@@ -1,0 +1,34 @@
+# Build artefacts
+NotchBuddy/build/
+NotchBuddy/NotchBuddy.xcodeproj/project.xcworkspace/xcuserdata/
+NotchBuddy/NotchBuddy.xcodeproj/xcuserdata/
+*.xcuserstate
+
+# Xcode DerivedData (outside repo — listed for clarity)
+DerivedData/
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# iCloud stubs
+*.icloud
+
+# Local only (never published)
+.claude/
+_prive/
+
+# powpow
+node_modules/
+.DS_Store
+*.log
+*.tgz
+.claude/settings.local.json
+_site/
+
+# Reference videos saved locally (not ours to publish)
+igexport-*.mp4
+
+# Worktrees that helper agents work in
+.claude/worktrees/

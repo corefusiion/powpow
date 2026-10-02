@@ -1,0 +1,17 @@
+{
+  "name": "powpow",
+  "version": "0.9.3",
+  "description": "A floating pal that shows what your coding agent is doing: every tool call, command and file change, live. Works with Claude Code and Codex.",
+  "author": {
+    "name": "powpow contributors"
+  },
+  "license": "MIT",
+  "keywords": [
+    "animation",
+    "mascot",
+    "status",
+    "hooks"
+  ],
+  "homepage": "https://github.com/corefusiion/powpow",
+  "repository": "https://github.com/corefusiion/powpow"
+}
