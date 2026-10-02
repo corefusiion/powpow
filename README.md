@@ -1,164 +1,236 @@
 <div align="center">
 
-<img src="docs/media/powpow.png" width="96" alt="Powpow icon">
+<img src="docs/media/powpow.png" width="104" alt="Ícone do Powpow">
 
 # Powpow
 
-**An animated companion for your coding agents — living in your Mac's notch or at the top of your screen on Windows.**
+**Um companheiro animado para seus agentes de código — morando na entalhadura do Mac ou no topo da tela do Windows.**
 
-Watch every session live, approve permissions, drop files, chat with your agent and pick the character that cheers you on — without leaving what you're doing.
+*Assista a cada sessão em tempo real, aprove permissões, solte arquivos, converse com o agente e escolha quem te acompanha — sem largar o que você estava fazendo.*
 
 ![macOS 15+](https://img.shields.io/badge/macOS-15%2B-black?logo=apple)
 ![Windows 10/11](https://img.shields.io/badge/Windows-10%2F11-0078D4?logo=windows&logoColor=white)
 ![Tauri 2](https://img.shields.io/badge/Tauri-2-FFC131?logo=tauri&logoColor=black)
 ![Swift 6](https://img.shields.io/badge/Swift-6-F05138?logo=swift&logoColor=white)
 ![Node 20+](https://img.shields.io/badge/Node-20%2B-339933?logo=node.js&logoColor=white)
-![License: MIT](https://img.shields.io/badge/license-MIT-green)
+![Licença MIT](https://img.shields.io/badge/licen%C3%A7a-MIT-green)
 
-<img src="docs/media/demo.gif" width="760" alt="Powpow in action">
+<img src="docs/media/demo.gif" width="760" alt="O Powpow em ação">
 
 </div>
 
 ---
 
-## Why
+## 01 · Por que o Powpow existe
 
-Coding agents got good at working alone — but you still have to babysit them: Which terminal was that? What did it just change? Is it waiting for me? Did the tests pass?
+Agentes de código aprenderam a trabalhar sozinhos — mas ainda exigem companhia. Em qual terminal aquilo rodou? O que ele acabou de mudar? Está esperando por mim? Os testes passaram?
 
-Powpow puts a small animated friend on the edge of your screen that tells you, at a glance, what your agents are doing and what they need — and lets you act on it in one click.
+O Powpow responde essas perguntas de relance. Um pequeno amigo animado encostado na borda da tela mostra o que cada agente está fazendo e o que precisa de você — e deixa resolver tudo em um clique, sem trocar de janela, sem perder o fluxo.
 
-## Features
+## 02 · A ilha
 
-- 👀 **Many agents, one island** — Claude Code, Gemini CLI, Antigravity (agy), OpenCode, Codex, Cursor and GitHub Copilot sessions appear side by side, each with its own pill, steps and working folder. Codex is followed by tailing its logs (zero setup); the others plug in via hooks or a tiny plugin.
-- ✋ **Approve from the notch** — permission requests surface with **Deny / Always allow / Allow**; "Always" remembers per-tool choices. Chat-only CLIs (agy, old Gemini) get read-only auto-allow so they are never blocked.
-- 📺 **Live activity** — see what each agent reads, edits and runs, step by step; files, commands and test results as they happen.
-- 💬 **Chat built in** — ask your agent anything from the notch. Providers: Anthropic and Google Gemini today; OpenRouter, OpenAI and more on the way.
-- 🎭 **A cast of characters** — eight hand-drawn SVG pals (Blu, Hop, Sunny, Lovi, Muse, Grok, Nova, Byte) with moods, gaze tracking and per-state animations — plus a **build-your-own pal** builder (shape, eyes, topper, color, fluff). Choose who lives in your island — or keep **Mochi**, the original notch pal — in **Settings → Character**, with a live preview before you save.
-- 📂 **Drop a file on the island** — your character turns into a box and swallows it, ready to ask a question about it.
-- 🪟 **Attach a window** — drag your companion onto any window to attach it as context.
-- 🔌 **Integrations** — Spotify, WhatsApp, Gmail, Outlook, Stripe, n8n, GitHub, Vercel, Resend, Notion, Cal.com — each with its own pill.
-- 🌐 **PT-BR + English interface** — switch live from Settings, no restart.
-- 🎨 **Themes** — Onyx, Ice and Frost, plus an "embasa" rule that expands the island over light backgrounds.
-- 🔒 **Private by design** — no telemetry, no account. Keys live in the macOS Keychain or Windows Credential Manager. The app only talks to services you configure.
+**Muitos agentes, um mesmo lugar.** Claude Code, Gemini CLI, Antigravity (agy), OpenCode, Codex, Cursor e GitHub Copilot aparecem lado a lado: cada sessão ganha sua própria pílula, seus passos e sua pasta de trabalho. O Codex é acompanhado apenas lendo os logs dele — zero configuração; os demais entram por hooks ou por um plugin miúdo, instalados a partir das Configurações.
 
-## Project layout
+**Aprovações na borda.** Um pedido de permissão abre a ilha com **Negar / Sempre permitir / Permitir**. "Sempre" grava a escolha por ferramenta — a lista fica visível em *Configurações → Geral → Ferramentas liberadas* — para a mesma pergunta não voltar a incomodar. CLIs que só conversam (agy, Gemini antigo) recebem auto-aprovação estritamente de leitura, assim nunca ficam travados esperando um clique.
 
-| Where | What |
+**Risco visível antes do clique.** Comandos destrutivos — apagar arquivos recursivamente, force-push, descartar alterações do git — chegam com um selo de risco em destaque no próprio cartão. Permitir deixa de ser um palpite.
+
+**Atividade ao vivo.** Cada leitura, edição, comando e resultado de teste, passo a passo, no momento em que acontece.
+
+**Histórico em palavras simples.** Quando o turno termina, a vista Histórica reconta o que houve: o que você pediu, os arquivos que mudaram, o que os testes disseram e o veredito — pronto para merge ou não — tudo em português claro, com um clique para copiar. O modo **Simples** fica curto; o modo **Detalhado** abre o resto.
+
+**Diff ao vivo.** Enquanto o agente edita, o cartão de diff acompanha as linhas surgindo em tempo real, ao lado do resto da atividade.
+
+> Se o Powpow estiver fechado, lento ou travado, o hook correspondente simplesmente desiste. **Uma sessão nunca é bloqueada nem atrasada por causa dele.**
+
+## 03 · Conversa, arquivos e serviços
+
+**Chat na ilha.** Pergunte qualquer coisa ao seu agente direto da borda. Hoje os provedores são Anthropic (Claude) e Google Gemini. A chave fica no Keychain do macOS ou no Credential Manager do Windows: a interface só consegue perguntar se ela existe, nunca mostrá-la.
+
+**Solte um arquivo.** Seu personagem vira uma caixa e engole o arquivo, pronto para você perguntar qualquer coisa sobre ele.
+
+**Anexe uma janela.** Arraste o companheiro sobre uma janela qualquer para acoplá-la como contexto do chat.
+
+**Integrações.** Spotify, WhatsApp, Gmail, Outlook, Stripe, n8n, GitHub, Vercel, Resend, Notion e Cal.com — cada uma com sua pílula colorida, contador de não lidos ou estado atual e um cartão de detalhes. Todas opcionais; nenhuma é obrigatória para o resto funcionar.
+
+## 04 · O elenco
+
+**Mochi**, o morador original da entalhadura, continua disponível. Ao lado dele: **Blu, Hop, Sunny, Lovi, Muse, Grok, Nova e Byte** — desenhados em SVG, com humores, olhos que acompanham o cursor e animações próprias para cada estado do agente.
+
+**Monte o seu.** Em *Configurações → Personagem*, o construtor deixa escolher forma, olhos, topinho, cor e pelugem, com prévia ao vivo e botão de sorteio. "Usar este pal" grava a criação e ela passa a ser sua opção pessoal na lista de personagens.
+
+**Gestos.** Eles reagem o tempo todo — e os 28 sons do app acompanham cada evento, com opção de mudo quando o trabalho pede silêncio:
+
+| Você faz | Ele faz |
 |---|---|
-| [`windows/`](windows/) | The Windows companion — a [Tauri 2](https://tauri.app) app (Rust + TypeScript): island window, character engine, hooks, approvals, chat, integrations. |
-| [`NotchBuddy/`](NotchBuddy/) | The macOS companion — native Swift 6 / SwiftUI / AppKit, zero third-party dependencies. |
-| [`bridge/`](bridge/) | Local activity bridge (Node, zero runtime dependencies): hook adapters for every supported agent, unified activity log, HTTP + SSE feed on `127.0.0.1:5175`, history, cross-agent file-conflict guard and handoff. |
-| [`src/`](src/) | `<dot-pal>` — a dependency-free animated web component: characters, moods, agent states, custom pal builder. Works in any page, no build step. |
-| [`hooks/`](hooks/), [`commands/`](commands/) | Claude Code plugin hooks and slash commands. |
+| passa o mouse no topo da tela | espreita e cumprimenta |
+| clica na ilha | abre a vista completa |
+| clica no personagem | se irrita; três cliques seguidos e ele fica tonto |
+| deixa o cursor parado dois segundos sobre ele | solta corações |
+| arraste um arquivo até a ilha | vira uma caixa e engole o arquivo |
+| arraste o personagem até uma janela | anexa a janela como contexto |
+| `Esc` | fecha a ilha |
 
-## Install
+## 05 · Aparência e idioma
+
+**Temas** — Onyx, Ice e Frost, mais a regra *Embasa*, que expande a ilha sobre fundos claros para o texto continuar legível.
+
+**Português e inglês** — a interface existe nas duas versões e troca ao vivo em *Configurações → Idioma*, sem reiniciar nada.
+
+## 06 · Privacidade
+
+- Sem telemetria e sem conta. O app não reporta nada a lugar nenhum.
+- Chaves de API e de integração vivem no Keychain (macOS) ou no Credential Manager (Windows) — nunca em disco, nunca na interface.
+- A única rede que o Powpow faz é para os serviços que **você** configurou.
+- Sempre que os hooks do Claude Code precisam ser alterados, você recebe o diff exato, um backup datado e só então decide gravar. Nada é escrito sem o seu clique, e apenas as entradas do Powpow são tocadas.
+- O log de depuração fica na sua máquina (`%LOCALAPPDATA%\Powpow\powpow.log` no Windows) e não guarda comandos nem URLs completas.
+
+## 07 · Instalação
 
 ### macOS
 
-1. Grab the latest `Powpow.zip` from [Releases](https://github.com/corefusiion/powpow/releases).
-2. Unzip and move **Powpow.app** to `/Applications`.
-3. Launch. If macOS can't verify the developer the first time: **System Settings → Privacy & Security → Open Anyway** (once).
+1. Baixe o `Powpow.zip` mais recente em [Releases](https://github.com/corefusiion/powpow/releases).
+2. Descompacte e mova o **Powpow.app** para `/Applications`.
+3. Na primeira abertura, se o macOS não reconhecer o desenvolvedor: *Ajustes do Sistema → Privacidade e Segurança → Abrir mesmo assim* (uma vez).
 
 ### Windows
 
-There is no notch on a PC, so the island slides out of the top edge of the screen instead. Download the installer or the portable build from the latest [Windows workflow run](https://github.com/corefusiion/powpow/actions/workflows/windows.yml) (artifacts are kept for 3 days), or see [`windows/README.md`](windows/README.md) for the details and to build it yourself.
+Não há entalhadura num PC, então a ilha escorrega do topo da tela. Baixe o instalador ou a versão portátil no artefato mais recente do [workflow do Windows](https://github.com/corefusiion/powpow/actions/workflows/windows.yml) — os artefatos ficam disponíveis por 3 dias — ou [compile você mesmo](#08--compilando-a-partir-do-código), são poucos minutos e não pede administrador. O detalhe de cada caminho está em [`windows/README.md`](windows/README.md), inclusive a nota sobre o falso positivo do Microsoft Defender no instalador ainda sem assinatura.
 
-### Build from source
+### Pela linha de comando
 
-**macOS** — requirements: macOS 15+, Xcode 16+, [XcodeGen](https://github.com/yonaskolb/XcodeGen).
+O mesmo código roda em qualquer sistema como pal flutuante + dashboard local:
+
+```bash
+git clone https://github.com/corefusiion/powpow.git
+cd powpow
+npm install
+npm run setup        # assistente: instala, conecta seus agentes e abre tudo
+```
+
+Sem clonar, uma linha faz o mesmo:
+
+```bash
+npx --allow-git=all github:corefusiion/powpow setup
+```
+
+Depois do setup:
+
+```bash
+npm run dashboard    # http://127.0.0.1:5175/dashboard
+npm run float        # o pal flutuante (Electron)
+npm run bridge       # só a ponte, sem janela
+```
+
+## 08 · Compilando a partir do código
+
+**macOS** — requer macOS 15+, Xcode 16+ e [XcodeGen](https://github.com/yonaskolb/XcodeGen):
 
 ```bash
 brew install xcodegen
 git clone https://github.com/corefusiion/powpow.git
 cd powpow/NotchBuddy
 xcodegen
-open NotchBuddy.xcodeproj   # then ⌘R
+open NotchBuddy.xcodeproj    # depois é só ⌘R
 ```
 
-**Windows** — requirements: [Rust](https://rustup.rs), Node 20+, MSVC build tools.
+O projeto nunca é editado à mão: mexa em `project.yml` e rode o `xcodegen` de novo.
+
+**Windows** — requer [Rust](https://rustup.rs), Node 20+ e as ferramentas MSVC ("Desenvolvimento de desktop com C++"):
 
 ```powershell
 git clone https://github.com/corefusiion/powpow.git
 cd powpow/windows
 npm install
-npm run pack                # installer lands in windows/release/
+npm run tauri dev      # desenvolvimento com recarga ao vivo
+npm run pack           # instalador em windows/release/
 ```
 
-**Activity bridge** — requirements: Node 20+.
+**Ponte e testes** — requer Node 20+:
 
 ```bash
 npm install
-npm run bridge              # http://127.0.0.1:5175/dashboard
-npm test                    # test suite
+npm test               # suíte de testes (node --test)
+npm run bridge         # http://127.0.0.1:5175/dashboard
 ```
 
-## Setup
+## 09 · Configuração
 
-Open Settings from the menu bar icon (macOS) or the system tray (Windows):
+Abra as Configurações pela barra de menu (macOS) ou pela bandeja (Windows):
 
-| What | Why | Where it goes |
+| O que conectar | Para quê | Onde |
 |---|---|---|
-| **Claude Code hooks** | live sessions + approvals | **Install hooks** — Powpow backs up `~/.claude/settings.json`, merges its own entries and shows you the diff before writing anything |
-| **Gemini CLI / Antigravity hooks** | their sessions in the island | one click each in Settings — always with a backup first |
-| **OpenCode plugin** | its sessions in the island | copy the bundled plugin to `~/.config/opencode/plugins/` |
-| **API key** (Anthropic / Gemini) | chat from the notch | Keychain / Windows Credential Manager |
-| Integrations | their pills | Keychain / Windows Credential Manager — all optional |
+| **Hooks do Claude Code** | sessões ao vivo e aprovações | *Claude Code → Instalar hooks.* — o Powpow mostra o diff exato e o backup datado antes de escrever qualquer coisa |
+| **Hooks do Gemini CLI / Antigravity** | as sessões deles na ilha | um clique em cada, sempre com backup antes |
+| **Plugin do OpenCode** | as sessões dele na ilha | copie o plugin para `~/.config/opencode/plugins/` |
+| **Chave de API** (Claude / Gemini) | chat pela ilha | Keychain ou Credential Manager |
+| **Integrações** | as pílulas | Keychain ou Credential Manager — tudo opcional |
 
-If Powpow isn't running, hooks exit immediately: **your agent is never blocked.**
+Se o Powpow não estiver no ar, os hooks saem imediatamente: **seu agente nunca fica esperando por ele.**
 
-## Things to try
+## 10 · Como funciona
 
-| Do this | Your pal does that |
-|---|---|
-| Hover the notch (top edge on Windows) | peeks out and says hi 👋 |
-| Click it | opens the full view |
-| Hover your pal | blinks, eyes follow you |
-| Click it | squish + annoyed |
-| Click 3 times fast | 😵‍💫 dizzy for a few seconds |
-| Drag a file onto the island | turns into a box and swallows it |
-| Drag your pal onto a window *(macOS)* | attaches it as context |
+**Windows** — um app [Tauri 2](https://tauri.app): a ilha é uma janela transparente, sempre por cima, que nunca rouba o foco. Os CLIs de agente conversam com o app por um relé minúsculo (`powpow-hook.exe`) via named pipe; os pedidos de permissão esperam o seu clique e só então respondem ao hook — com limite de 300 ms para chegar lá. As chaves ficam no Credential Manager.
 
-## How it works
+**macOS** — um `NSPanel` sem bordas encostado na entalhadura; o personagem é desenhado em SwiftUI `Canvas` + `TimelineView`, a 60 fps, sem imagens nem bibliotecas de animação. Um relé por socket encaminha os eventos; as aprovações ficam bloqueadas até você clicar.
 
-**Windows** — a Tauri 2 app: the island is a transparent, always-on-top window that never steals focus. Agent CLIs run a tiny `powpow-hook.exe` relay that talks to the app over a named pipe; approvals wait for your click, then answer the hook. Keys live in Windows Credential Manager.
-
-**macOS** — a borderless `NSPanel` hugging the notch; the character is drawn in SwiftUI `Canvas` + `TimelineView` at 60 fps. A small socket-based hook script forwards events; approvals block until you click.
-
-**Bridge** (cross-platform) — hook adapters for each agent POST events into a local bridge, which merges them into one activity log and broadcasts over SSE. Any UI — the dashboard, an embedded `<dot-pal>`, your own script — consumes the same feed:
+**Ponte de atividade** (plataforma independente) — adaptadores de hook para cada agente mandam eventos para uma ponte local, que mescla tudo num único log de atividade e retransmite por Server-Sent Events. Qualquer interface — dashboard, um `<dot-pal>` embutido, o script do seu time — consome o mesmo fluxo:
 
 ```js
 const pal = document.querySelector('dot-pal');
 const source = new EventSource('http://127.0.0.1:5175/events');
 source.onmessage = (e) => {
   const { state, text } = JSON.parse(e.data);
-  pal.setState(state, { text });
+  pal.setState(state, { text });   // repassa o estado ao personagem
 };
 ```
 
-See [`bridge/`](bridge/) and [`src/`](src/) for the adapters and the full component API.
+O componente `<dot-pal>` também anda sozinho, sem build e sem dependências:
 
-## Roadmap
+```html
+<script type="module" src="https://cdn.jsdelivr.net/npm/powpow"></script>
+<dot-pal character="sunny"></dot-pal>
+```
 
-- 🔄 Island ⇄ bridge integration — the notch consuming the unified SSE feed directly
-- 🌐 More chat providers — OpenRouter, OpenAI, and others
-- 🎭 More characters and pal customization in the island
-- 🤖 Agent coverage — more CLIs as they add hook support
+Veja [`bridge/`](bridge/) e [`src/`](src/) para os adaptadores e a API completa do componente.
 
-## Contributing
+## 11 · Estrutura do repositório
 
-Issues and PRs are very welcome — new adapters, characters, providers, sounds and bug fixes. See [CONTRIBUTING.md](CONTRIBUTING.md).
+| Onde | O que tem |
+|---|---|
+| [`windows/`](windows/) | o companheiro Windows — app [Tauri 2](https://tauri.app) (Rust + TypeScript): janela-ilha, motor do personagem, hooks, aprovações, chat, integrações |
+| [`NotchBuddy/`](NotchBuddy/) | o companheiro macOS — Swift 6 nativo com SwiftUI e AppKit, sem nenhuma dependência de terceiros |
+| [`bridge/`](bridge/) | ponte de atividade local (Node, zero dependências em runtime): adaptadores para cada agente, log unificado, fluxo HTTP + SSE em `127.0.0.1:5175`, histórico, guarda de conflito entre agentes e handoff |
+| [`src/`](src/) | `<dot-pal>` — componente web animado e sem dependências: personagens, humores, estados de agente e o construtor de pals. Funciona em qualquer página, sem build |
+| [`hooks/`](hooks/), [`commands/`](commands/), [`.claude-plugin/`](.claude-plugin/) | plugin do Claude Code: hooks e comandos de barra |
+| [`desktop/`](desktop/) | o pal flutuante em Electron e o launcher do dashboard (`npm run float`) |
+| [`docs/`](docs/) | site, especificação (`SPEC.md`) e documentação de integrações |
+| [`design/`](design/) | protótipo HTML — a fonte da verdade visual — e as capturas de referência |
+| [`test/`](test/), [`tests/`](tests/) | suíte Node (`node --test`) e testes Swift (geometria da tela, links seguros) |
+| [`scripts/`](scripts/), [`bin/`](bin/) | utilitários de desenvolvimento e a CLI `powpow` |
 
-## License
+## 12 · Estrada aberta
 
-- **Code:** [MIT](LICENSE) — use it, fork it, learn from it, just keep the copyright notices.
-- **Bridge and web component:** MIT — see [LICENSE-dotpals](LICENSE-dotpals) and [THIRD_PARTY_NOTICES](THIRD_PARTY_NOTICES) for adapted third-party code.
-- **Artwork and sounds:** see [LICENSE-ASSETS.md](LICENSE-ASSETS.md).
+- Ilha consumindo direto o feed SSE unificado da ponte
+- Mais provedores de chat — OpenRouter, OpenAI e outros
+- Mais personagens e mais personalização dentro da ilha
+- Mais agentes cobertos à medida que ganharem suporte a hooks
 
-Maintained by [Gleisson Santos](mailto:jsgleisson@gmail.com).
+## 13 · Contribuindo
+
+Issues e pull requests são muito bem-vindos: novos adaptadores, personagens, sons, provedores e correções de bugs. O guia está em [CONTRIBUTING.md](CONTRIBUTING.md) — inclui os primeiros passos e boas contribuições para começar.
+
+## 14 · Licença
+
+- **Código:** [MIT](LICENSE) — use, faça fork, aprenda; é só manter os avisos de copyright.
+- **Ponte e componente web:** MIT — ver [LICENSE-dotpals](LICENSE-dotpals) e [THIRD_PARTY_NOTICES](THIRD_PARTY_NOTICES) para o código de terceiros adaptado.
+- **Arte e sons:** ver [LICENSE-ASSETS.md](LICENSE-ASSETS.md).
+
+Mantido por [Gleisson Santos](mailto:jsgleisson@gmail.com).
 
 <div align="center">
 
-**If Powpow made you smile, a ⭐ helps a lot.**
+**Se o Powpow deixou seu terminal mais agradável, uma estrela no repositório ajuda a espalhar a palavra.**
 
 [Issues](https://github.com/corefusiion/powpow/issues)
 
