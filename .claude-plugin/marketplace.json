@@ -1,7 +1,7 @@
 {
   "name": "powpow",
   "owner": {
-    "name": "powpow contributors"
+    "name": "Gleisson Santos"
   },
   "description": "Fluffy animated pals that react live to your Claude Code sessions.",
   "plugins": [

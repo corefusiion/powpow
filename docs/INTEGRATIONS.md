@@ -3,11 +3,11 @@
 Règle d'or : **vérifier la doc officielle au moment d'implémenter**. Les formats ci-dessous sont le plan, pas une garantie. Sources à relire :
 - Hooks Claude Code : https://code.claude.com/docs/en/hooks
 - API Claude (Messages, outil de recherche web, modèles) : https://docs.claude.com/en/api/overview
-- API publique n8n : `{URL de l'instance}/api/v1/docs` (playground de l'instance de Louis)
+- API publique n8n : `{URL de l'instance}/api/v1/docs` (playground de l'instance de Gleisson)
 
 ---
 
-## 1. Claude Code (sessions de Louis)
+## 1. Claude Code (sessions de Gleisson)
 
 ### Architecture
 ```
@@ -40,7 +40,7 @@ Vérifier dans la doc la liste exacte des événements et leurs champs.
 
 ### Approuver depuis le notch
 - Sur `PermissionRequest`, `nb-hook` **attend** la décision de l'app (défaut 110 s, réglable) puis écrit sur stdout le JSON de décision du hook (d'après la doc actuelle : `hookSpecificOutput` avec `decision.behavior` = `allow` ou `deny`). Timeout du hook dans settings.json : décision + 10 s.
-- Pas de réponse avant le délai, ou app fermée → aucune sortie, le terminal affiche sa demande habituelle. Si Louis répond dans le terminal, l'app retire l'alerte au prochain événement de la session.
+- Pas de réponse avant le délai, ou app fermée → aucune sortie, le terminal affiche sa demande habituelle. Si Gleisson répond dans le terminal, l'app retire l'alerte au prochain événement de la session.
 - Un bug a été signalé où `deny` était ignoré sur `PermissionRequest` (issue GitHub anthropics/claude-code #19298). **Tester allow et deny** ; si deny ne marche pas, basculer la décision sur `PreToolUse` (`permissionDecision`) pour les outils concernés.
 - « Toujours autoriser » : si la doc permet de renvoyer une règle de permission persistante, l'utiliser. Sinon l'app garde sa propre liste (projet + outil + motif de commande) et répond `allow` automatiquement ensuite. Liste visible et supprimable dans les réglages.
 - Raccourcis Y / N quand la vue `approval` est ouverte.
@@ -63,14 +63,14 @@ Demande l'autorisation Automatisation la première fois (normal).
 1. Lire `~/.claude/settings.json` (le créer s'il n'existe pas).
 2. Copier en `~/.claude/settings.json.bak-AAAAMMJJ-HHMM`.
 3. **Fusionner** : ajouter les hooks Notch Buddy sans toucher aux hooks existants. Chemin de `nb-hook` entre guillemets (il contient un espace).
-4. Montrer le diff à Louis, attendre son OK, écrire.
+4. Montrer le diff à Gleisson, attendre son OK, écrire.
 5. Bouton « Désinstaller les hooks » dans les réglages qui retire uniquement les entrées Notch Buddy.
 
 ---
 
-## 2. n8n (workflows de Louis)
+## 2. n8n (workflows de Gleisson)
 
-- Réglages : URL de l'instance (probablement `https://n8nlouis.dcsys.tech`, **à confirmer avec Louis**) et clé API n8n (Trousseau). La clé se crée dans n8n : Settings → n8n API.
+- Réglages : URL de l'instance (`https://n8n.exemple.tld`, **à confirmer**) et clé API n8n (Trousseau). La clé se crée dans n8n : Settings → n8n API.
 - Le Mac joint n8n, pas l'inverse : **polling** toutes les 5 s de l'API publique :
   - noms des workflows : `GET /api/v1/workflows` (cache 10 min) ;
   - exécutions récentes : `GET /api/v1/executions` avec filtres de statut et `limit`.
@@ -148,7 +148,7 @@ Permissions : Enregistrement de l'écran (capture) et Automatisation (navigateur
 
 ---
 
-## 7. Permissions macOS demandées (récapitulatif pour Louis)
+## 7. Permissions macOS demandées (récapitulatif pour Gleisson)
 
 | Permission | Pourquoi | Quand |
 |---|---|---|

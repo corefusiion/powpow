@@ -35,6 +35,9 @@ pub struct Settings {
     /// Remembered "always allow" rules for non-Claude approvals ("source:tool").
     #[serde(default)]
     pub approved_tools: Vec<String>,
+    /// Island character: "mochi" (the original) or a dotpals built-in id.
+    #[serde(default = "default_character")]
+    pub character: String,
 }
 
 fn default_language() -> String {
@@ -55,6 +58,10 @@ fn default_gemini_model() -> String {
 
 fn default_model() -> String {
     crate::claude::DEFAULT_MODEL.to_string()
+}
+
+fn default_character() -> String {
+    "mochi".to_string()
 }
 
 impl Default for Settings {
@@ -79,6 +86,7 @@ impl Default for Settings {
             language: default_language(),
             theme: default_theme(),
             approved_tools: Vec::new(),
+            character: default_character(),
         }
     }
 }

@@ -1,7 +1,7 @@
 [package]
 name = "powpow"
 description = "Powpow for Windows — Mochi lives at the top of your screen"
-authors = ["gleisson-santos"]
+authors = ["Gleisson Santos <jsgleisson@gmail.com>"]
 version.workspace = true
 edition.workspace = true
 license.workspace = true

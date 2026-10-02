@@ -136,6 +136,8 @@ const PT: Record<string, string> = {
   "Clear": "Limpar",
   "Language": "Idioma",
   "Theme": "Tema",
+  "Character": "Personagem",
+  "Mochi (notch original)": "Mochi (o original do notch)",
   "Onyx (black)": "Ônix (preto)",
   "Ice (frost white)": "Gelo (branco gelo)",
   "Frost (translucent blue)": "Geada (azul translúcido)",

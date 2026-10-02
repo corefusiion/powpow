@@ -112,6 +112,8 @@ export interface Settings {
   theme: IslandTheme;
   /** Remembered "always allow" rules for non-Claude approvals ("source:tool"). */
   approvedTools: string[];
+  /** Island character: "mochi" (the original) or a dotpals built-in id. */
+  character: string;
 }
 
 export const DEFAULT_SETTINGS: Settings = {
@@ -131,6 +133,7 @@ export const DEFAULT_SETTINGS: Settings = {
   language: "en",
   theme: "onyx",
   approvedTools: [],
+  character: "mochi",
 };
 
 type Listener = () => void;

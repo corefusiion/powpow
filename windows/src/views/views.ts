@@ -28,6 +28,8 @@ export interface ViewActions {
   setVolume(v: number): void;
   setAutoClose(seconds: number): void;
   openSettingsWindow(): void;
+  /** The Drop view's "Choose file" button — same path as a DOM drop. */
+  attachFile(file: File): void;
   blip(): void;
 }
 
@@ -511,10 +513,11 @@ export function buildViews(
   map.set("note", buildNote());
   map.set("settings", buildSettings(actions));
   map.set("prompt", buildPrompt(actions, onChatHeightChange));
-  map.set("upload", buildUpload());
+  map.set("upload", buildUpload(actions));
   map.set("uploading", buildUploading());
   map.set("choose", buildChoose(actions));
-  // Not in the Windows v1: sending a file by email, window attach + web result.
+  // Placeholders kept from the spec: sending a file by mail, plus the search and
+  // result views. Window attach is real — drag Mochi out of the island.
   map.set("mail", buildPlaceholder(t("Sending by email isn't in this version."), ""));
   map.set("searching", buildPlaceholder(t("Claude is searching…"), ""));
   map.set("result", buildPlaceholder(t("Result"), ""));

@@ -33,7 +33,7 @@ Powpow puts a small animated friend on the edge of your screen that tells you, a
 - ✋ **Approve from the notch** — permission requests surface with **Deny / Always allow / Allow**; "Always" remembers per-tool choices. Chat-only CLIs (agy, old Gemini) get read-only auto-allow so they are never blocked.
 - 📺 **Live activity** — see what each agent reads, edits and runs, step by step; files, commands and test results as they happen.
 - 💬 **Chat built in** — ask your agent anything from the notch. Providers: Anthropic and Google Gemini today; OpenRouter, OpenAI and more on the way.
-- 🎭 **A cast of characters** — eight hand-drawn SVG pals (Blu, Hop, Sunny, Lovi, Muse, Grok, Nova, Byte) with moods, gaze tracking and per-state animations — plus a **build-your-own pal** builder (shape, eyes, topper, color, fluff).
+- 🎭 **A cast of characters** — eight hand-drawn SVG pals (Blu, Hop, Sunny, Lovi, Muse, Grok, Nova, Byte) with moods, gaze tracking and per-state animations — plus a **build-your-own pal** builder (shape, eyes, topper, color, fluff). Choose who lives in your island — or keep **Mochi**, the original notch pal — in **Settings → Character**, with a live preview before you save.
 - 📂 **Drop a file on the island** — your character turns into a box and swallows it, ready to ask a question about it.
 - 🪟 **Attach a window** — drag your companion onto any window to attach it as context.
 - 🔌 **Integrations** — Spotify, WhatsApp, Gmail, Outlook, Stripe, n8n, GitHub, Vercel, Resend, Notion, Cal.com — each with its own pill.
@@ -61,7 +61,7 @@ Powpow puts a small animated friend on the edge of your screen that tells you, a
 
 ### Windows
 
-There is no notch on a PC, so the island slides out of the top edge of the screen instead. See [`windows/README.md`](windows/README.md) for the details and the current build situation.
+There is no notch on a PC, so the island slides out of the top edge of the screen instead. Download the installer or the portable build from the latest [Windows workflow run](https://github.com/corefusiion/powpow/actions/workflows/windows.yml) (artifacts are kept for 3 days), or see [`windows/README.md`](windows/README.md) for the details and to build it yourself.
 
 ### Build from source
 
@@ -153,6 +153,8 @@ Issues and PRs are very welcome — new adapters, characters, providers, sounds 
 - **Code:** [MIT](LICENSE) — use it, fork it, learn from it, just keep the copyright notices.
 - **Bridge and web component:** MIT — see [LICENSE-dotpals](LICENSE-dotpals) and [THIRD_PARTY_NOTICES](THIRD_PARTY_NOTICES) for adapted third-party code.
 - **Artwork and sounds:** see [LICENSE-ASSETS.md](LICENSE-ASSETS.md).
+
+Maintained by [Gleisson Santos](mailto:jsgleisson@gmail.com).
 
 <div align="center">
 

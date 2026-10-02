@@ -7,7 +7,7 @@ import {
   EXPANDED_CORNER, EXPANDED_W, NOTCH_W, PANEL_H, PANEL_W,
   ROUNDED_CORNER, VIEW_LAYOUTS, botGlowColor, botGlowOpacity, botPosition, chatPromptHeight,
   islandSize,
-  type IslandMode, type IslandViewName,
+  type BotStateName, type IslandMode, type IslandViewName,
 } from "../core/layout";
 import { Sound } from "../core/sound";
 import { State } from "../core/state";
@@ -18,11 +18,38 @@ import { UploadCanvas } from "../upload/canvas";
 import { USC, UploadSeq } from "../upload/sequence";
 import { buildHeader, buildViews, type ViewActions, type ViewHost } from "../views/views";
 import { h } from "../views/dom";
+// Side effect registers the `dot-pal` tag; the island draws one instead of Mochi
+// whenever Settings › Character picks something else.
+import { DotPal, characters, type AgentState } from "../../../src/index.js";
 import { IslandStateMachine } from "./fsm";
 
 const BOT_OVERHANG = 40;
 /** Same margin as the Rust hit test (src-tauri/src/island.rs). */
 const HIT_MARGIN = 14;
+
+/**
+ * `<dot-pal>` host box, in bot-body diameters: full body height is ~1.95× the
+ * width (the component clips everything below its bottom edge — the feet would
+ * otherwise be cut off), and the body's centre sits 1.27 diameters below the
+ * box top, which is where Mochi's centre sits (average over the eight built-ins).
+ */
+const PAL_H_RATIO = 1.95;
+const PAL_MID_RATIO = 1.27;
+
+/** Bot state → the agent state the `<dot-pal>` overlay shows for it. */
+const PAL_STATE: Record<BotStateName, AgentState> = {
+  idle: "idle",
+  working: "working",
+  thinking: "thinking",
+  searching: "working",
+  approval: "waiting",
+  question: "waiting",
+  error: "error",
+  finished: "done",
+  ratelimit: "waiting",
+  sleeping: "sleeping",
+  dizzy: "error",
+};
 
 /** The three views the drop sequence owns; leaving them stops the engine. */
 const UPLOAD_VIEWS: ReadonlySet<IslandViewName> = new Set(["upload", "uploading", "choose"]);
@@ -42,6 +69,9 @@ export class Island {
   private viewsEl!: HTMLElement;
   private botCanvas!: HTMLCanvasElement;
   private botGlow!: HTMLElement;
+  /** Character overlay drawn where Mochi would be; null while Mochi is chosen. */
+  private pal: DotPal | null = null;
+  private palCharacter = "";
   private greetingCanvas!: HTMLCanvasElement;
   private miniGrid!: HTMLElement;
   private countdown!: HTMLElement;
@@ -153,7 +183,8 @@ export class Island {
         if (task.id === "integration_claude" || task.source === "claudeCode") {
           void Bridge.openInVSCode(task.sessionCwd ?? null);
         } else if (task.source === "geminiCli" || task.source === "antigravity" || task.source === "opencode" || task.source === "genericCli") {
-          // No per-terminal jump on Windows — open the working folder like VS Code.
+          // jump.rs focuses the console running that session; if no match, the
+          // working folder still opens in VS Code.
           void Bridge.openInVSCode(task.sessionCwd ?? null);
         } else if (task.id === "integration_n8n") void Bridge.openN8n();
         else if (urls[task.id]) void Bridge.openUrl(urls[task.id]);
@@ -203,6 +234,8 @@ export class Island {
         State.notify();
       },
       openSettingsWindow: () => void Bridge.openSettingsWindow(),
+      /** Keyboard/mouse way into the drop flow (Drop view's "Choose file"). */
+      attachFile: (file) => this.handleFile(file),
       blip: () => Sound.play("blip"),
     };
 
@@ -352,10 +385,12 @@ export class Island {
       return;
     }
     if (this.botPress) {
-      // Plain click on Mochi: the deferred slap.
+      // Plain click on Mochi: the deferred slap. The overlay plays the same
+      // tap action its own click would have fired.
       this.botPress = null;
       this.cancelBotHover();
       this.engine.slap();
+      if (this.pal) void this.pal.play(String(characters[this.pal.character]?.tap ?? "squish"));
     }
   }
 
@@ -573,36 +608,44 @@ export class Island {
       if (!files || files.length === 0) return;
       e.preventDefault();
       State.fileDragOver = false;
-      const file = files[0];
-      void Bridge.log(`dom-drop ${file.name} ${file.size}b`);
-      if (file.size > 25 * 1024 * 1024) {
-        State.noteMessage = "File too large (25 MB max).";
+      this.handleFile(files[0]);
+    });
+  }
+
+  /**
+   * One file, two ways in: a DOM drop (content only, paths hidden by WebView2)
+   * and the Drop view's "Choose file" button. Both end in `ingest_bytes`, so the
+   * button is a full equivalent of dragging for keyboard and screen-reader users.
+   */
+  private handleFile(file: File) {
+    void Bridge.log(`file ${file.name} ${file.size}b`);
+    if (file.size > 25 * 1024 * 1024) {
+      State.noteMessage = "File too large (25 MB max).";
+      this.setView("note");
+      Sound.play("error");
+      window.setTimeout(() => this.setView(State.defaultView()), 2400);
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = () => {
+      const url = String(reader.result ?? "");
+      const b64 = url.includes(",") ? url.split(",")[1] : "";
+      if (!b64) {
+        State.noteMessage = "Could not read that file.";
         this.setView("note");
         Sound.play("error");
         window.setTimeout(() => this.setView(State.defaultView()), 2400);
         return;
       }
-      const reader = new FileReader();
-      reader.onload = () => {
-        const url = String(reader.result ?? "");
-        const b64 = url.includes(",") ? url.split(",")[1] : "";
-        if (!b64) {
-          State.noteMessage = "Could not read that file.";
-          this.setView("note");
-          Sound.play("error");
-          window.setTimeout(() => this.setView(State.defaultView()), 2400);
-          return;
-        }
-        this.swallowBytes(file.name, b64);
-      };
-      reader.onerror = () => {
-        State.noteMessage = "Could not read that file.";
-        this.setView("note");
-        Sound.play("error");
-        window.setTimeout(() => this.setView(State.defaultView()), 2400);
-      };
-      reader.readAsDataURL(file);
-    });
+      this.swallowBytes(file.name, b64);
+    };
+    reader.onerror = () => {
+      State.noteMessage = "Could not read that file.";
+      this.setView("note");
+      Sound.play("error");
+      window.setTimeout(() => this.setView(State.defaultView()), 2400);
+    };
+    reader.readAsDataURL(file);
   }
 
   /**
@@ -846,6 +889,9 @@ export class Island {
   /** Cursor in window-logical coordinates. `down` comes from the Rust poll. */
   onCursor(x: number, y: number, down = false) {
     State.mouse = { x, y };
+    // The overlay follows the pointer on its own; Tauri drives the cursor from
+    // Rust, so hand it over explicitly (same coordinate space: this window).
+    if (this.pal) DotPal.pointAt(x, y);
     const rect = this.islandRect();
     State.mouseInIsland = { x: x - rect.x, y: y - rect.y };
 
@@ -911,6 +957,7 @@ export class Island {
     if (performance.now() / 1000 - this.lastLoveTime < 6) return;
     this.botHoverStart = { x, y };
     this.engine.blink();
+    this.pal?.blink();
     this.engine.tgEs = 1.08;
     Sound.play("hover");
     this.scheduleLove();
@@ -924,6 +971,7 @@ export class Island {
       if (performance.now() / 1000 - this.lastLoveTime < 6) return;
       this.lastLoveTime = performance.now() / 1000;
       this.engine.triggerEmote("love");
+      void this.pal?.emote("love");
       Sound.play("love");
     }, 1900);
   }
@@ -938,14 +986,15 @@ export class Island {
   private handleDizzy() {
     this.prevViewBeforeConfused = State.view;
     State.stateOverride = "dizzy";
-    this.engine.setState("dizzy");
+    this.setBotState("dizzy");
+    void this.pal?.emote("dizzy", 3300);
     Sound.play("dizzy");
     this.alert("confused");
     if (this.confusedRecovery != null) window.clearTimeout(this.confusedRecovery);
     this.confusedRecovery = window.setTimeout(() => {
       this.confusedRecovery = null;
       State.stateOverride = null;
-      this.engine.setState(State.effectiveState);
+      this.setBotState(State.effectiveState);
       if (State.view === "confused") {
         const fallback = State.defaultView();
         this.setView(this.prevViewBeforeConfused === "confused" ? fallback : this.prevViewBeforeConfused);
@@ -1036,9 +1085,11 @@ export class Island {
 
     const greetingActive = State.mode === "expanded" && State.view === "greeting";
     // The drop canvas draws its own Mochi; two of them would overlap. The drag
-    // ghost replaces the bot too while a window attach is in flight.
+    // ghost replaces the bot too while a window attach is in flight. The overlay
+    // and the canvas show the same bot, so exactly one of them is ever opaque.
     const visible = p.opacity > 0 && !greetingActive && !this.uploadActive && !this.draggingGhost;
-    this.botCanvas.style.opacity = visible ? "1" : "0";
+    this.botCanvas.style.opacity = visible && !this.pal ? "1" : "0";
+    if (this.pal) this.pal.style.opacity = visible ? "1" : "0";
 
     if (State.mode === "expanded" && State.view !== "uploading" && !greetingActive && !this.uploadActive) {
       const d = p.diameter;
@@ -1057,6 +1108,17 @@ export class Island {
 
   private drawBot(dt: number) {
     const size = this.botSize.value;
+    if (this.pal) {
+      // Same centre and same body diameter as Mochi's (the canvas is botSize
+      // wide, the body is 60 % of it). `size` feeds --dp-size, which scales the
+      // pal's own glow and "tiny" mode with it.
+      const d = size * 0.6;
+      const px = String(Math.round(d));
+      if (this.pal.getAttribute("size") !== px) this.pal.setAttribute("size", px);
+      this.pal.style.height = `${Math.round(d * PAL_H_RATIO)}px`;
+      this.pal.style.left = `${this.botCx.value - d / 2}px`;
+      this.pal.style.top = `${this.botCy.value - d * PAL_MID_RATIO}px`;
+    }
     const w = Math.max(1, Math.round(size));
     const hCss = w + BOT_OVERHANG;
     const dpr = Math.min(2, window.devicePixelRatio || 1);
@@ -1164,7 +1226,39 @@ export class Island {
     }
 
     syncMiniBotStates(State.tasks);
-    this.engine.setState(State.effectiveState);
+    this.setBotState(State.effectiveState);
+  }
+
+  /** Engine state + the overlay's mirror of it, always moved together. */
+  private setBotState(s: BotStateName) {
+    this.engine.setState(s);
+    if (this.pal) this.pal.setState(PAL_STATE[s] ?? "idle");
+  }
+
+  /**
+   * Settings › Character. Mochi (the canvas) and the `<dot-pal>` overlay never
+   * draw at the same time: one element, swapped in place.
+   */
+  private applyCharacter() {
+    const want = State.settings.character || "mochi";
+    if (want === this.palCharacter) return;
+    this.palCharacter = want;
+    if (want === "mochi") {
+      this.pal?.remove();
+      this.pal = null;
+    } else {
+      if (!this.pal) {
+        // Same contract as the canvas: invisible to the mouse, so the island's
+        // own hit test (isBotHit) keeps driving hover, slaps and drag-out.
+        const el = h("dot-pal", { id: "bot-pal" });
+        this.botCanvas.after(el);
+        this.pal = el;
+      }
+      this.pal.character = want;
+      this.pal.setState(PAL_STATE[State.effectiveState] ?? "idle");
+    }
+    this.dirty = true;
+    this.ensureRunning();
   }
 
   /** Applies settings coming from Rust at boot (and on every save). */
@@ -1173,6 +1267,7 @@ export class Island {
     Sound.setVolume(State.settings.soundVolume);
     this.fsm.homeToPetitDelay = State.settings.autoCloseInterval;
     this.applyTheme();
+    this.applyCharacter();
     if (State.settings.language !== this.lastLang) {
       this.lastLang = State.settings.language;
       this.rebuildChrome();

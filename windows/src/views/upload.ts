@@ -28,7 +28,7 @@ function dashedFrame(): SVGSVGElement {
   return el;
 }
 
-export function buildUpload(): ViewHost {
+export function buildUpload(actions: ViewActions): ViewHost {
   const frame = dashedFrame();
   const title = h("div", { class: "drop-title", text: t("Drop your files here") });
   const tags = h(
@@ -36,11 +36,25 @@ export function buildUpload(): ViewHost {
     { class: "drop-tags" },
     ...["PDF", "Images", "Code", "Docs"].map((tg) => h("span", { text: t(tg) })),
   );
+  // Keyboard and screen-reader way in: a real button opens the file picker and
+  // runs the same swallow as a drop (no mouse, no drag, no OLE needed).
+  const pick = h("input", { type: "file", style: "display:none" });
+  pick.addEventListener("change", () => {
+    const file = pick.files?.[0];
+    pick.value = "";
+    if (file) actions.attachFile(file);
+  });
+  const button = h("button", {
+    class: "btn secondary drop-pick",
+    text: t("Choose file"),
+    onclick: () => pick.click(),
+  });
   const card = h(
     "div",
     { class: "card drop-card" },
     frame,
-    h("div", { class: "drop-body" }, title, tags),
+    h("div", { class: "drop-body" }, title, tags, button),
+    pick,
   );
   const el = h("div", { class: "view" }, card);
 

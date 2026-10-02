@@ -18,7 +18,7 @@ final class HookServer: @unchecked Sendable {
     static var socketPath: String {
         #if APPSTORE
         // Container home root keeps path ≤ 103 bytes (sun_path limit on macOS is 104 incl. NUL)
-        // /Users/louis/Library/Containers/com.corefusiion.powpow/Data/nb.sock = 66 bytes ✓
+        // /Users/gleisson/Library/Containers/com.corefusiion.powpow/Data/nb.sock = 69 bytes ✓
         return NSHomeDirectory() + "/nb.sock"
         #else
         return supportDir.appendingPathComponent("nb.sock").path

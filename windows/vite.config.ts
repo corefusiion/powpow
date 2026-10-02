@@ -45,7 +45,14 @@ function sharedSounds(): Plugin {
 export default defineConfig({
   plugins: [sharedSounds()],
   clearScreen: false,
-  server: { port: 1420, strictPort: true, host: "127.0.0.1" },
+  server: {
+    port: 1420,
+    strictPort: true,
+    host: "127.0.0.1",
+    // The island and settings import <dot-pal> from ../src (repo root), which is
+    // outside the vite root: allow serving it during `npm run dev`.
+    fs: { allow: [resolve(__dirname, "..")] },
+  },
   envPrefix: ["VITE_", "TAURI_ENV_"],
   build: {
     target: "chrome110",

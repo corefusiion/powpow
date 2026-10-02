@@ -21,13 +21,15 @@ Approve Claude Code permissions, watch your session work, drop a file, chat with
 
 ## Install
 
-The downloadable installer is **temporarily unavailable**. Microsoft Defender
+The downloadable installer is **temporarily unavailable** on Releases: Microsoft Defender
 wrongly flags the unsigned installer as malware (`Trojan:Win32/Wacatac.H!ml`, a
 machine-learning false positive). A report is under review at Microsoft, and the
 installer will be published again once it is cleared and code-signed.
 
-Until then, [build it yourself](#build-it-yourself): it takes a few minutes and
-installs for the current user only — no admin prompt.
+Meanwhile, grab the **Powpow-Windows-setup** installer or the **Powpow-Windows-portable**
+zip from the latest [Windows workflow run](https://github.com/corefusiion/powpow/actions/workflows/windows.yml)
+(artifacts are kept for 3 days), or [build it yourself](#build-it-yourself): it takes a
+few minutes and installs for the current user only — no admin prompt.
 
 ## Using it
 

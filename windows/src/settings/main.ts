@@ -1,12 +1,14 @@
 // Settings window — the place where anything that writes to disk is confirmed.
-// Stage 2 covers the Claude Code hooks and the general preferences; API keys and
-// integrations land here too in a later stage.
+// Preferences (character, language, theme, sound), the agent hook status and
+// the integrations all live here; API keys go to the OS credential store.
 
 import "./settings.css";
 import { Bridge, onEvent, type HookPreview, type HookStatus } from "../core/bridge";
 import { DEFAULT_SETTINGS, type Settings } from "../core/state";
 import { t } from "../core/i18n";
 import { h, clear } from "../views/dom";
+// Registers `dot-pal` so the character row can preview what it picks.
+import "../../../src/index.js";
 
 let settings: Settings = { ...DEFAULT_SETTINGS };
 let version = "";
@@ -815,6 +817,48 @@ function integrationsSection(present: Record<string, boolean>): HTMLElement {
   return h("section", {}, h("h2", {}, h("span", { text: t("Integrations") })), note, list);
 }
 
+// ── Character ─────────────────────────────────────────────────────────────────
+
+/**
+ * Which character the island draws instead of Mochi, with a live preview at the
+ * same proportions the island uses (width = body diameter, height taller so the
+ * component's bottom-edge clip doesn't cut the feet).
+ */
+function characterRow(): HTMLElement {
+  const preview = h("dot-pal", {
+    size: "48",
+    style: "width:48px;height:94px;pointer-events:none;flex:0 0 auto",
+  });
+  const select = h("select", {}) as HTMLSelectElement;
+  const chars: [string, string][] = [
+    ["mochi", t("Mochi (notch original)")],
+    ["blu", "Blu"],
+    ["hop", "Hop"],
+    ["sunny", "Sunny"],
+    ["lovi", "Lovi"],
+    ["muse", "Muse"],
+    ["grok", "Grok"],
+    ["nova", "Nova"],
+    ["byte", "Byte"],
+  ];
+  for (const [id, label] of chars) select.append(h("option", { value: id, text: label }));
+  select.value = settings.character ?? "mochi";
+  select.addEventListener("change", () => {
+    settings.character = select.value;
+    preview.character = settings.character;
+    void save();
+  });
+  preview.character = select.value;
+
+  return h(
+    "div",
+    { class: "row" },
+    h("label", { text: t("Character") }),
+    select,
+    preview,
+  );
+}
+
 // ── General section ───────────────────────────────────────────────────────────
 
 function generalSection(): HTMLElement {
@@ -888,6 +932,7 @@ function generalSection(): HTMLElement {
       h("label", { text: t("Theme") }),
       theme,
     ),
+    characterRow(),
     h("div", { class: "row" },
       h("label", { text: t("Sound") }),
       toggle(settings.soundEnabled, (v) => { settings.soundEnabled = v; void save(); }),
