@@ -3,6 +3,10 @@
     "target": "ES2022",
     "module": "ESNext",
     "moduleResolution": "bundler",
+    // The island imports the shared bridge/ ESM modules (activity.js, story.js,
+    // recap.js) directly; checkJs stays off, they are upstream code.
+    "allowJs": true,
+    "checkJs": false,
     "lib": ["ES2022", "DOM", "DOM.Iterable"],
     "strict": true,
     "noUnusedLocals": true,

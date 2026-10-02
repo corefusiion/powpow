@@ -282,3 +282,108 @@ select option {
   background: rgba(245, 165, 36, 0.13);
   color: #fbc06a;
 }
+
+/* -- Make your own pal (settings › character) ------------------------------ */
+
+.char-block {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.maker-wrap {
+  border: 1px solid var(--hairline);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.04);
+  padding: 14px;
+}
+
+.maker-wrap[hidden] {
+  display: none;
+}
+
+.maker {
+  display: flex;
+  gap: 16px;
+  align-items: flex-start;
+}
+
+.maker-pal {
+  flex: 0 0 auto;
+  width: 96px;
+  height: 168px;
+}
+
+.maker-form {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.maker-row > label {
+  min-width: auto;
+}
+
+.maker-group {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.maker-group .cap {
+  min-width: 48px;
+  font: 400 12px var(--font);
+  color: var(--dim);
+}
+
+.opts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+button.opt {
+  font: 500 11.5px var(--font);
+  padding: 4px 10px;
+}
+
+button.opt[aria-pressed="true"] {
+  background: var(--ink);
+  color: #0b0c0e;
+}
+
+.opts.colors {
+  align-items: center;
+}
+
+button.swatch {
+  width: 18px;
+  height: 18px;
+  min-width: 18px;
+  padding: 0;
+  border-radius: 50%;
+  background: var(--c);
+  border: 2px solid transparent;
+}
+
+button.swatch[aria-pressed="true"] {
+  border-color: #fff;
+  box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.25);
+}
+
+input[type="color"] {
+  width: 26px;
+  height: 24px;
+  padding: 0;
+  border: 1px solid var(--hairline);
+  border-radius: 6px;
+  background: transparent;
+}
+
+.maker-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 2px;
+}

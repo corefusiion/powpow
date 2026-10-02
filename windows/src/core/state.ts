@@ -31,6 +31,8 @@ export interface ApprovalInfo {
   tool: string;
   command: string;
   source: AgentSource;
+  /** Risk lines for what is being approved (bridge/ui/story.js flags). */
+  risk?: { level: "warn" | "info"; text: string }[];
 }
 
 export interface ChatMessage {
@@ -114,6 +116,10 @@ export interface Settings {
   approvedTools: string[];
   /** Island character: "mochi" (the original) or a dotpals built-in id. */
   character: string;
+  /** Custom character spec (dot-pal CustomSpec) when character is "custom". */
+  custom?: Record<string, unknown> | null;
+  /** Story view wording: one plain sentence (simple) or the chapters (detailed). */
+  storyView: "simple" | "detailed";
 }
 
 export const DEFAULT_SETTINGS: Settings = {
@@ -134,6 +140,7 @@ export const DEFAULT_SETTINGS: Settings = {
   theme: "onyx",
   approvedTools: [],
   character: "mochi",
+  storyView: "simple",
 };
 
 type Listener = () => void;

@@ -7,8 +7,16 @@ import { Bridge, onEvent, type HookPreview, type HookStatus } from "../core/brid
 import { DEFAULT_SETTINGS, type Settings } from "../core/state";
 import { t } from "../core/i18n";
 import { h, clear } from "../views/dom";
-// Registers `dot-pal` so the character row can preview what it picks.
-import "../../../src/index.js";
+// Registers `dot-pal` so the character row can preview what it picks; the maker
+// builds a custom spec with the very helpers the island uses to draw it.
+import {
+  CUSTOM_OPTIONS,
+  DEFAULT_CUSTOM,
+  DotPal,
+  cleanCustom,
+  registerCustom,
+  type CustomPal,
+} from "../../../src/index.js";
 
 let settings: Settings = { ...DEFAULT_SETTINGS };
 let version = "";
@@ -819,10 +827,146 @@ function integrationsSection(present: Record<string, boolean>): HTMLElement {
 
 // ── Character ─────────────────────────────────────────────────────────────────
 
+/** Swatch palette of the maker — the same ten the dotpals dashboard ships. */
+const MAKER_COLORS = [
+  "#1e88ff", "#8be22e", "#ffc21a", "#ff2fc4", "#9d6bff",
+  "#ff7a2f", "#16c6ae", "#ef4444", "#4c5566", "#f2efe9",
+];
+
+/**
+ * "Make your own pal": a draft spec rendered live as `character="draft"`;
+ * "Use this pal" cleans it up and hands it back for saving as "custom".
+ */
+function buildMaker(onUse: (spec: Required<CustomPal>) => void): HTMLElement {
+  const draft: Required<CustomPal> = cleanCustom(settings.custom ?? null) ?? { ...DEFAULT_CUSTOM };
+
+  const maker = h("dot-pal", { size: "96", idle: "float", style: "width:96px;height:168px" });
+  maker.character = "draft";
+  const name = h("input", { type: "text", maxlength: "24", style: "width:150px" });
+  const furSwitch = toggle(draft.fur, (v) => {
+    draft.fur = v;
+    render();
+  });
+
+  // Body, eyes and top: one row of pressed buttons each.
+  const groups: Record<"shape" | "eyes" | "top", HTMLButtonElement[]> = { shape: [], eyes: [], top: [] };
+  const boxes: Record<"shape" | "eyes" | "top", HTMLElement> = { shape: h("div"), eyes: h("div"), top: h("div") };
+  for (const key of ["shape", "eyes", "top"] as const) {
+    boxes[key].className = "opts";
+    for (const [value, label] of Object.entries(CUSTOM_OPTIONS[key])) {
+      const b = h("button", { class: "opt", text: t(label) });
+      b.type = "button";
+      b.dataset.value = value;
+      b.addEventListener("click", () => {
+        (draft as unknown as Record<string, string>)[key] = value;
+        render();
+        void maker.play("squish");
+      });
+      boxes[key].append(b);
+      groups[key].push(b);
+    }
+  }
+
+  // Ten swatches plus "any color".
+  const colorBox = h("div", { class: "opts colors" });
+  const swatches = MAKER_COLORS.map((c) => {
+    const b = h("button", { class: "swatch" });
+    b.type = "button";
+    b.dataset.value = c;
+    b.style.setProperty("--c", c);
+    b.setAttribute("aria-label", c);
+    b.addEventListener("click", () => {
+      draft.color = c;
+      render();
+      void maker.play("squish");
+    });
+    colorBox.append(b);
+    return b;
+  });
+  const anyColor = h("input", { type: "color", title: t("Any color") });
+  anyColor.addEventListener("input", () => {
+    draft.color = anyColor.value;
+    render();
+  });
+  colorBox.append(anyColor);
+
+  name.addEventListener("input", () => {
+    draft.name = name.value || DEFAULT_CUSTOM.name;
+    registerCustom(draft, "draft");
+    DotPal.refresh("draft");
+  });
+
+  const random = h("button", { text: t("Random") });
+  random.type = "button";
+  random.addEventListener("click", () => {
+    const any = (o: Record<string, string>) => {
+      const keys = Object.keys(o);
+      return keys[Math.floor(Math.random() * keys.length)];
+    };
+    const set = (key: "shape" | "eyes" | "top", value: string) => {
+      (draft as unknown as Record<string, string>)[key] = value;
+    };
+    set("shape", any(CUSTOM_OPTIONS.shape));
+    set("eyes", any(CUSTOM_OPTIONS.eyes));
+    set("top", any(CUSTOM_OPTIONS.top));
+    draft.color = MAKER_COLORS[Math.floor(Math.random() * MAKER_COLORS.length)];
+    draft.fur = Math.random() > 0.25;
+    render();
+    void maker.play("jump");
+  });
+
+  const use = h("button", { class: "primary", text: t("Use this pal") });
+  use.addEventListener("click", () => {
+    const spec = cleanCustom(draft);
+    if (!spec) return;
+    onUse(spec);
+    void maker.play("jump");
+  });
+
+  function render() {
+    registerCustom(draft, "draft");
+    DotPal.refresh("draft");
+    name.value = draft.name;
+    furSwitch.classList.toggle("on", draft.fur);
+    furSwitch.setAttribute("aria-pressed", String(draft.fur));
+    for (const key of ["shape", "eyes", "top"] as const) {
+      for (const b of groups[key]) b.setAttribute("aria-pressed", String(b.dataset.value === draft[key]));
+    }
+    for (const b of swatches) b.setAttribute("aria-pressed", String(b.dataset.value === draft.color));
+    if (anyColor.value !== draft.color) anyColor.value = draft.color;
+  }
+
+  render();
+
+  return h(
+    "div",
+    { class: "maker" },
+    h("div", { class: "maker-pal" }, maker),
+    h(
+      "div",
+      { class: "maker-form" },
+      h(
+        "div",
+        { class: "row maker-row" },
+        h("label", { text: t("Name") }),
+        name,
+        h("label", { text: t("Fur") }),
+        furSwitch,
+      ),
+      h("div", { class: "maker-group" }, h("span", { class: "cap", text: t("Body") }), boxes.shape),
+      h("div", { class: "maker-group" }, h("span", { class: "cap", text: t("Eyes") }), boxes.eyes),
+      h("div", { class: "maker-group" }, h("span", { class: "cap", text: t("Top") }), boxes.top),
+      h("div", { class: "maker-group" }, h("span", { class: "cap", text: t("Color") }), colorBox),
+      h("div", { class: "maker-actions" }, random, use),
+    ),
+  );
+}
+
 /**
  * Which character the island draws instead of Mochi, with a live preview at the
  * same proportions the island uses (width = body diameter, height taller so the
- * component's bottom-edge clip doesn't cut the feet).
+ * component's bottom-edge clip doesn't cut the feet). The maker below builds
+ * your own pal and swaps it in as "custom".
  */
 function characterRow(): HTMLElement {
   const preview = h("dot-pal", {
@@ -842,20 +986,69 @@ function characterRow(): HTMLElement {
     ["byte", "Byte"],
   ];
   for (const [id, label] of chars) select.append(h("option", { value: id, text: label }));
+
+  // Your own pal: the option only exists once a spec has been saved (dotpals
+  // does the same), and the spec itself is registered for the preview.
+  const saved = cleanCustom(settings.custom ?? null);
+  const customLabel = (spec: Required<CustomPal> | null) =>
+    spec ? `${spec.name} (${t("yours")})` : t("Custom");
+  const ensureOption = (spec: Required<CustomPal> | null) => {
+    let opt = Array.from(select.options).find((o) => o.value === "custom");
+    if (!opt) {
+      opt = h("option", { value: "custom", text: customLabel(spec) }) as HTMLOptionElement;
+      select.prepend(opt);
+    } else opt.textContent = customLabel(spec);
+    return opt;
+  };
+  if (saved) {
+    ensureOption(saved);
+    registerCustom(saved);
+  } else if (settings.character === "custom") {
+    // A spec that never made it to disk: fall back to a built-in.
+    settings.character = "mochi";
+  }
   select.value = settings.character ?? "mochi";
+
+  const panel = h("div", { class: "maker-wrap" });
+  const maker = buildMaker((spec) => {
+    settings.custom = spec;
+    settings.character = "custom";
+    registerCustom(spec);
+    DotPal.refresh("custom");
+    ensureOption(spec);
+    select.value = "custom";
+    preview.character = "custom";
+    panel.hidden = false;
+    void save();
+  });
+  panel.append(maker);
+  panel.hidden = settings.character !== "custom";
+
+  const makerToggle = h("button", { text: t("Make your own pal") });
+  makerToggle.addEventListener("click", () => {
+    panel.hidden = !panel.hidden;
+  });
+
   select.addEventListener("change", () => {
     settings.character = select.value;
     preview.character = settings.character;
+    panel.hidden = settings.character !== "custom";
     void save();
   });
   preview.character = select.value;
 
   return h(
     "div",
-    { class: "row" },
-    h("label", { text: t("Character") }),
-    select,
-    preview,
+    { class: "char-block" },
+    h(
+      "div",
+      { class: "row" },
+      h("label", { text: t("Character") }),
+      select,
+      makerToggle,
+      preview,
+    ),
+    panel,
   );
 }
 

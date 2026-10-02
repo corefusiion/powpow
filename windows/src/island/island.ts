@@ -19,8 +19,8 @@ import { USC, UploadSeq } from "../upload/sequence";
 import { buildHeader, buildViews, type ViewActions, type ViewHost } from "../views/views";
 import { h } from "../views/dom";
 // Side effect registers the `dot-pal` tag; the island draws one instead of Mochi
-// whenever Settings › Character picks something else.
-import { DotPal, characters, type AgentState } from "../../../src/index.js";
+// whenever Settings › Character picks something else (registerCustom feeds "custom").
+import { DotPal, characters, registerCustom, type AgentState, type CustomPal } from "../../../src/index.js";
 import { IslandStateMachine } from "./fsm";
 
 const BOT_OVERHANG = 40;
@@ -1241,6 +1241,15 @@ export class Island {
    */
   private applyCharacter() {
     const want = State.settings.character || "mochi";
+    // Your own pal: the spec can arrive (or change) while "custom" stays
+    // selected, so register it first and re-draw even when the id is unchanged.
+    if (want === "custom") {
+      if (State.settings.custom) registerCustom(State.settings.custom as CustomPal);
+      if (want === this.palCharacter) {
+        DotPal.refresh("custom");
+        return;
+      }
+    }
     if (want === this.palCharacter) return;
     this.palCharacter = want;
     if (want === "mochi") {

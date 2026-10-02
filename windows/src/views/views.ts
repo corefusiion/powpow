@@ -7,9 +7,12 @@ import { ICONS } from "./icons";
 import { t, langBadge } from "../core/i18n";
 import { Ticker } from "./ticker";
 import { State, type AgentTask } from "../core/state";
+import { diffIsFresh, latestDiff } from "../core/activity";
 import { washRGBA, type IslandViewName, type Wash } from "../core/layout";
 import { createMiniBot, pruneMiniBots } from "../mochi/minibots";
 import { buildPrompt } from "./chat";
+import { buildStory } from "./story";
+import { diffCardKey, renderDiffCard } from "./diff";
 import { buildChoose, buildUpload, buildUploading } from "./upload";
 import { renderIntegrationCard, type IntegrationCardHooks } from "./integrations";
 
@@ -84,6 +87,7 @@ function stack(padLeft: number, padRight: number, ...children: Node[]): HTMLElem
 
 export function buildHeader(actions: ViewActions): ViewHost {
   const tabHome = h("button", { class: "tab", title: t("Overview"), onclick: () => go("overview") }, svg(ICONS.house, 13));
+  const tabStory = h("button", { class: "tab", title: t("Story"), onclick: () => go("story") }, svg(ICONS.doc, 13));
   const tabChat = h("button", { class: "tab", title: t("Ask"), onclick: () => go("prompt") }, svg(ICONS.bubble, 13));
   const tabDrop = h("button", { class: "tab", title: t("Drop"), onclick: () => go("upload") }, svg(ICONS.plus, 13));
 
@@ -108,7 +112,7 @@ export function buildHeader(actions: ViewActions): ViewHost {
   const el = h(
     "div",
     { id: "header" },
-    h("div", { class: "tabs" }, tabHome, tabChat, tabDrop),
+    h("div", { class: "tabs" }, tabHome, tabStory, tabChat, tabDrop),
     h("div", { class: "header-actions" }, langBtn, gearBtn, soundBtn),
   );
 
@@ -117,6 +121,7 @@ export function buildHeader(actions: ViewActions): ViewHost {
     sync() {
       const v = State.view;
       tabHome.classList.toggle("on", v === "overview" || v === "empty");
+      tabStory.classList.toggle("on", v === "story");
       tabChat.classList.toggle("on", v === "prompt");
       tabDrop.classList.toggle("on", v === "upload");
       gearBtn.classList.toggle("on", v === "settings");
@@ -153,7 +158,7 @@ function buildOverview(actions: ViewActions): ViewHost {
   let pillIds = "";
   let detailOpen = false;
   let lastFocus: string | null = null;
-  let mode: "ticker" | "card" | null = null;
+  let mode: "ticker" | "diff" | "card" | null = null;
   let cardKey = "";
 
   const hooks: IntegrationCardHooks = {
@@ -193,25 +198,38 @@ function buildOverview(actions: ViewActions): ViewHost {
         task?.id === "integration_claude" && (task.state !== "idle" || task.steps.length > 0);
 
       if (task && sessionActive) {
-        if (mode !== "ticker") {
-          clear(leftBody);
-          leftBody.append(tickerBody);
-          mode = "ticker";
-          cardKey = "";
+        // A fresh edit takes the card over: the file, a few lines around the
+        // change and the newest line typing in (bridge/ui/notch-diff.js).
+        const diff = latestDiff();
+        const diffKey = diff && diffIsFresh(diff) ? diffCardKey(diff) : "";
+        if (diff && diffKey) {
+          if (mode !== "diff" || cardKey !== diffKey) {
+            clear(leftBody);
+            leftBody.append(renderDiffCard(diff));
+            mode = "diff";
+            cardKey = diffKey;
+          }
+        } else {
+          if (mode !== "ticker") {
+            clear(leftBody);
+            leftBody.append(tickerBody);
+            mode = "ticker";
+            cardKey = "";
+          }
+          clear(who);
+          who.append(
+            dot(task.color, 7),
+            h("span", { class: "name", text: task.name }),
+            h("span", { class: "tool", text: task.source === "claudeCode" ? "Claude Code" : "n8n" }),
+          );
+          if (task.steps.length > 1) {
+            who.append(h("span", {
+              class: "count",
+              text: `${Math.min(task.stepIndex + 1, task.steps.length)}/${task.steps.length}`,
+            }));
+          }
+          ticker.sync(task);
         }
-        clear(who);
-        who.append(
-          dot(task.color, 7),
-          h("span", { class: "name", text: task.name }),
-          h("span", { class: "tool", text: task.source === "claudeCode" ? "Claude Code" : "n8n" }),
-        );
-        if (task.steps.length > 1) {
-          who.append(h("span", {
-            class: "count",
-            text: `${Math.min(task.stepIndex + 1, task.steps.length)}/${task.steps.length}`,
-          }));
-        }
-        ticker.sync(task);
       } else if (task) {
         const info = State.integrations[task.id];
         const key = [
@@ -306,9 +324,11 @@ function buildEmpty(actions: ViewActions): ViewHost {
 function buildApproval(actions: ViewActions): ViewHost {
   const who = h("div");
   const code = h("div", { class: "code" });
+  const risks = h("div", { class: "risks" });
   const row = h("div", { class: "actions" });
-  const el = h("div", { class: "view" }, card("amber", stack(116, 16, who, code, row)));
+  const el = h("div", { class: "view" }, card("amber", stack(116, 16, who, code, risks, row)));
   let rowKey = "";
+  let riskKey = "";
   return {
     el,
     sync() {
@@ -318,6 +338,15 @@ function buildApproval(actions: ViewActions): ViewHost {
       // is the command, the file path or the URL being authorised, not just the
       // name of the tool asking.
       code.textContent = State.pendingApproval?.command || State.pendingApproval?.tool || "…";
+      // The same warnings the terminal shows: a recursive delete, a force-push,
+      // a file that usually holds secrets. Rebuilt only when they change.
+      const risk = State.pendingApproval?.risk ?? [];
+      const key = risk.map((r) => `${r.level}:${r.text}`).join("|");
+      if (key !== riskKey) {
+        riskKey = key;
+        clear(risks);
+        for (const r of risk) risks.append(h("div", { class: `risk ${r.level}`, text: t(r.text) }));
+      }
       // Three buttons, built once. Rebuilding them between a mouse-down and a
       // mouse-up would swallow the click; "Always" persists a remembered rule.
       if (rowKey === "built") return;
@@ -512,6 +541,7 @@ export function buildViews(
   map.set("confused", buildConfused());
   map.set("note", buildNote());
   map.set("settings", buildSettings(actions));
+  map.set("story", buildStory());
   map.set("prompt", buildPrompt(actions, onChatHeightChange));
   map.set("upload", buildUpload(actions));
   map.set("uploading", buildUploading());

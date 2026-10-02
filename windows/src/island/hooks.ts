@@ -12,6 +12,7 @@
 // Only Claude PermissionRequest blocks for a decision; Gemini/opencode events
 // are fire-and-forget (their CLIs have no compatible blocking approval).
 
+import { applyHookEvent, pendingFlags } from "../core/activity";
 import { Bridge, onEvent } from "../core/bridge";
 import { Sound } from "../core/sound";
 import { State, type AgentSource } from "../core/state";
@@ -238,7 +239,7 @@ export function registerHookHandlers(island: Island) {
   void onEvent<HookPayload>("hook", (payload) => handleHook(island, payload));
 }
 
-function handleHook(island: Island, payload: HookPayload) {
+export function handleHook(island: Island, payload: HookPayload) {
   if (State.paused) {
     // Silence here used to cost Claude Code nearly two minutes: the relay waited
     // for a decision from an island that had already decided not to look. Say so,
@@ -252,6 +253,10 @@ function handleHook(island: Island, payload: HookPayload) {
   const cwd = payload.cwd ?? "";
   const raw = lastPathComponent(cwd);
   const projectName = aliasProjectName(raw || "Session");
+
+  // Same payload, two consumers: the pill state below, and the activity log
+  // that the Story view, the live diff and the approval risk lines read.
+  applyHookEvent(payload);
 
   // Two routing mechanisms, one pill per session:
   // 1. Valid powpow_agent (upstream) → dynamic "agent_<name>" pill.
@@ -477,6 +482,9 @@ function showApprovalCard(island: Island, ctx: ApprovalCtx) {
     tool,
     command: approvalTarget(tool, input),
     source,
+    // What the approval actually risks: a recursive delete, a force-push, a
+    // secret file. Computed the same way the terminal UI words it (flags()).
+    risk: pendingFlags(tool, input, cwd),
   };
   // The relay's short ack window closes in 800 ms; everything below this
   // line is synchronous, so the card really is up by the time it lands.

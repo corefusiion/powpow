@@ -5,7 +5,8 @@ import { Bridge, IS_TAURI, onEvent } from "./core/bridge";
 import { Sound } from "./core/sound";
 import { State, type Settings } from "./core/state";
 import { Island } from "./island/island";
-import { registerHookHandlers } from "./island/hooks";
+import { handleHook, registerHookHandlers } from "./island/hooks";
+import { latestDiff, storyTurns } from "./core/activity";
 import { registerIntegrationHandlers, refreshConfigured } from "./island/integrations";
 
 async function main() {
@@ -65,6 +66,18 @@ async function main() {
 
   registerHookHandlers(island);
   registerIntegrationHandlers(island);
+
+  // Dev seam: in a browser there is no Tauri pipe to deliver hook events, so
+  // the screenshot harness drives the same handleHook() the pipe calls. `DEV`
+  // folds to false in `vite build`, so none of this ships.
+  if (import.meta.env.DEV && !IS_TAURI) {
+    (window as unknown as { __powpow?: unknown }).__powpow = {
+      State,
+      island,
+      handleHook: (payload: unknown) => handleHook(island, payload as Parameters<typeof handleHook>[1]),
+      probe: () => ({ turns: storyTurns(6).length, diff: !!latestDiff() }),
+    };
+  }
 
   island.launch();
 

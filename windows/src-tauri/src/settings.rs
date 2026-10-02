@@ -35,9 +35,15 @@ pub struct Settings {
     /// Remembered "always allow" rules for non-Claude approvals ("source:tool").
     #[serde(default)]
     pub approved_tools: Vec<String>,
-    /// Island character: "mochi" (the original) or a dotpals built-in id.
+    /// Island character: "mochi" (the original), a dotpals built-in id or "custom".
     #[serde(default = "default_character")]
     pub character: String,
+    /// Your own pal (a dot-pal CustomSpec) so `character: "custom"` survives restarts.
+    #[serde(default)]
+    pub custom: Option<serde_json::Value>,
+    /// Story view wording: "simple" (one sentence) or "detailed" (the chapters).
+    #[serde(default = "default_story_view")]
+    pub story_view: String,
 }
 
 fn default_language() -> String {
@@ -64,6 +70,10 @@ fn default_character() -> String {
     "mochi".to_string()
 }
 
+fn default_story_view() -> String {
+    "simple".to_string()
+}
+
 impl Default for Settings {
     fn default() -> Self {
         Self {
@@ -87,6 +97,8 @@ impl Default for Settings {
             theme: default_theme(),
             approved_tools: Vec::new(),
             character: default_character(),
+            custom: None,
+            story_view: default_story_view(),
         }
     }
 }

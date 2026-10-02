@@ -650,6 +650,35 @@ body {
   user-select: text;
 }
 
+/* What the approval risks: one line per flag (bridge/ui/story.js flags()). */
+.risks {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.risk {
+  font: 400 11.5px var(--font);
+  color: var(--dim);
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+}
+
+.risk::before {
+  content: "⚠";
+  font-size: 10px;
+}
+
+.risk.warn {
+  color: var(--amber);
+}
+
+.risk.info::before {
+  content: "ℹ";
+  color: var(--dim-2);
+}
+
 .stack {
   position: relative;
   z-index: 1;
@@ -1394,6 +1423,538 @@ input[type="range"]::-webkit-slider-thumb {
 
 .int-card.detail {
   padding-top: 8px;
+}
+
+/* ── Story view ────────────────────────────────────────────────────────────── */
+
+/* Scrollable: header, today's tally, then the requests. The bot keeps its own
+   column on the left (botX 56), hence the 84px inset like the settings view. */
+.story {
+  position: relative;
+  z-index: 1;
+  height: 100%;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 8px 14px 10px 84px;
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.18) transparent;
+}
+
+.story::-webkit-scrollbar {
+  width: 6px;
+}
+
+.story::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.18);
+  border-radius: 3px;
+}
+
+/* Simple / Detailed */
+.viewseg {
+  display: flex;
+  gap: 4px;
+}
+
+.viewseg button {
+  font: 500 11px var(--font);
+  color: var(--dim);
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid transparent;
+  border-radius: 999px;
+  padding: 3px 12px;
+  cursor: pointer;
+}
+
+.viewseg button.on {
+  color: var(--ink);
+  background: var(--tab-on);
+  border-color: var(--hairline);
+}
+
+/* Today's tally + Copy today */
+.today {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.today > small {
+  font: 600 10px var(--font);
+  color: var(--dim-2);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.today .stats {
+  display: flex;
+  gap: 10px;
+  font: 400 11.5px var(--font);
+  color: var(--dim);
+}
+
+.today .stats b {
+  color: var(--ink);
+  font-weight: 600;
+}
+
+.mini-btn {
+  font: 500 10.5px var(--font);
+  color: var(--dim);
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid var(--hairline);
+  border-radius: 7px;
+  padding: 3px 8px;
+  cursor: pointer;
+  margin-left: auto;
+}
+
+.mini-btn:hover {
+  color: var(--ink);
+}
+
+/* The test status note */
+.note {
+  font: 400 11.5px var(--font);
+  padding: 4px 8px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--dim);
+}
+
+.note.ok {
+  color: var(--green);
+}
+
+.note.warn {
+  color: var(--amber);
+}
+
+.note.bad {
+  color: var(--red-text);
+}
+
+/* One request */
+.turn {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  padding-top: 7px;
+  border-top: 1px solid var(--hairline);
+}
+
+.turn:first-of-type {
+  border-top: none;
+  padding-top: 0;
+}
+
+.asked {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+  font: 500 12px var(--font);
+  color: var(--ink);
+}
+
+.asked > * {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.asked small {
+  font: 400 10.5px var(--font);
+  color: var(--dim-2);
+}
+
+p.simple {
+  margin: 0;
+  font: 400 12.5px var(--font);
+  color: var(--ink);
+  display: flex;
+  gap: 6px;
+  align-items: baseline;
+}
+
+p.simple .mark {
+  font-weight: 700;
+}
+
+p.simple.ok .mark {
+  color: var(--green);
+}
+
+p.simple.failed .mark {
+  color: var(--red-text);
+}
+
+p.simple.unclear .mark {
+  color: var(--amber);
+}
+
+p.simple.running .mark {
+  color: var(--cyan);
+}
+
+p.simple.stopped .mark {
+  color: var(--dim-2);
+}
+
+p.said {
+  margin: 0;
+  font: 400 12px var(--font);
+  color: var(--dim);
+}
+
+p.said.bad {
+  color: var(--red-text);
+}
+
+/* Warnings worth a second look */
+.flags {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.flag {
+  position: relative;
+  font: 400 11px var(--font);
+  color: var(--dim);
+  padding-left: 14px;
+}
+
+.flag::before {
+  content: "⚠";
+  position: absolute;
+  left: 0;
+  color: var(--amber);
+  font-size: 9.5px;
+}
+
+.flag.warn {
+  color: var(--amber);
+}
+
+.flag.info::before {
+  content: "ℹ";
+  color: var(--dim-2);
+}
+
+/* Chapters (Detailed) */
+.chapters {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.ch .row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 3px 6px;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.ch .row:hover {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.ch .what {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.ch .what b {
+  font: 500 12px var(--font);
+  color: var(--ink);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.ch .what small {
+  font: 400 10.5px var(--font);
+  color: var(--dim-2);
+}
+
+.ch .side {
+  margin-left: auto;
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  font: 600 10.5px var(--font);
+  color: var(--dim-2);
+}
+
+.ch .side .add {
+  color: var(--green);
+}
+
+.ch .side .del {
+  color: var(--red-text);
+}
+
+.ch .side .ok {
+  color: var(--green);
+}
+
+.ch .side .bad {
+  color: var(--red-text);
+}
+
+.ch .side .unclear {
+  color: var(--amber);
+}
+
+.ch .side .caret {
+  font-size: 9px;
+  color: var(--dim-2);
+}
+
+.spin {
+  width: 9px;
+  height: 9px;
+  border: 1.5px solid var(--cyan);
+  border-top-color: transparent;
+  border-radius: 50%;
+  animation: story-spin 0.8s linear infinite;
+}
+
+@keyframes story-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.ch ul.steps {
+  list-style: none;
+  margin: 2px 0 4px;
+  padding: 0 0 0 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.ch ul.steps li {
+  font: 400 11px var(--font);
+  color: var(--dim);
+}
+
+.ch ul.steps li.failed {
+  color: var(--red-text);
+}
+
+/* Ready to merge / why it stopped */
+.review {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.ready {
+  font: 500 11.5px var(--font);
+}
+
+.ready.ok {
+  color: var(--green);
+}
+
+.ready.no {
+  color: var(--amber);
+}
+
+.why {
+  font: 400 11px var(--font);
+  color: var(--dim);
+}
+
+/* Request footer: outcome, time, Copy */
+.turn-foot {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font: 400 11px var(--font);
+  color: var(--dim-2);
+}
+
+.turn-foot .ok {
+  color: var(--green);
+}
+
+.turn-foot .bad {
+  color: var(--red-text);
+}
+
+.quiet {
+  font: 400 11.5px var(--font);
+  color: var(--dim-2);
+  padding: 6px 0;
+}
+
+/* ── Live diff card (overview, while an edit is fresh) ─────────────────────── */
+
+.diff {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+
+.diff .file {
+  display: flex;
+  align-items: baseline;
+  gap: 7px;
+  min-width: 0;
+}
+
+.diff .file .lang {
+  font: 700 8.5px var(--mono);
+  color: var(--lc, var(--dim));
+  background: rgba(255, 255, 255, 0.07);
+  border: 1px solid var(--hairline);
+  border-radius: 5px;
+  padding: 1px 4px;
+  flex: none;
+}
+
+.diff .file b {
+  font: 600 12px var(--font);
+  color: var(--ink);
+  white-space: nowrap;
+}
+
+.diff .file .live {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--cyan);
+  box-shadow: 0 0 6px var(--cyan);
+  animation: diff-pulse 1.2s ease-in-out infinite;
+  flex: none;
+  align-self: center;
+}
+
+@keyframes diff-pulse {
+  50% {
+    opacity: 0.35;
+  }
+}
+
+.diff .file small {
+  font: 400 10.5px var(--mono);
+  color: var(--dim-2);
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.diff .file .n {
+  margin-left: auto;
+  display: flex;
+  gap: 5px;
+  font: 600 11px var(--mono);
+  flex: none;
+}
+
+.diff .file .n .add {
+  color: var(--green);
+}
+
+.diff .file .n .del {
+  color: var(--red-text);
+}
+
+.diff .code {
+  font: 400 11px/1.45 var(--mono);
+  background: rgba(0, 0, 0, 0.32);
+  border: 1px solid var(--hairline);
+  border-radius: 8px;
+  padding: 5px 7px;
+  max-height: 94px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  user-select: text;
+}
+
+.diff .ln {
+  display: flex;
+  gap: 6px;
+  white-space: pre;
+}
+
+.diff .ln.gap {
+  height: 7px;
+}
+
+.diff .ln .s {
+  flex: none;
+  width: 8px;
+  text-align: center;
+  color: var(--dim-2);
+}
+
+.diff .ln.plus .s {
+  color: var(--green);
+}
+
+.diff .ln.minus .s {
+  color: var(--red-text);
+}
+
+.diff .ln.plus {
+  background: rgba(34, 197, 94, 0.08);
+}
+
+.diff .ln.minus {
+  background: rgba(244, 80, 94, 0.08);
+}
+
+/* The newest line types in, then a caret blinks after it. */
+.diff .ln.typing .x {
+  animation: diff-type var(--dur, 900ms) var(--steps, steps(80, end)) both;
+}
+
+@keyframes diff-type {
+  from {
+    clip-path: inset(0 100% 0 0);
+  }
+
+  to {
+    clip-path: inset(0 0 0 0);
+  }
+}
+
+.diff .ln.typing .caret {
+  display: inline-block;
+  width: 5px;
+  height: 11px;
+  margin-left: 1px;
+  background: currentColor;
+  color: var(--ink);
+  vertical-align: -1px;
+  animation: diff-caret 1s step-end infinite;
+}
+
+@keyframes diff-caret {
+  50% {
+    opacity: 0;
+  }
+}
+
+.diff .code-more {
+  font: 400 10.5px var(--mono);
+  color: var(--dim-2);
 }
 
 /* ── Island themes ────────────────────────────────────────────────────────── */
