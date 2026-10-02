@@ -5,9 +5,13 @@
 // touching anybody else's hooks, show the diff, and write only after an explicit
 // click. Uninstall removes Powpow's entries and nothing else.
 //
-// The command is only the quoted exe path in forward slashes plus the event name:
-// on Windows Claude Code runs hook commands through Git Bash, and anything with
-// PowerShell or cmd in it breaks.
+// Claude's entries are written in exec form — `command` is the exe path alone
+// and `args` carries the event — so no shell is involved at all. Shell form
+// (`"C:/.../powpow-hook.exe" Stop`) only ever worked where Git Bash existed:
+// without it Claude Code falls back to PowerShell, which refuses to parse a
+// quoted string followed by a bare token, and every hook died with a
+// ParserError before the exe ran. Gemini and Antigravity have no exec form
+// (their schema has no `args`), so those two keep a shell command.
 
 use std::path::{Path, PathBuf};
 
@@ -153,24 +157,39 @@ fn read_settings_lossy() -> Value {
     read_settings().unwrap_or_else(|_| json!({}))
 }
 
-fn hook_command(event: &str) -> String {
-    let exe = settings::hook_exe_path().to_string_lossy().replace('\\', "/");
-    format!("\"{exe}\" {event}")
+/// Claude Code hook handler in exec form: `command` is only the executable and
+/// `args` is the argument vector, so Claude Code spawns the relay directly with
+/// no shell anywhere. Setting `args` is also what turns the `shell` field off,
+/// which keeps this working whether Git Bash, PowerShell, or neither is around.
+fn hook_handler(event: &str, timeout: u64) -> Value {
+    let exe = settings::hook_exe_path()
+        .to_string_lossy()
+        .replace('\\', "/");
+    json!({
+        "type": "command",
+        "command": exe,
+        "args": [event],
+        "timeout": timeout,
+    })
 }
 
 fn gemini_hook_command(normalized_event: &str) -> String {
     // argv[1] = normalized event, argv[2] = source. Relay normalizes again,
     // so Gemini's BeforeTool/AfterTool payloads land as Pre/PostToolUse.
-    // POWPOW_SOURCE is also set via env expansion where the shell supports it,
-    // but argv is the reliable channel on Windows (Git Bash).
-    let exe = settings::hook_exe_path().to_string_lossy().replace('\\', "/");
+    // Gemini's hook schema has no `args`, so this stays shell form; Node runs
+    // it through cmd.exe on Windows, where a quoted exe path parses fine.
+    let exe = settings::hook_exe_path()
+        .to_string_lossy()
+        .replace('\\', "/");
     format!("\"{exe}\" {normalized_event} gemini")
 }
 
 fn agy_hook_command(event: &str) -> String {
     // Antigravity runs `command` through the shell; quoted forward-slash exe
     // path works in cmd and PowerShell. argv[2] tags the source as agy.
-    let exe = settings::hook_exe_path().to_string_lossy().replace('\\', "/");
+    let exe = settings::hook_exe_path()
+        .to_string_lossy()
+        .replace('\\', "/");
     format!("\"{exe}\" {event} agy")
 }
 
@@ -205,13 +224,7 @@ fn merged(existing: &Value) -> Value {
             .cloned()
             .unwrap_or_default();
         list.retain(|entry| !entry_is_ours(entry));
-        list.push(json!({
-            "hooks": [{
-                "type": "command",
-                "command": hook_command(event),
-                "timeout": timeout,
-            }]
-        }));
+        list.push(json!({ "hooks": [hook_handler(*event, *timeout)] }));
         hooks.insert((*event).to_string(), Value::Array(list));
     }
 
@@ -807,6 +820,36 @@ mod tests {
         // And removing ours puts it back exactly as it was.
         let cleaned = without_ours(&after);
         assert_eq!(cleaned, existing);
+    }
+
+    /// The Windows bug, pinned. Shell form (`"C:/…/powpow-hook.exe" Stop`) is a
+    /// quoted string followed by a bare token, which PowerShell — what Claude
+    /// Code falls back to when Git Bash is missing — rejects with a ParserError
+    /// before the exe ever starts. Exec form has no shell to disagree with.
+    #[test]
+    fn claude_entries_are_exec_form_never_a_shell_command() {
+        let after = merged(&json!({}));
+        for (event, timeout) in HOOK_EVENTS {
+            let list = after["hooks"][*event]
+                .as_array()
+                .expect("one list per event");
+            let ours = list
+                .iter()
+                .find(|e| entry_is_ours(e))
+                .unwrap_or_else(|| panic!("{event}: Powpow's own entry went missing"));
+            let handler = &ours["hooks"][0];
+            assert_eq!(handler["type"], "command");
+            assert_eq!(handler["timeout"], *timeout);
+            assert_eq!(handler["args"], json!([*event]));
+            let command = handler["command"]
+                .as_str()
+                .expect("command must be a string");
+            assert!(
+                !command.contains(' '),
+                "the event belongs in args, not glued onto the path: {command}"
+            );
+            assert!(command.ends_with("powpow-hook.exe"), "{command}");
+        }
     }
 
     #[test]
