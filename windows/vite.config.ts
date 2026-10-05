@@ -62,6 +62,7 @@ export default defineConfig({
     rollupOptions: {
       input: {
         island: resolve(__dirname, "index.html"),
+        pal: resolve(__dirname, "pal.html"),
         settings: resolve(__dirname, "settings.html"),
       },
     },

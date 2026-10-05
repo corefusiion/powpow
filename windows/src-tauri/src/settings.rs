@@ -58,7 +58,7 @@ fn default_language() -> String {
 }
 
 fn default_voice() -> bool {
-    true
+    false
 }
 
 fn default_wander() -> bool {

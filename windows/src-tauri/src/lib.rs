@@ -22,7 +22,7 @@ mod win_user;
 
 use std::os::windows::process::CommandExt;
 use std::process::Command;
-use std::sync::atomic::Ordering;
+use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Mutex};
 
 use serde::Serialize;
@@ -206,6 +206,63 @@ fn quit_app(app: AppHandle) {
 #[tauri::command]
 fn set_paused(paused: bool) {
     integrations::set_paused(paused);
+}
+
+// ── The roaming pal (a window of its own, so the island never has to move) ────
+
+/// Whether the pal is out walking. The island decides; the window asks once.
+static PAL_WANDER: AtomicBool = AtomicBool::new(false);
+
+/// The face the island last set. The pal asks for it when its page loads,
+/// since the event that carried it may have raced the page.
+static PAL_FACE: Mutex<String> = Mutex::new(String::new());
+
+#[tauri::command]
+fn set_pal_wander(app: AppHandle, on: bool) {
+    PAL_WANDER.store(on, Ordering::Relaxed);
+    if let Some(win) = app.get_webview_window("pal") {
+        if on {
+            let _ = win.show();
+        } else {
+            let _ = win.hide();
+        }
+    }
+    let _ = app.emit_to("pal", "pal-wander", on);
+    // Both windows are topmost, and showing one can drop the other down a step
+    // inside that band: the island goes last, and is re-inserted so the pal can
+    // never sit over the approval card or the chat.
+    if let Some(island) = app.get_webview_window(island::WINDOW_LABEL) {
+        let _ = island.set_always_on_top(false);
+        let _ = island.set_always_on_top(true);
+    }
+}
+
+#[tauri::command]
+fn pal_wander_state() -> bool {
+    PAL_WANDER.load(Ordering::Relaxed)
+}
+
+#[tauri::command]
+fn move_pal(app: AppHandle, x: f64, y: f64) {
+    if let Some(win) = app.get_webview_window("pal") {
+        let _ = win.set_position(tauri::LogicalPosition::new(x, y));
+    }
+}
+
+#[tauri::command]
+fn set_pal_state(app: AppHandle, state: String) {
+    if let Ok(mut face) = PAL_FACE.lock() {
+        *face = state.clone();
+    }
+    let _ = app.emit_to("pal", "pal-state", state);
+}
+
+#[tauri::command]
+fn pal_state() -> String {
+    PAL_FACE
+        .lock()
+        .map(|f| f.clone())
+        .unwrap_or_else(|_| String::new())
 }
 
 // ── Claude Code hooks ─────────────────────────────────────────────────────────
@@ -544,6 +601,11 @@ pub fn run() {
             open_n8n,
             open_settings_window,
             set_paused,
+            set_pal_wander,
+            pal_wander_state,
+            move_pal,
+            set_pal_state,
+            pal_state,
         ])
         .setup(move |app| {
             let handle = app.handle().clone();
@@ -555,6 +617,11 @@ pub fn run() {
                 island::make_non_activating(&win);
                 island::apply_geometry(&handle, &loaded.screen, false);
                 let _ = win.show();
+            }
+            // The pal roams under the cursor without ever taking it: clicks
+            // fall through to whatever is really beneath it.
+            if let Some(pal) = handle.get_webview_window("pal") {
+                let _ = pal.set_ignore_cursor_events(true);
             }
             gate.collapsed.store(false, Ordering::Relaxed);
             gate.set_collapsed(false);

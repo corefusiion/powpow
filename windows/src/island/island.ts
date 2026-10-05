@@ -22,49 +22,13 @@ import { buildHeader, buildViews, type ViewActions, type ViewHost } from "../vie
 import { h } from "../views/dom";
 // Side effect registers the `dot-pal` tag; the island draws one instead of Mochi
 // whenever Settings › Character picks something else (registerCustom feeds "custom").
-import { DotPal, characters, registerCustom, type AgentState, type CustomPal, type Emote } from "../../../src/index.js";
+import { DotPal, characters, registerCustom, type CustomPal } from "../../../src/index.js";
 import { IslandStateMachine } from "./fsm";
-import { Walker } from "./walker";
+import { PAL_EMOTE, PAL_H_RATIO, PAL_MID_RATIO, PAL_STATE } from "./palState";
 
 const BOT_OVERHANG = 40;
 /** Same margin as the Rust hit test (src-tauri/src/island.rs). */
 const HIT_MARGIN = 14;
-
-/**
- * `<dot-pal>` host box, in bot-body diameters: full body height is ~1.95× the
- * width (the component clips everything below its bottom edge — the feet would
- * otherwise be cut off), and the body's centre sits 1.27 diameters below the
- * box top, which is where Mochi's centre sits (average over the eight built-ins).
- */
-const PAL_H_RATIO = 1.95;
-const PAL_MID_RATIO = 1.27;
-
-/** Bot state → the agent state the `<dot-pal>` overlay shows for it. */
-const PAL_STATE: Record<BotStateName, AgentState> = {
-  idle: "idle",
-  working: "working",
-  thinking: "thinking",
-  // Looking for something reads as thinking (dots), not as running a command.
-  searching: "thinking",
-  approval: "waiting",
-  question: "waiting",
-  error: "error",
-  finished: "done",
-  // Backing off before a retry: still on it, so a bar, not the waiting "?".
-  ratelimit: "working",
-  sleeping: "sleeping",
-  dizzy: "error",
-};
-
-/** The face that says what the state means, where the mood alone can't. */
-const PAL_EMOTE: Partial<Record<BotStateName, Emote>> = {
-  approval: "wide",
-  question: "hey",
-  error: "oops",
-  finished: "star",
-  ratelimit: "sweat",
-  // dizzy comes from handleDizzy(), which holds the face for the whole 3.3 s.
-};
 
 /** The three views the drop sequence owns; leaving them stops the engine. */
 const UPLOAD_VIEWS: ReadonlySet<IslandViewName> = new Set(["upload", "uploading", "choose"]);
@@ -133,11 +97,9 @@ export class Island {
   private pushedRect = { x: -1, y: -1, w: -1, h: -1 };
   private homeCollapseAt: number | null = null;
 
-  // Wandering: the pal strolls while the island is compact and parks the moment
-  // anything needs the user's eyes or hands (see walkBlocked).
-  readonly walker = new Walker(() => this.walkBlocked());
-  /** Screen preference last seen, so a change can re-anchor the walker. */
-  private lastScreenPref: string = State.settings.screen;
+  // The roaming pal lives in its own window; this is the last thing we told
+  // Rust about it, so a state that keeps saying the same thing costs nothing.
+  private palRoam: boolean | null = null;
 
   // Bot hover → love (IslandWindowController.botHoverIn)
   private botHovering = false;
@@ -481,6 +443,7 @@ export class Island {
     }
     this.updateWindowCollapsed();
     this.animateGeometry(modeOrder(mode) < modeOrder(prev));
+    this.syncPalWander();
     State.notify();
   }
 
@@ -863,38 +826,39 @@ export class Island {
         this.collapseTimer = null;
         if (State.mode !== "hidden") return;
         this.collapsed = true;
-        this.walker.setEnabled(false);
+        this.syncPalWander();
         void Bridge.setCollapsed(true);
       }, 420);
     } else if (this.collapsed) {
       // Grow the window back before the island animates open.
       this.collapsed = false;
       void Bridge.setCollapsed(false);
-      // Rust re-centres the window on the way back: start from where it landed.
-      this.walker.reanchor();
-      this.walker.setEnabled(State.settings.wander);
+      this.syncPalWander();
     }
   }
 
   /**
-   * Wandering stops for anything that wants the user's eyes or hands: the island
-   * open, the pointer on it, an approval or a chat waiting, a drag owning the
-   * screen, or the OS asking for stillness. The loop keeps running; only the
-   * steps stop, so a resume continues from where the pal stood.
+   * The roaming pal is a window of its own, so the island never has to move.
+   * It comes up (and walks) only while the island is compact and nothing needs
+   * the user's eyes or hands: open island, pointer resting on it, an approval or
+   * chat waiting, a drag owning the screen, pause, or reduced motion.
    */
-  private walkBlocked(): boolean {
-    return (
-      State.mode !== "compact" ||
-      State.paused ||
-      State.stateOverride != null ||
-      State.pendingApproval != null ||
-      this.collapsed ||
-      this.wasInIsland ||
-      this.draggingGhost ||
-      State.fileDragOver ||
-      UploadSeq.isActive ||
-      reducedMotion()
-    );
+  private syncPalWander() {
+    const on =
+      State.settings.wander &&
+      State.mode === "compact" &&
+      !State.paused &&
+      State.stateOverride == null &&
+      State.pendingApproval == null &&
+      !this.collapsed &&
+      !this.wasInIsland &&
+      !this.draggingGhost &&
+      !State.fileDragOver &&
+      !UploadSeq.isActive &&
+      !reducedMotion();
+    if (on === this.palRoam) return;
+    this.palRoam = on;
+    void Bridge.setPalWander(on);
   }
 
   // ── Input ───────────────────────────────────────────────────────────────────
@@ -986,6 +950,7 @@ export class Island {
       }
     }
     this.wasInIsland = inIsland;
+    this.syncPalWander();
 
     // Bot hover → love
     const overBot = State.mode === "expanded" && State.stateOverride == null && this.isBotHit(x, y);
@@ -1291,6 +1256,8 @@ export class Island {
   private setBotState(s: BotStateName) {
     this.engine.setState(s);
     this.syncPal(s);
+    // Approval, question, chat and pause all land here through State.notify().
+    this.syncPalWander();
   }
 
   /**
@@ -1305,6 +1272,8 @@ export class Island {
     if (!changed && text === this.palStateText) return;
     this.palState = s;
     this.palStateText = text;
+    // The roaming pal wears the same face; only a real change reaches Rust.
+    if (changed) void Bridge.setPalState(s);
     // The voice belongs to the state, not to the overlay: Mochi speaks too.
     if (changed && PAL_VOICE.has(s)) Sound.say(text);
     const pal = this.pal;
@@ -1414,13 +1383,7 @@ export class Island {
     this.fsm.homeToPetitDelay = State.settings.autoCloseInterval;
     this.applyTheme();
     this.applyCharacter();
-    // Rust re-centres the window when the screen preference changes, so the
-    // walker's own idea of where it is is stale from that moment on.
-    if (State.settings.screen !== this.lastScreenPref) {
-      this.lastScreenPref = State.settings.screen;
-      this.walker.reanchor();
-    }
-    this.walker.setEnabled(State.settings.wander && !this.collapsed);
+    this.syncPalWander();
     if (State.settings.language !== this.lastLang) {
       this.lastLang = State.settings.language;
       this.rebuildChrome();

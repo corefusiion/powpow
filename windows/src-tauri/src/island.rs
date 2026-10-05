@@ -294,7 +294,9 @@ pub fn spawn_cursor_poll(app: AppHandle, gate: Arc<PollGate>) {
                         last_screen = now;
                         if !first {
                             crate::log::line("display layout changed — repositioning".to_string());
-                            let _ = app.emit_to(WINDOW_LABEL, "screen-changed", ());
+                            // Broadcast: the roaming pal measures the same
+                            // screen and has to re-measure with it.
+                            let _ = app.emit("screen-changed", ());
                         }
                     }
                 }

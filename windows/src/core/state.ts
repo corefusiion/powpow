@@ -129,7 +129,8 @@ export interface Settings {
 export const DEFAULT_SETTINGS: Settings = {
   soundEnabled: true,
   soundVolume: 0.12,
-  voiceEnabled: true,
+  // Off until asked for: a voice that starts talking on its own is a surprise.
+  voiceEnabled: false,
   wander: true,
   autoCloseInterval: 15,
   absenceInterval: 180,

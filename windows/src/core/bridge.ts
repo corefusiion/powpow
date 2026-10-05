@@ -126,6 +126,18 @@ export const Bridge = {
 
   /** Tray → Pause. Stops the integration pollers, not just the island. */
   setPaused: (paused: boolean) => call<void>("set_paused", { paused }),
+
+  // ── The roaming pal (its own window, so the island never moves) ────────────
+  /** Show the pal and let it walk, or park and hide it. */
+  setPalWander: (on: boolean) => call<void>("set_pal_wander", { on }),
+  /** What Rust last heard — asked once when the pal window loads. */
+  palWanderState: () => call<boolean>("pal_wander_state"),
+  /** Top-left of the pal window, logical pixels. */
+  movePal: (x: number, y: number) => call<void>("move_pal", { x, y }),
+  /** The island's state, so the roaming pal wears the same face. */
+  setPalState: (state: string) => call<void>("set_pal_state", { state }),
+  /** The face in effect right now — asked once when the pal window loads. */
+  palState: () => call<string>("pal_state"),
 };
 
 export interface IntegrationUpdate {

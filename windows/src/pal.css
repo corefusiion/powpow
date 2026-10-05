@@ -1,0 +1,26 @@
+/* The roaming pal's page: a character on a window with no frame, no shadow
+   and no say in what the user clicks (Rust makes it click-through). */
+html,
+body {
+  margin: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background: transparent;
+  user-select: none;
+}
+
+#pal-root {
+  position: relative;
+  width: 100%;
+  height: 100%;
+}
+
+#pal-bot {
+  position: absolute;
+}
+
+dot-pal {
+  position: absolute;
+  pointer-events: none;
+}
