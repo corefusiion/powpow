@@ -48,6 +48,15 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      # Nothing on the dev machine can link Rust (no MSVC, no Windows SDK), and
+      # this workflow only ever packed the app, so the unit tests had nowhere to
+      # run. The hook format in particular is the kind of thing a test catches
+      # and a green build does not: PowerShell refuses a shell-form command, the
+      # exe never starts, and every event disappears in silence.
+      - name: Test the Rust workspace
+        shell: pwsh
+        run: cargo test --workspace
+
       # Three files carry the version and they drift silently. Publishing a
       # "0.1.1" that installs a 0.1.0 is the kind of thing nobody notices until
       # a bug report arrives against the wrong build.
