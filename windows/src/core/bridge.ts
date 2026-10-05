@@ -138,6 +138,15 @@ export const Bridge = {
   setPalState: (state: string) => call<void>("set_pal_state", { state }),
   /** The face in effect right now — asked once when the pal window loads. */
   palState: () => call<string>("pal_state"),
+  /** The window the user was working in - the pal's Screen analysis. */
+  attachActiveWindow: () => callOrThrow<AttachedWindow>("attach_active_window"),
+  /** A card button pressed on the pal; the island owns what it means. */
+  palAction: (kind: string, query?: string) => call<void>("pal_action", { kind, query }),
+  /** The pal's clickable area, window-local logical px (character + card). */
+  setPalRect: (x: number, y: number, w: number, h: number) =>
+    call<void>("set_pal_rect", { x, y, w, h }),
+  /** Typing in the card: let the window take focus, then give it back. */
+  setPalFocus: (focused: boolean) => call<void>("set_pal_focus", { focused }),
 };
 
 export interface IntegrationUpdate {

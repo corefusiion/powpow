@@ -1,18 +1,24 @@
-// Window attach for the Mochi drag-out: captures the window under the cursor
-// into the inbox and reports it back, mirroring WindowContextCapture on macOS.
+// Window attach for the Mochi drag-out and for the roaming pal's "Screen
+// analysis": captures a window into the inbox and reports it back, mirroring
+// WindowContextCapture on macOS.
 //
-// Flow: user drags Mochi out of the island (> 7pt) → a ghost follows the
-// cursor → on release the front end calls `attach_window` → we read the cursor
+// Flow: user drags Mochi out of the island (> 7pt) — a ghost follows the
+// cursor — on release the front end calls `attach_window` — we read the cursor
 // position ourselves (the release usually happens outside our window, so
-// client coordinates would be meaningless), find the window below it, blit
-// the visible screen rect into a PNG next to dropped files.
-// The front end then offers it as prompt context like any other file.
+// client coordinates would be meaningless), find the window below it, blit the
+// visible screen rect into a PNG next to dropped files. The front end then
+// offers it as prompt context like any other file.
+//
+// The pal asks for the *foreground* window instead (`attach_active`): clicking
+// the pal does not steal focus (the window is WS_EX_NOACTIVATE), so the app
+// the user was working in is still the one in front — that is the window worth
+// analysing.
 //
 // Permissions: none beyond what a screenshot tool needs. A minimized window or
-// our own island under the cursor is a clean error, never a capture.
+// one of our own windows is a clean error, never a capture.
 
 use serde::Serialize;
-use tauri::AppHandle;
+use tauri::{AppHandle, Manager};
 use windows::Win32::Foundation::{HWND, RECT};
 use windows::Win32::Graphics::Gdi::{
     BitBlt, CreateCompatibleBitmap, CreateCompatibleDC, DeleteDC, DeleteObject, GetDC,
@@ -22,12 +28,17 @@ use windows::Win32::Graphics::Gdi::{
 use windows::Win32::System::ProcessStatus::GetModuleBaseNameW;
 use windows::Win32::System::Threading::{OpenProcess, PROCESS_QUERY_LIMITED_INFORMATION};
 use windows::Win32::UI::WindowsAndMessaging::{
+    GetCursorPos, GetForegroundWindow, GetWindowRect, GetWindowTextW, GetWindowThreadProcessId,
+    IsIconic, WindowFromPoint,
+};
+use windows::Win32::System::ProcessStatus::GetModuleBaseNameW;
+use windows::Win32::System::Threading::{OpenProcess, PROCESS_QUERY_LIMITED_INFORMATION};
+use windows::Win32::UI::WindowsAndMessaging::{
     GetCursorPos, GetWindowRect, GetWindowTextW, GetWindowThreadProcessId, IsIconic,
     WindowFromPoint,
 };
 
 use crate::files;
-use crate::island;
 
 #[derive(Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -39,10 +50,15 @@ pub struct AttachedWindow {
     pub title: String,
 }
 
-fn our_hwnd(app: &AppHandle) -> Option<HWND> {
-    island::window(app)
-        .and_then(|w| w.hwnd().ok())
+/// Every window that belongs to us: a capture must never pick one of Powpow's
+/// own windows — they are what the user clicked, not what they were doing.
+fn ours(app: &AppHandle) -> Vec<HWND> {
+    ["island", "pal", "settings"]
+        .iter()
+        .filter_map(|label| app.get_webview_window(label))
+        .filter_map(|w| w.hwnd().ok())
         .map(|raw| HWND(raw.0 as *mut _))
+        .collect()
 }
 
 fn window_text(hwnd: HWND) -> String {
@@ -143,12 +159,33 @@ pub fn attach(app: &AppHandle) -> Result<AttachedWindow, String> {
     if target.0.is_null() {
         return Err("no window under the cursor".into());
     }
-    if Some(target) == our_hwnd(app) {
-        return Err("drop Mochi on another app's window, not on the island".into());
+    check_target(app, target, "drop Mochi on another app's window, not on the island")?;
+    save(app, target)
+}
+
+/// The window the user was working in before clicking the roaming pal. The pal
+/// is WS_EX_NOACTIVATE, so the click never changed what is in front.
+pub fn attach_active(app: &AppHandle) -> Result<AttachedWindow, String> {
+    let target = unsafe { GetForegroundWindow() };
+    if target.0.is_null() {
+        return Err("no active window".into());
+    }
+    check_target(app, target, "capture another app's window, not Powpow's own")?;
+    save(app, target)
+}
+
+/// Ours or minimized are clean errors, never a capture.
+fn check_target(app: &AppHandle, target: HWND, ours_msg: &str) -> Result<(), String> {
+    if ours(app).contains(&target) {
+        return Err(ours_msg.into());
     }
     if unsafe { IsIconic(target) }.as_bool() {
         return Err("that window is minimized".into());
     }
+    Ok(())
+}
+
+fn save(app: &AppHandle, target: HWND) -> Result<AttachedWindow, String> {
     let mut rect = RECT::default();
     unsafe {
         GetWindowRect(target, &mut rect).map_err(|_| "cannot read window bounds".to_string())?;

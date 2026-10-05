@@ -73,6 +73,12 @@ export function buildPrompt(actions: ViewActions, onHeightChange: () => void): V
     const query = input.value.trim();
     if (!query || sending) return;
     input.value = "";
+    await sendQuery(query);
+  }
+
+  /** Runs a prompt through the chat as if it were typed - the pal's menu. */
+  async function sendQuery(query: string) {
+    if (!query || sending) return;
     sending = true;
     Sound.play("send");
 
@@ -144,6 +150,8 @@ export function buildPrompt(actions: ViewActions, onHeightChange: () => void): V
       input.disabled = sending;
       fresh.style.display = State.chatHistory.length > 0 || State.droppedFile ? "" : "none";
     },
+    send: sendQuery,
+
     focus() {
       input.focus();
       input.select();

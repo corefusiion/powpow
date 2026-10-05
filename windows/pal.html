@@ -6,7 +6,22 @@
     <title>Powpow Pal</title>
   </head>
   <body>
-    <div id="pal-root"></div>
+    <div id="pal-root">
+      <!-- The card: clicked off the character, its meaning belongs to the island -->
+      <div id="pal-card" hidden>
+        <button class="pal-item" data-action="analyze" data-label="Screen analysis"></button>
+        <button class="pal-item" data-action="search-open" data-label="Web search"></button>
+        <div id="pal-search" hidden>
+          <input id="pal-search-input" type="text" />
+          <button id="pal-search-go" data-action="search-send" aria-label="Search">→</button>
+        </div>
+        <div class="pal-sep"></div>
+        <button class="pal-item" data-action="pause" data-label="Pause stroll"></button>
+        <button class="pal-item" data-action="new-chat" data-label="New chat"></button>
+        <button class="pal-item" data-action="settings" data-label="Settings"></button>
+        <button class="pal-item" data-action="home" data-label="Back to the island"></button>
+      </div>
+    </div>
     <script type="module" src="/src/pal.ts"></script>
   </body>
 </html>

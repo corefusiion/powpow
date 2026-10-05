@@ -41,7 +41,7 @@
         "label": "pal",
         "title": "Powpow Pal",
         "url": "pal.html",
-        "width": 140,
+        "width": 360,
         "height": 250,
         "resizable": false,
         "decorations": false,

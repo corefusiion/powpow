@@ -1,5 +1,6 @@
 /* The roaming pal's page: a character on a window with no frame, no shadow
-   and no say in what the user clicks (Rust makes it click-through). */
+   and no say in what the user clicks — Rust only opens the mouse up over the
+   character or the card below, the transparent rest stays click-through. */
 html,
 body {
   margin: 0;
@@ -23,4 +24,84 @@ body {
 dot-pal {
   position: absolute;
   pointer-events: none;
+}
+
+/* The card: to the right of the character, in the window's spare width. */
+#pal-card {
+  position: absolute;
+  left: 156px;
+  top: 10px;
+  width: 196px;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 7px;
+  background: rgba(18, 18, 22, 0.94);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 14px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+  font: 500 12px/1.3 system-ui, "Segoe UI", sans-serif;
+}
+
+#pal-card[hidden] {
+  display: none;
+}
+
+.pal-item {
+  margin: 0;
+  padding: 6px 10px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: #ececf1;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.pal-item:hover {
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.pal-sep {
+  height: 1px;
+  margin: 2px;
+  background: rgba(255, 255, 255, 0.12);
+}
+
+#pal-search {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+}
+
+#pal-search[hidden] {
+  display: none;
+}
+
+#pal-search-input {
+  flex: 1;
+  min-width: 0;
+  padding: 6px 8px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.08);
+  color: #fff;
+  font: inherit;
+  outline: none;
+}
+
+#pal-search-input::placeholder {
+  color: rgba(255, 255, 255, 0.45);
+}
+
+#pal-search-go {
+  padding: 6px 9px;
+  border: 0;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.16);
+  color: #fff;
+  font: inherit;
+  cursor: pointer;
 }

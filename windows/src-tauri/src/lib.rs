@@ -265,6 +265,48 @@ fn pal_state() -> String {
         .unwrap_or_else(|_| String::new())
 }
 
+/// The pal's "Screen analysis": the window the user was working in, which the
+/// click on the pal did not disturb (it never takes focus).
+#[tauri::command]
+fn attach_active_window(app: AppHandle) -> Result<capture::AttachedWindow, String> {
+    capture::attach_active(&app)
+}
+
+#[derive(Clone, Serialize)]
+struct PalAction {
+    kind: String,
+    query: Option<String>,
+}
+
+/// A card button pressed on the pal. The island owns every action they mean.
+#[tauri::command]
+fn pal_action(app: AppHandle, kind: String, query: Option<String>) {
+    let _ = app.emit_to(
+        island::WINDOW_LABEL,
+        "pal-action",
+        PalAction { kind, query },
+    );
+}
+
+/// The pal window's clickable area (character + card), window-local logical px.
+#[tauri::command]
+fn set_pal_rect(shared: State<'_, Shared>, x: f64, y: f64, w: f64, h: f64) {
+    shared
+        .gate
+        .set_pal_rect(island::IslandRect { x, y, w, h });
+}
+
+/// Typing in the card needs the window activatable, same as focus_window.
+#[tauri::command]
+fn set_pal_focus(app: AppHandle, focused: bool) {
+    if let Some(win) = app.get_webview_window("pal") {
+        island::set_activating(&win, focused);
+        if focused {
+            let _ = win.set_focus();
+        }
+    }
+}
+
 // ── Claude Code hooks ─────────────────────────────────────────────────────────
 
 #[tauri::command]
@@ -606,6 +648,10 @@ pub fn run() {
             move_pal,
             set_pal_state,
             pal_state,
+            attach_active_window,
+            pal_action,
+            set_pal_rect,
+            set_pal_focus,
         ])
         .setup(move |app| {
             let handle = app.handle().clone();
@@ -619,8 +665,12 @@ pub fn run() {
                 let _ = win.show();
             }
             // The pal roams under the cursor without ever taking it: clicks
-            // fall through to whatever is really beneath it.
+            // fall through to whatever is really beneath it — except inside
+            // the character/card, which the cursor poll opens up. Never let it
+            // steal focus either: clicking it must not change which window is
+            // in front (the Screen analysis captures that window).
             if let Some(pal) = handle.get_webview_window("pal") {
+                island::make_non_activating(&pal);
                 let _ = pal.set_ignore_cursor_events(true);
             }
             gate.collapsed.store(false, Ordering::Relaxed);

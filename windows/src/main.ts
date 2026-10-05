@@ -28,6 +28,7 @@ async function main() {
     island.onCursor(x, y, down),
   );
   await onEvent<{ x: number; y: number }>("mouse-up", ({ x, y }) => island.onMouseUp(x, y));
+  await onEvent<{ kind: string; query?: string | null }>("pal-action", (a) => void island.palAction(a));
 
   /** Pause has to reach Rust too, or the pollers keep calling out. */
   const setPaused = (on: boolean) => {

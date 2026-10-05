@@ -43,6 +43,8 @@ export interface ViewHost {
   focus?(): void;
   /** Called every frame while the view is on screen. */
   tick?(nowMs: number): void;
+  /** Runs a prompt through the view as if typed - only the prompt view. */
+  send?(query: string): Promise<void>;
 }
 
 // ── Shared pieces ─────────────────────────────────────────────────────────────

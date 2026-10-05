@@ -316,6 +316,14 @@ const PT: Record<string, string> = {
   "Done!": "Pronto!",
   "Sleeping…": "Dormindo…",
   "Whoa…": "Uau…",
+  // The roaming pal's card (pal.ts menu)
+  "Screen analysis": "Análise de tela",
+  "Web search": "Busca na Web",
+  "Search the web…": "Buscar na web…",
+  "Pause stroll": "Pausar passeio",
+  "Back to the island": "Voltar para a ilha",
+  "Settings": "Configurações",
+  "Analyze this screen": "Analise esta tela",
 };
 
 export function t(key: string): string {

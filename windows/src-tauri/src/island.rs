@@ -74,6 +74,12 @@ pub struct PollGate {
     pub rect: Mutex<IslandRect>,
     /// Mirrors the window flag so we only call into Win32 when it changes.
     ignoring: AtomicBool,
+    /// The roaming pal's clickable area, window-local logical px: the
+    /// character and the card it shows when clicked, never the transparent
+    /// rest of the window.
+    pub pal_rect: Mutex<IslandRect>,
+    /// Mirrors the pal window's flag, same reason as `ignoring`.
+    pal_ignoring: AtomicBool,
 }
 
 impl PollGate {
@@ -85,11 +91,17 @@ impl PollGate {
             collapsed: AtomicBool::new(true),
             rect: Mutex::new(IslandRect::default()),
             ignoring: AtomicBool::new(false),
+            pal_rect: Mutex::new(IslandRect::default()),
+            pal_ignoring: AtomicBool::new(true),
         }
     }
 
     pub fn set_rect(&self, rect: IslandRect) {
         *self.rect.lock().unwrap() = rect;
+    }
+
+    pub fn set_pal_rect(&self, rect: IslandRect) {
+        *self.pal_rect.lock().unwrap() = rect;
     }
 
     /// Forces the next poll tick to re-apply the flag (after a window resize).
@@ -343,6 +355,40 @@ pub fn spawn_cursor_poll(app: AppHandle, gate: Arc<PollGate>) {
                     }
                     was_down = down;
                     continue;
+                }
+
+                // The roaming pal: click-through follows the character and the
+                // card the page marks out (never the transparent rest of the
+                // window), and the cursor position is handed over so the pal
+                // can stand and watch where the user is working. Checked on
+                // every tick even when the cursor is still — the pal walks.
+                let moved_cursor = (x - last.0).abs() >= 1.0 || (y - last.1).abs() >= 1.0;
+                if let Some(pal) = app.get_webview_window("pal") {
+                    let pr = *gate.pal_rect.lock().unwrap();
+                    let mut on_pal = false;
+                    if pr.w > 0.0 && pal.is_visible().unwrap_or(false) {
+                        if let Ok(porigin) = pal.outer_position() {
+                            let pscale = pal.scale_factor().unwrap_or(scale);
+                            let px = (cx - porigin.x as f64) / pscale;
+                            let py = (cy - porigin.y as f64) / pscale;
+                            on_pal = px >= pr.x - HIT_MARGIN
+                                && px <= pr.x + pr.w + HIT_MARGIN
+                                && py >= pr.y - HIT_MARGIN
+                                && py <= pr.y + pr.h + HIT_MARGIN;
+                        }
+                    }
+                    let want_ignore = !on_pal;
+                    if gate.pal_ignoring.load(Ordering::Relaxed) != want_ignore {
+                        gate.pal_ignoring.store(want_ignore, Ordering::Relaxed);
+                        let _ = pal.set_ignore_cursor_events(want_ignore);
+                        let _ = pal.emit("pal-hover", !want_ignore);
+                    }
+                    if moved_cursor {
+                        let _ = pal.emit(
+                            "pal-cursor",
+                            CursorPayload { x: cx / scale, y: cy / scale, down },
+                        );
+                    }
                 }
 
                 if (x - last.0).abs() < 1.0 && (y - last.1).abs() < 1.0 {

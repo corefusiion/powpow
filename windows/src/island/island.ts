@@ -511,6 +511,64 @@ export class Island {
     this.fsm.forcePetit();
   }
 
+  // -- The roaming pal's card ------------------------------------------------
+
+  /** A button pressed on the pal: every action its menu can ask for. */
+  async palAction(a: { kind: string; query?: string | null }) {
+    switch (a.kind) {
+      case "analyze": {
+        try {
+          const win = await Bridge.attachActiveWindow();
+          State.droppedFile = { name: win.name, path: win.path };
+          State.promptContext = { kind: "file", name: win.name, path: win.path };
+          State.chatHistory = [];
+          void Bridge.chatReset();
+          Sound.play("attach");
+          this.engine.triggerEmote("wink");
+          await this.sendPrompt(
+            win.title
+              ? `${t("Analyze this screen")} - ${win.title}`
+              : t("Analyze this screen"),
+          );
+        } catch (err) {
+          State.noteMessage = String(err).replace(/^Error:\s*/, "");
+          this.setView("note");
+          Sound.play("error");
+          window.setTimeout(() => this.setView(State.defaultView()), 2400);
+        }
+        break;
+      }
+      case "search": {
+        const q = (a.query ?? "").trim();
+        if (q) await this.sendPrompt(q);
+        break;
+      }
+      case "pause":
+        State.settings.wander = false;
+        void Bridge.saveSettings(State.settings);
+        this.applySettings();
+        break;
+      case "new-chat":
+        this.actions.newChat();
+        break;
+      case "settings":
+        if (State.paused) {
+          State.paused = false;
+          void Bridge.setPaused(false);
+        }
+        this.alert("settings");
+        break;
+      case "home":
+        break; // The pal walks home on its own - the card just closed there.
+    }
+  }
+
+  /** Runs a prompt through the chat, the way typing it would. */
+  private async sendPrompt(query: string) {
+    this.setView("prompt");
+    await this.views.get("prompt")?.send?.(query);
+  }
+
   /** Alert from the hook server: open on this view. Pinned alerts never auto-close. */
   alert(view: IslandViewName) {
     this.fsm.pinned = State.isPinned;
