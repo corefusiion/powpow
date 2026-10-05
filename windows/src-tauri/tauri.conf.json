@@ -49,7 +49,7 @@
         "shadow": false,
         "alwaysOnTop": true,
         "skipTaskbar": true,
-        "focused": false,
+        "focus": false,
         "visible": false,
         "center": false,
         "maximizable": false,
