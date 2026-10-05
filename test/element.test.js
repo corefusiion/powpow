@@ -2,7 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
   DotPal, EMOTES, MOOD_EYES, PARTICLE_KINDS,
-  eyeShape, particleSVG, particleFrames, gazeFor, foreshorten,
+  eyeShape, particleSVG, particleFrames, gazeFor, foreshorten, bubbleContent,
 } from '../src/element.js';
 import { characters } from '../src/characters.js';
 import { actions } from '../src/actions.js';
@@ -55,6 +55,18 @@ test('particles are inline SVG that fade in, grow ~40% and fade out', () => {
   assert.match(sweat.at(-1).transform, /^translate\(0px, 40px\)/);
   // Positions are absolute px inside the pal's particle layer.
   assert.match(particleFrames('star', { x0: 50, y0: 20 })[0].transform, /^translate\(50px, 20px\)/);
+});
+
+test('the bubble only draws a busy mood on its own when the host wants it', () => {
+  assert.match(bubbleContent('working'), /dp-bar/);
+  assert.match(bubbleContent('thinking'), /dp-dots/);
+  assert.match(bubbleContent('waiting'), /dp-ask/);
+  for (const mood of ['neutral', 'happy', 'sad', 'sleepy']) assert.equal(bubbleContent(mood), null);
+  // bubble="text" / "none": the host shows progress itself, so no glyph ever.
+  for (const mode of ['text', 'none']) {
+    for (const mood of ['working', 'thinking', 'waiting']) assert.equal(bubbleContent(mood, mode), null);
+  }
+  assert.equal(bubbleContent('working', 'anything else'), null);
 });
 
 test('gaze: tanh falloff, never past 1, and eyes foreshorten as they turn', () => {

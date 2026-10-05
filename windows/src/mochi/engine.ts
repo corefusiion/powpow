@@ -6,6 +6,7 @@
 
 import { Ease, lerp, type EaseFn } from "../core/anim";
 import { Sound } from "../core/sound";
+import { reducedMotion } from "../core/motion";
 import type { BotEmoteName, BotStateName } from "../core/layout";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -486,6 +487,9 @@ export class BotEngine {
   update(dt: number) {
     const n = now();
     const nowMs = performance.now();
+    // Idle drift (scan, sway, breathe, bounce) is decoration: with the OS
+    // asking for reduced motion, hold still instead of looping it.
+    const calm = reducedMotion();
 
     for (const tw of [...this.tweens.values()]) {
       const k = tw.keys[tw.index];
@@ -511,15 +515,15 @@ export class BotEngine {
       ty = ty * 0.35 + this.cfg.look[0] * 0.55;
       tp = tp * 0.3 + this.cfg.look[1] * 0.5;
     }
-    if (this.cfg.scans) {
+    if (this.cfg.scans && !calm) {
       ty = Math.sin(t * 2.6) * 0.6;
       tp = -0.06;
     }
     if (this.state === "sleeping") { ty = 0; tp = -0.14; }
-    if (this.state === "dizzy") { ty = Math.sin(t * 9) * 0.25; }
+    if (this.state === "dizzy" && !calm) { ty = Math.sin(t * 9) * 0.25; }
 
     // Mini bots never follow the mouse — they wander.
-    if (this.isMini && !this.cfg.look && !this.cfg.scans && this.state !== "sleeping" && this.state !== "dizzy") {
+    if (this.isMini && !calm && !this.cfg.look && !this.cfg.scans && this.state !== "sleeping" && this.state !== "dizzy") {
       if (n > this.miniLookNextTime) {
         this.miniLookTarget = {
           x: -0.88 + Math.random() * 1.76,
@@ -535,20 +539,20 @@ export class BotEngine {
     this.tgPitch = tp;
     this.tgTilt = this.cfg.tilt;
 
-    if (n > this.waveStart && n < this.waveUntil) {
+    if (!calm && n > this.waveStart && n < this.waveUntil) {
       const wt = n - this.waveStart;
       this.tgTilt = -0.06 + Math.sin(2 * Math.PI * 1.2 * wt) * 0.07;
     }
 
-    const bounce = this.cfg.bounces ? -Math.abs(Math.sin(t * 5.2)) * 0.07 : 0;
+    const bounce = this.cfg.bounces && !calm ? -Math.abs(Math.sin(t * 5.2)) * 0.07 : 0;
     const kGen = 1 - Math.pow(0.0008, dt);
     if (!this.locks.has("oy")) this.oy += (bounce - this.oy) * kGen;
 
-    if (this.cfg.breathes) {
+    if (this.cfg.breathes && !calm) {
       const amp = this.isMini ? 0.07 : 0.035;
       this.tgSy = 1 + Math.sin(t * 1.8) * amp;
       this.tgSx = 1 - Math.sin(t * 1.8) * amp * 0.57;
-    } else if (this.isMini) {
+    } else if (this.isMini && !calm) {
       this.tgSy = 1 + Math.sin(t * 2.2) * 0.04;
       this.tgSx = 1 - Math.sin(t * 2.2) * 0.02;
     } else {
@@ -556,7 +560,7 @@ export class BotEngine {
       this.tgSx = 1;
     }
 
-    if (this.isMini && n > this.miniNextBehavior) this.doMiniBehaviorLoop();
+    if (this.isMini && !calm && n > this.miniNextBehavior) this.doMiniBehaviorLoop();
 
     const kLook = 1 - Math.pow(0.0025, dt);
     if (!this.locks.has("yaw")) this.yaw += (this.tgYaw - this.yaw) * kLook;

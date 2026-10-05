@@ -299,6 +299,17 @@ const PT: Record<string, string> = {
   "Give me a sec — back to work in three seconds.": "Me dá um segundo — volto em três segundos.",
   "Sending by email isn't in this version.": "Envio por e-mail não existe nesta versão.",
   "Claude is searching…": "Claude pesquisando…",
+  // The pal's speech bubble (one short line per state, island.ts bubbleText)
+  "Working…": "Trabalhando…",
+  "Thinking…": "Pensando…",
+  "Searching…": "Procurando…",
+  "Allow {tool}?": "Permitir {tool}?",
+  "Allow?": "Permitir?",
+  "Question for you": "Uma pergunta pra você",
+  "Something went wrong": "Algo deu errado",
+  "Done!": "Pronto!",
+  "Sleeping…": "Dormindo…",
+  "Whoa…": "Uau…",
 };
 
 export function t(key: string): string {

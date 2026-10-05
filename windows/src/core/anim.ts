@@ -3,6 +3,8 @@
 // Spring mirrors SwiftUI `.spring(response:dampingFraction:)` so open/close motion
 // matches the macOS app exactly.
 
+import { reducedMotion } from "./motion";
+
 export const Ease = {
   out: (t: number) => 1 - Math.pow(1 - t, 3),
   inOut: (t: number) => (t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2),
@@ -76,6 +78,11 @@ export class Spring {
   }
 
   step(dt: number) {
+    if (reducedMotion()) {
+      this.value = this.target;
+      this.velocity = 0;
+      return;
+    }
     const steps = Math.max(1, Math.ceil(dt / (1 / 240)));
     const h = dt / steps;
     for (let i = 0; i < steps; i++) {
@@ -136,6 +143,13 @@ export class Tracked {
   }
 
   step(dt: number, now = performance.now()) {
+    // Reduced motion: land where the animation was heading, don't travel.
+    if (this.mode !== "idle" && reducedMotion()) {
+      this.spring.value = this.spring.target;
+      this.spring.velocity = 0;
+      this.mode = "idle";
+      return;
+    }
     if (this.mode === "spring") {
       this.spring.step(dt);
       if (this.spring.settled) {

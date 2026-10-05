@@ -5,6 +5,7 @@
 
 import { h } from "./dom";
 import { t } from "../core/i18n";
+import { reducedMotion } from "../core/motion";
 import { diffOf, language } from "../../../bridge/ui/notch-diff.js";
 import { baseName } from "../../../bridge/ui/recap.js";
 import type { ActEntry } from "../core/activity";
@@ -13,8 +14,6 @@ import type { ActEntry } from "../core/activity";
 export function diffCardKey(e: ActEntry): string {
   return `${e.id}|${e.status}|${e.body?.patch?.length ?? 0}`;
 }
-
-const reduced = () => window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ?? false;
 
 export function renderDiffCard(entry: ActEntry): HTMLElement {
   const d = diffOf(entry.body?.patch ?? "", { max: 6 }) as unknown as {
@@ -48,7 +47,7 @@ export function renderDiffCard(entry: ActEntry): HTMLElement {
   card.append(file);
 
   const code = h("div", { class: "code" });
-  const animate = !reduced();
+  const animate = !reducedMotion();
   d.lines.forEach((l, i) => {
     if (l.sign === "@") {
       code.append(h("div", { class: "ln gap" }));

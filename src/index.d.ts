@@ -13,6 +13,8 @@ export type AgentState =
   | 'idle' | 'listening' | 'thinking' | 'working' | 'speaking' | 'waiting' | 'done' | 'error' | 'sleeping';
 export interface AgentUpdate { state: AgentState; text?: string }
 export type IdleAnimation = 'breathe' | 'bounce' | 'float' | 'wobble' | 'sway' | 'none';
+/** What the speech bubble shows without a `say()`. */
+export type BubbleMode = 'auto' | 'text' | 'none';
 
 export interface CharacterRenderParams {
   /** Returns an id unique to this element instance, e.g. for gradients. */
@@ -82,6 +84,8 @@ export declare class DotPal extends HTMLElement {
   mood: Mood;
   state: AgentState;
   look: 'cursor' | 'none';
+  /** Speech bubble mode (`bubble` attribute): progress glyph, text only, or no bubble at all. */
+  bubble: BubbleMode;
   static: boolean;
   // The pal leans slightly toward the pointer; the attribute lean="none" turns that off.
   /** True while the pal is drawn smaller than 48 px (reflected as the `tiny` attribute): no fur, bigger eyes. */
@@ -141,6 +145,8 @@ export declare function registerAction(name: string, definition: ActionDefinitio
 export declare function define(tag?: string): void;
 export declare const MOODS: Mood[];
 export declare const AGENT_STATES: Record<AgentState, Mood>;
+/** What the bubble shows on its own for `mood`: the progress glyph, or null when `mode` hides it. */
+export declare function bubbleContent(mood: Mood, mode?: BubbleMode): string | null;
 export declare function toAgentState(event: unknown): AgentUpdate | null;
 export declare function connectAgent(
   pal: DotPal,

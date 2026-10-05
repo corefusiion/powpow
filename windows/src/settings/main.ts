@@ -13,6 +13,7 @@ import {
   CUSTOM_OPTIONS,
   DEFAULT_CUSTOM,
   DotPal,
+  characters,
   cleanCustom,
   registerCustom,
   type CustomPal,
@@ -974,16 +975,11 @@ function characterRow(): HTMLElement {
     style: "width:48px;height:94px;pointer-events:none;flex:0 0 auto",
   });
   const select = h("select", {}) as HTMLSelectElement;
+  // Every character the component knows, straight from dotpals: a new built-in
+  // shows up here without this list having to change.
   const chars: [string, string][] = [
     ["mochi", t("Mochi (notch original)")],
-    ["blu", "Blu"],
-    ["hop", "Hop"],
-    ["sunny", "Sunny"],
-    ["lovi", "Lovi"],
-    ["muse", "Muse"],
-    ["grok", "Grok"],
-    ["nova", "Nova"],
-    ["byte", "Byte"],
+    ...Object.entries(characters).map(([id, def]) => [id, def.label ?? id] as [string, string]),
   ];
   for (const [id, label] of chars) select.append(h("option", { value: id, text: label }));
 

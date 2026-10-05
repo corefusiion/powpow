@@ -3,6 +3,7 @@
 
 import { Tracked, Spring, clamp } from "../core/anim";
 import { Bridge, IS_TAURI, onDragDrop, onEvent } from "../core/bridge";
+import { t } from "../core/i18n";
 import {
   EXPANDED_CORNER, EXPANDED_W, NOTCH_W, PANEL_H, PANEL_W,
   ROUNDED_CORNER, VIEW_LAYOUTS, botGlowColor, botGlowOpacity, botPosition, chatPromptHeight,
@@ -20,7 +21,7 @@ import { buildHeader, buildViews, type ViewActions, type ViewHost } from "../vie
 import { h } from "../views/dom";
 // Side effect registers the `dot-pal` tag; the island draws one instead of Mochi
 // whenever Settings › Character picks something else (registerCustom feeds "custom").
-import { DotPal, characters, registerCustom, type AgentState, type CustomPal } from "../../../src/index.js";
+import { DotPal, characters, registerCustom, type AgentState, type CustomPal, type Emote } from "../../../src/index.js";
 import { IslandStateMachine } from "./fsm";
 
 const BOT_OVERHANG = 40;
@@ -41,14 +42,26 @@ const PAL_STATE: Record<BotStateName, AgentState> = {
   idle: "idle",
   working: "working",
   thinking: "thinking",
-  searching: "working",
+  // Looking for something reads as thinking (dots), not as running a command.
+  searching: "thinking",
   approval: "waiting",
   question: "waiting",
   error: "error",
   finished: "done",
-  ratelimit: "waiting",
+  // Backing off before a retry: still on it, so a bar, not the waiting "?".
+  ratelimit: "working",
   sleeping: "sleeping",
   dizzy: "error",
+};
+
+/** The face that says what the state means, where the mood alone can't. */
+const PAL_EMOTE: Partial<Record<BotStateName, Emote>> = {
+  approval: "wide",
+  question: "hey",
+  error: "oops",
+  finished: "star",
+  ratelimit: "sweat",
+  // dizzy comes from handleDizzy(), which holds the face for the whole 3.3 s.
 };
 
 /** The three views the drop sequence owns; leaving them stops the engine. */
@@ -72,6 +85,9 @@ export class Island {
   /** Character overlay drawn where Mochi would be; null while Mochi is chosen. */
   private pal: DotPal | null = null;
   private palCharacter = "";
+  /** Last state/text handed to the overlay, so the frame loop can't repeat it. */
+  private palState: BotStateName | null = null;
+  private palStateText = "";
   private greetingCanvas!: HTMLCanvasElement;
   private miniGrid!: HTMLElement;
   private countdown!: HTMLElement;
@@ -1232,7 +1248,61 @@ export class Island {
   /** Engine state + the overlay's mirror of it, always moved together. */
   private setBotState(s: BotStateName) {
     this.engine.setState(s);
-    if (this.pal) this.pal.setState(PAL_STATE[s] ?? "idle");
+    this.syncPal(s);
+  }
+
+  /**
+   * The overlay mirrors the state with one short line in a speech bubble and,
+   * when the state really changes, the face that explains it. Both are keyed on
+   * the island's own state names, so `searching` and `ratelimit` read
+   * differently even though the component has no state for them.
+   */
+  private syncPal(s: BotStateName) {
+    const pal = this.pal;
+    if (!pal) return;
+    const text = this.bubbleText(s);
+    const changed = s !== this.palState;
+    if (!changed && text === this.palStateText) return;
+    this.palState = s;
+    this.palStateText = text;
+    pal.setState(PAL_STATE[s] ?? "idle", { text });
+    const emote = changed ? PAL_EMOTE[s] : undefined;
+    if (emote) void pal.emote(emote);
+  }
+
+  /** One short line for the speech bubble, in the language picked in Settings. */
+  private bubbleText(s: BotStateName): string {
+    const focus = State.focusTask;
+    switch (s) {
+      case "working": {
+        const step = focus ? focus.steps[focus.stepIndex] : undefined;
+        if (!step) return t("Working…");
+        return step.length > 46 ? `${step.slice(0, 45)}…` : step;
+      }
+      case "thinking":
+        return t("Thinking…");
+      case "searching":
+        return t("Searching…");
+      case "approval": {
+        const tool = State.pendingApproval?.tool;
+        return tool ? t("Allow {tool}?").replace("{tool}", tool) : t("Allow?");
+      }
+      case "question":
+        return t("Question for you");
+      case "error":
+        return t("Something went wrong");
+      case "finished":
+        return t("Done!");
+      case "ratelimit":
+        return t("Too many hits at once.");
+      case "sleeping":
+        return t("Sleeping…");
+      case "dizzy":
+        return t("Whoa…");
+      case "idle":
+      default:
+        return "";
+    }
   }
 
   /**
@@ -1259,12 +1329,15 @@ export class Island {
       if (!this.pal) {
         // Same contract as the canvas: invisible to the mouse, so the island's
         // own hit test (isBotHit) keeps driving hover, slaps and drag-out.
-        const el = h("dot-pal", { id: "bot-pal" });
+        // bubble="text": the short line syncPal() picks, never the progress glyph.
+        const el = h("dot-pal", { id: "bot-pal", bubble: "text" });
         this.botCanvas.after(el);
         this.pal = el;
       }
       this.pal.character = want;
-      this.pal.setState(PAL_STATE[State.effectiveState] ?? "idle");
+      this.palState = null;
+      this.palStateText = "";
+      this.syncPal(State.effectiveState);
     }
     this.dirty = true;
     this.ensureRunning();

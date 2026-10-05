@@ -583,14 +583,31 @@ function fitOnResize() {
 }
 
 const TINY = 48; // px: below this the pal is an avatar (bigger eyes, no fur)
+const BURST_MIN = 32; // px: below this a particle would be a speck (a 20 px dot on the drop bar)
 const LONG_RUN = 90_000; // ms of working before the pal starts to sweat
 const QUICK_CLICKS = 1200; // ms window for three clicks → dizzy
 let scriptSeq = 0;
 
+/** Progress glyphs the bubble shows on its own, per mood (`bubble="auto"`). */
+const BUBBLE_CONTENT = {
+  thinking: '<span class="dp-dots"><i></i><i></i><i></i></span>',
+  working: '<span class="dp-bar"></span>',
+  waiting: '<span class="dp-ask">?</span>',
+};
+
+/**
+ * What the bubble shows without a `say()`: the busy mood's progress glyph, or
+ * nothing when the host asked for text only (`bubble="text"` — a UI that shows
+ * progress itself doesn't want a permanent bar) or for no bubble at all.
+ */
+export function bubbleContent(mood, mode = 'auto') {
+  return mode === 'auto' ? BUBBLE_CONTENT[mood] ?? null : null;
+}
+
 // ---------------------------------------------------------------------------
 
 export class DotPal extends Base {
-  static observedAttributes = ['character', 'color', 'size', 'label', 'mood', 'state', 'idle', 'lean'];
+  static observedAttributes = ['character', 'color', 'size', 'label', 'mood', 'state', 'idle', 'lean', 'bubble'];
 
   #n = ++uid;
   #uid = `dp${this.#n}`;
@@ -742,6 +759,7 @@ export class DotPal extends Base {
     else if (name === 'label') this.#applyLabel();
     else if (name === 'state') this.#applyState();
     else if (name === 'lean') this.#lean(this.#gaze.x);
+    else if (name === 'bubble') this.#syncBubble();
     else if (this.#def) this.#render();
   }
 
@@ -779,6 +797,10 @@ export class DotPal extends Base {
 
   get look() { return this.getAttribute('look') === 'none' ? 'none' : 'cursor'; }
   set look(v) { this.setAttribute('look', v); }
+
+  /** Bubble mode: `auto` (progress glyph for a busy mood), `text` (only what you pass) or `none`. */
+  get bubble() { return this.getAttribute('bubble') || 'auto'; }
+  set bubble(v) { v == null ? this.removeAttribute('bubble') : this.setAttribute('bubble', v); }
 
   get static() { return this.hasAttribute('static'); }
   set static(v) { this.toggleAttribute('static', !!v); }
@@ -873,9 +895,14 @@ export class DotPal extends Base {
   /**
    * Show a speech bubble. It hides after `duration` ms (default: based on
    * length); pass `duration: 0` to keep it until `say('')` is called.
+   * With `bubble="none"` the bubble stays hidden and the text is dropped.
    */
   say(text, { duration } = {}) {
     clearTimeout(this.#sayTimer);
+    if (this.getAttribute('bubble') === 'none') {
+      this.#saying = false;
+      return this.#hideBubble();
+    }
     this.#saying = !!text;
     if (!text) return this.#syncBubble();
     this.#showBubble({ text });
@@ -1457,18 +1484,18 @@ export class DotPal extends Base {
   // -- bubble ----------------------------------------------------------------
 
   #syncBubble() {
-    if (this.#saying) return;
-    const content = {
-      thinking: '<span class="dp-dots"><i></i><i></i><i></i></span>',
-      working: '<span class="dp-bar"></span>',
-      waiting: '<span class="dp-ask">?</span>',
-    }[this.mood];
+    if (this.#saying || !this.#bubble) return;
+    const content = bubbleContent(this.mood, this.getAttribute('bubble') || 'auto');
     if (content) this.#showBubble({ html: content });
-    else {
-      this.#bubbleTok++;
-      this.#bubbleAnim?.cancel();
-      this.#bubble.classList.remove('dp-show');
-    }
+    else this.#hideBubble();
+  }
+
+  /** Slide the bubble away (and forget what it was showing). */
+  #hideBubble() {
+    if (!this.#bubble) return;
+    this.#bubbleTok++;
+    this.#bubbleAnim?.cancel();
+    this.#bubble.classList.remove('dp-show');
   }
 
   /** Show `text` (or `html`) in the bubble; if it was already showing something else, pop it. */
@@ -1678,9 +1705,11 @@ export class DotPal extends Base {
 
   /** Throw `count` particles of `kind` (a built-in shape, or any text glyph). */
   #burst(kind, count = 6) {
-    if (!this.isConnected || this.#tiny || reducedMotion()) return;
+    if (!this.isConnected || reducedMotion()) return;
     const box = this.getBoundingClientRect();
     const size = box.width || 160;
+    if (size < BURST_MIN) return;
+    if (this.#tiny) count = Math.max(1, count - 2);
     const height = box.height || size;
     const shape = PARTICLES[kind] ? kind : null;
     for (let i = 0; i < count; i++) {
