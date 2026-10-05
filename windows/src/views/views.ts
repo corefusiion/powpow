@@ -409,11 +409,31 @@ function buildError(actions: ViewActions): ViewHost {
 function buildFinished(actions: ViewActions): ViewHost {
   const who = h("div");
   const title = h("div", { class: "title" });
+  const go = (v: IslandViewName) => {
+    actions.blip();
+    actions.setView(v);
+  };
   const row = h("div", { class: "actions" },
     btn(t("Open terminal"), "primary", () => actions.openTerminal()),
     btn(t("OK"), "secondary", () => actions.collapse()),
   );
-  const el = h("div", { class: "view" }, card("green", stack(116, 16, who, title, row)));
+  // What usually comes next. The chips only ever open views the island already
+  // has - nobody starts a command from here that the terminal did not ask for.
+  const suggest = h(
+    "div",
+    { class: "suggest" },
+    h("button", { class: "link-btn", text: t("See what changed"), onclick: () => go("story") }),
+    h("button", { class: "link-btn", text: t("Ask the pal"), onclick: () => go("prompt") }),
+    h("button", {
+      class: "link-btn",
+      text: t("New chat"),
+      onclick: () => {
+        actions.blip();
+        actions.newChat();
+      },
+    }),
+  );
+  const el = h("div", { class: "view" }, card("green", stack(116, 16, who, title, row, suggest)));
   return {
     el,
     sync() {

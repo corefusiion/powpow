@@ -692,6 +692,22 @@ body {
   gap: 8px;
 }
 
+/* Finished: what usually comes next, one quiet row under the buttons. */
+.suggest {
+  display: flex;
+  gap: 16px;
+  margin-top: 7px;
+}
+
+.suggest .link-btn {
+  opacity: 0.7;
+}
+
+.suggest .link-btn:hover {
+  opacity: 1;
+  text-decoration: underline;
+}
+
 .status-badge {
   display: inline-flex;
   align-items: center;

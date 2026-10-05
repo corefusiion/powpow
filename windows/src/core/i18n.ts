@@ -84,6 +84,8 @@ const PT: Record<string, string> = {
   "Copy": "Copiar",
   "Open result": "Abrir resultado",
   // Finished / error / question
+  "See what changed": "Ver o que mudou",
+  "Ask the pal": "Perguntar ao pal",
   "See terminal": "Ver terminal",
   "Open terminal": "Abrir terminal",
   "OK": "OK",
@@ -170,6 +172,10 @@ const PT: Record<string, string> = {
   // Settings window
   "General": "Geral",
   "Sound": "Som",
+  "Voice": "Voz",
+  "the pal says the alerts out loud": "o pal fala os alertas em voz alta",
+  "Walk around": "Andar pela tela",
+  "the pal strolls across the screen": "o pal passeia pela tela",
   "Auto-close": "Fechamento auto",
   "seconds after you leave the island": "segundos após sair da ilha",
   "Island lives on": "Ilha fica em",

@@ -3,5 +3,9 @@
   "identifier": "default",
   "description": "What Powpow's windows are allowed to do. Everything that touches the OS goes through Powpow's own commands.",
   "windows": ["island", "settings"],
-  "permissions": ["core:default", "autostart:default"]
+  "permissions": [
+    "core:default",
+    "autostart:default",
+    "core:window:allow-set-position"
+  ]
 }

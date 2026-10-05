@@ -10,6 +10,7 @@ import {
   islandSize,
   type BotStateName, type IslandMode, type IslandViewName,
 } from "../core/layout";
+import { reducedMotion } from "../core/motion";
 import { Sound } from "../core/sound";
 import { State } from "../core/state";
 import { BotEngine, hexToRGB } from "../mochi/engine";
@@ -23,6 +24,7 @@ import { h } from "../views/dom";
 // whenever Settings › Character picks something else (registerCustom feeds "custom").
 import { DotPal, characters, registerCustom, type AgentState, type CustomPal, type Emote } from "../../../src/index.js";
 import { IslandStateMachine } from "./fsm";
+import { Walker } from "./walker";
 
 const BOT_OVERHANG = 40;
 /** Same margin as the Rust hit test (src-tauri/src/island.rs). */
@@ -66,6 +68,15 @@ const PAL_EMOTE: Partial<Record<BotStateName, Emote>> = {
 
 /** The three views the drop sequence owns; leaving them stops the engine. */
 const UPLOAD_VIEWS: ReadonlySet<IslandViewName> = new Set(["upload", "uploading", "choose"]);
+
+/** Worth saying out loud: the states the island already shouts about. */
+const PAL_VOICE: ReadonlySet<BotStateName> = new Set([
+  "finished",
+  "error",
+  "approval",
+  "question",
+  "ratelimit",
+]);
 
 /** Seconds between the drop and the moment the progress bar starts filling. */
 const PRE_PROGRESS = USC.T_PROG_START - USC.T_DROP;
@@ -121,6 +132,12 @@ export class Island {
   /** Last shape handed to Rust for the click-through test. */
   private pushedRect = { x: -1, y: -1, w: -1, h: -1 };
   private homeCollapseAt: number | null = null;
+
+  // Wandering: the pal strolls while the island is compact and parks the moment
+  // anything needs the user's eyes or hands (see walkBlocked).
+  readonly walker = new Walker(() => this.walkBlocked());
+  /** Screen preference last seen, so a change can re-anchor the walker. */
+  private lastScreenPref: string = State.settings.screen;
 
   // Bot hover → love (IslandWindowController.botHoverIn)
   private botHovering = false;
@@ -846,13 +863,38 @@ export class Island {
         this.collapseTimer = null;
         if (State.mode !== "hidden") return;
         this.collapsed = true;
+        this.walker.setEnabled(false);
         void Bridge.setCollapsed(true);
       }, 420);
     } else if (this.collapsed) {
       // Grow the window back before the island animates open.
       this.collapsed = false;
       void Bridge.setCollapsed(false);
+      // Rust re-centres the window on the way back: start from where it landed.
+      this.walker.reanchor();
+      this.walker.setEnabled(State.settings.wander);
     }
+  }
+
+  /**
+   * Wandering stops for anything that wants the user's eyes or hands: the island
+   * open, the pointer on it, an approval or a chat waiting, a drag owning the
+   * screen, or the OS asking for stillness. The loop keeps running; only the
+   * steps stop, so a resume continues from where the pal stood.
+   */
+  private walkBlocked(): boolean {
+    return (
+      State.mode !== "compact" ||
+      State.paused ||
+      State.stateOverride != null ||
+      State.pendingApproval != null ||
+      this.collapsed ||
+      this.wasInIsland ||
+      this.draggingGhost ||
+      State.fileDragOver ||
+      UploadSeq.isActive ||
+      reducedMotion()
+    );
   }
 
   // ── Input ───────────────────────────────────────────────────────────────────
@@ -1258,31 +1300,49 @@ export class Island {
    * differently even though the component has no state for them.
    */
   private syncPal(s: BotStateName) {
-    const pal = this.pal;
-    if (!pal) return;
     const text = this.bubbleText(s);
     const changed = s !== this.palState;
     if (!changed && text === this.palStateText) return;
     this.palState = s;
     this.palStateText = text;
+    // The voice belongs to the state, not to the overlay: Mochi speaks too.
+    if (changed && PAL_VOICE.has(s)) Sound.say(text);
+    const pal = this.pal;
+    if (!pal) return;
     pal.setState(PAL_STATE[s] ?? "idle", { text });
     const emote = changed ? PAL_EMOTE[s] : undefined;
     if (emote) void pal.emote(emote);
   }
 
+  /**
+   * The step the focused task is on, ready for one short line: the source tag
+   * (`[Claude]`) belongs to the Story view, not to a speech bubble, and 46
+   * chars is what the bubble can hold before it swallows the pal.
+   */
+  private currentStep(): string | undefined {
+    const focus = State.focusTask;
+    const raw = focus ? focus.steps[focus.stepIndex] : undefined;
+    if (!raw) return undefined;
+    const step = raw.replace(/^\[[^\]]+\]\s*/, "");
+    if (!step) return undefined;
+    return step.length > 46 ? `${step.slice(0, 45)}…` : step;
+  }
+
   /** One short line for the speech bubble, in the language picked in Settings. */
   private bubbleText(s: BotStateName): string {
-    const focus = State.focusTask;
+    // While the pal thinks, searches or works, the bubble says what is actually
+    // happening - the prompt you just sent, the command about to run - and only
+    // falls back to the fixed line when there is no step to quote. `stateOverride`
+    // is chat/dizzy territory: there the state is ours, not a task's, so the last
+    // step would be stale.
+    const step = State.stateOverride ? undefined : this.currentStep();
     switch (s) {
-      case "working": {
-        const step = focus ? focus.steps[focus.stepIndex] : undefined;
-        if (!step) return t("Working…");
-        return step.length > 46 ? `${step.slice(0, 45)}…` : step;
-      }
+      case "working":
+        return step ?? t("Working…");
       case "thinking":
-        return t("Thinking…");
+        return step ?? t("Thinking…");
       case "searching":
-        return t("Searching…");
+        return step ?? t("Searching…");
       case "approval": {
         const tool = State.pendingApproval?.tool;
         return tool ? t("Allow {tool}?").replace("{tool}", tool) : t("Allow?");
@@ -1347,9 +1407,20 @@ export class Island {
   applySettings() {
     Sound.setEnabled(State.settings.soundEnabled);
     Sound.setVolume(State.settings.soundVolume);
+    Sound.setVoice(
+      State.settings.voiceEnabled,
+      State.settings.language === "pt-BR" ? "pt-BR" : "en-US",
+    );
     this.fsm.homeToPetitDelay = State.settings.autoCloseInterval;
     this.applyTheme();
     this.applyCharacter();
+    // Rust re-centres the window when the screen preference changes, so the
+    // walker's own idea of where it is is stale from that moment on.
+    if (State.settings.screen !== this.lastScreenPref) {
+      this.lastScreenPref = State.settings.screen;
+      this.walker.reanchor();
+    }
+    this.walker.setEnabled(State.settings.wander && !this.collapsed);
     if (State.settings.language !== this.lastLang) {
       this.lastLang = State.settings.language;
       this.rebuildChrome();

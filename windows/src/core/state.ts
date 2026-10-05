@@ -96,6 +96,10 @@ export interface IntegrationInfo {
 export interface Settings {
   soundEnabled: boolean;
   soundVolume: number;
+  /** The pal says the alert lines out loud instead of only drawing them. */
+  voiceEnabled: boolean;
+  /** The pal strolls to random corners of the screen while the island is compact. */
+  wander: boolean;
   autoCloseInterval: number;
   absenceInterval: number;
   activeIntegrations: string[];
@@ -125,6 +129,8 @@ export interface Settings {
 export const DEFAULT_SETTINGS: Settings = {
   soundEnabled: true,
   soundVolume: 0.12,
+  voiceEnabled: true,
+  wander: true,
   autoCloseInterval: 15,
   absenceInterval: 180,
   activeIntegrations: [

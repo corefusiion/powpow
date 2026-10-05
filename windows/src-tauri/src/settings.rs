@@ -9,6 +9,13 @@ use std::path::PathBuf;
 pub struct Settings {
     pub sound_enabled: bool,
     pub sound_volume: f64,
+    /// The pal says the alert lines out loud (SpeechSynthesis lives in the
+    /// WebView, so only the preference itself is stored here).
+    #[serde(default = "default_voice")]
+    pub voice_enabled: bool,
+    /// The pal strolls across the screen while the island is compact.
+    #[serde(default = "default_wander")]
+    pub wander: bool,
     pub auto_close_interval: f64,
     pub absence_interval: f64,
     pub active_integrations: Vec<String>,
@@ -50,6 +57,14 @@ fn default_language() -> String {
     "en".to_string()
 }
 
+fn default_voice() -> bool {
+    true
+}
+
+fn default_wander() -> bool {
+    true
+}
+
 fn default_theme() -> String {
     "onyx".to_string()
 }
@@ -79,6 +94,8 @@ impl Default for Settings {
         Self {
             sound_enabled: true,
             sound_volume: 0.12,
+            voice_enabled: default_voice(),
+            wander: default_wander(),
             auto_close_interval: 15.0,
             absence_interval: 180.0,
             active_integrations: vec![

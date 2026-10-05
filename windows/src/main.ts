@@ -54,7 +54,11 @@ async function main() {
     }
   });
 
-  await onEvent<null>("screen-changed", () => void Bridge.reposition());
+  await onEvent<null>("screen-changed", async () => {
+    // Rust re-centres the window first; the walker then starts from there.
+    await Bridge.reposition();
+    island.walker.reanchor();
+  });
 
   // The settings window writes preferences; apply them here without a restart.
   await onEvent<Settings>("settings-changed", (s) => {

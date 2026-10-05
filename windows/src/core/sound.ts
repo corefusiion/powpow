@@ -15,6 +15,9 @@ export type SoundName = (typeof SOUND_NAMES)[number];
 class SoundEngine {
   enabled = true;
   volume = 0.12;
+  voiceEnabled = true;
+  /** BCP-47 for the spoken lines: the same language the island reads in. */
+  lang = "en-US";
 
   private ctx: AudioContext | null = null;
   private master: GainNode | null = null;
@@ -82,6 +85,33 @@ class SoundEngine {
 
   setEnabled(on: boolean) {
     this.enabled = on;
+  }
+
+  setVoice(on: boolean, lang: string) {
+    this.voiceEnabled = on;
+    this.lang = lang;
+  }
+
+  /**
+   * The pal talking. SpeechSynthesis lives in the WebView, so no Rust and no
+   * audio file is involved: one line at a time (a new line cancels the one
+   * before it), silent when the island is muted or the voice is off.
+   */
+  say(text: string) {
+    if (!this.enabled || !this.voiceEnabled || !text) return;
+    const synth = typeof window !== "undefined" ? window.speechSynthesis : undefined;
+    if (!synth) return;
+    try {
+      synth.cancel();
+      const line = new SpeechSynthesisUtterance(text);
+      line.lang = this.lang;
+      line.rate = 1.05;
+      // The slider runs 0-0.2 like the WAV player; speech wants 0-1.
+      line.volume = Math.min(1, this.volume * 5);
+      synth.speak(line);
+    } catch {
+      /* a missing voice must never break the island, like a missing WAV */
+    }
   }
 
   play(name: SoundName | string) {
