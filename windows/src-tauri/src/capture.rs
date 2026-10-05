@@ -31,12 +31,6 @@ use windows::Win32::UI::WindowsAndMessaging::{
     GetCursorPos, GetForegroundWindow, GetWindowRect, GetWindowTextW, GetWindowThreadProcessId,
     IsIconic, WindowFromPoint,
 };
-use windows::Win32::System::ProcessStatus::GetModuleBaseNameW;
-use windows::Win32::System::Threading::{OpenProcess, PROCESS_QUERY_LIMITED_INFORMATION};
-use windows::Win32::UI::WindowsAndMessaging::{
-    GetCursorPos, GetWindowRect, GetWindowTextW, GetWindowThreadProcessId, IsIconic,
-    WindowFromPoint,
-};
 
 use crate::files;
 
@@ -160,7 +154,7 @@ pub fn attach(app: &AppHandle) -> Result<AttachedWindow, String> {
         return Err("no window under the cursor".into());
     }
     check_target(app, target, "drop Mochi on another app's window, not on the island")?;
-    save(app, target)
+    save(target)
 }
 
 /// The window the user was working in before clicking the roaming pal. The pal
@@ -171,7 +165,7 @@ pub fn attach_active(app: &AppHandle) -> Result<AttachedWindow, String> {
         return Err("no active window".into());
     }
     check_target(app, target, "capture another app's window, not Powpow's own")?;
-    save(app, target)
+    save(target)
 }
 
 /// Ours or minimized are clean errors, never a capture.
@@ -185,7 +179,7 @@ fn check_target(app: &AppHandle, target: HWND, ours_msg: &str) -> Result<(), Str
     Ok(())
 }
 
-fn save(app: &AppHandle, target: HWND) -> Result<AttachedWindow, String> {
+fn save(target: HWND) -> Result<AttachedWindow, String> {
     let mut rect = RECT::default();
     unsafe {
         GetWindowRect(target, &mut rect).map_err(|_| "cannot read window bounds".to_string())?;
