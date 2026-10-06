@@ -1,4 +1,5 @@
 import { EmbasaAvatarElement } from './avatar/EmbasaAvatarElement';
+import { MascotSelector } from './avatar/MascotSelector';
 import type { Emotion, Gesture } from './avatar/types';
 import { DotPal } from '../../src/index.js';
 
@@ -181,3 +182,25 @@ document.getElementById('btn-mini-walk')?.addEventListener('click', () => {
     miniPal.style.transform = 'scaleX(1)';
   }
 });
+
+// 4. Instancia o Seletor de Mascotes Completo (Embasa + 52 do page-mascot)
+const selectorMount = document.getElementById('mascot-selector-mount');
+if (selectorMount) {
+  const selector = new MascotSelector({
+    currentMascot: 'embasa',
+    onSelect: (mascotId, info) => {
+      console.log(`Mascote selecionado: ${mascotId} (${info.name})`);
+      if (miniPal) {
+        if (mascotId === 'embasa') {
+          miniPal.character = 'embasa';
+          miniPal.say('💧 Eu sou a Gota Embasa! Tratando água com carinho.');
+        } else {
+          // Para outros mascotes, avisa o usuário com balão
+          miniPal.say(`Mascote ativado: ${info.name}!`);
+        }
+      }
+    },
+  });
+  selectorMount.appendChild(selector.container);
+}
+

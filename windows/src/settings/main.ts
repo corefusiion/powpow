@@ -3,6 +3,12 @@
 // the integrations all live here; API keys go to the OS credential store.
 
 import "./settings.css";
+import "../avatar/mascot-selector.css";
+import { MascotSelector } from "../avatar/MascotSelector";
+import { registerAllPageMascots } from "../avatar/registerMascots";
+
+// Registra todos os mascotes do page-mascot no runtime
+registerAllPageMascots();
 import { Bridge, onEvent, type HookPreview, type HookStatus } from "../core/bridge";
 import { DEFAULT_SETTINGS, type Settings } from "../core/state";
 import { t } from "../core/i18n";
@@ -1020,6 +1026,35 @@ function characterRow(): HTMLElement {
   panel.append(maker);
   panel.hidden = settings.character !== "custom";
 
+  const galleryPanel = h("div", { class: "gallery-wrap", style: "margin-top: 16px; width: 100%;" });
+  galleryPanel.hidden = true;
+
+  const selector = new MascotSelector({
+    currentMascot: settings.character ?? "embasa",
+    onSelect: (id) => {
+      let opt = Array.from(select.options).find((o) => o.value === id);
+      if (!opt) {
+        opt = h("option", { value: id, text: id });
+        select.append(opt);
+      }
+      select.value = id;
+      settings.character = id;
+      preview.character = id;
+      panel.hidden = settings.character !== "custom";
+      void save();
+    },
+  });
+  galleryPanel.append(selector.container);
+
+  const galleryToggle = h("button", {
+    style: "background: rgba(4, 149, 244, 0.2); border-color: rgba(4, 149, 244, 0.5); color: #38bdf8;",
+    text: "🎨 " + t("Galeria de Mascotes (53)"),
+  });
+  galleryToggle.addEventListener("click", () => {
+    galleryPanel.hidden = !galleryPanel.hidden;
+    if (!galleryPanel.hidden) panel.hidden = true;
+  });
+
   const makerToggle = h("button", { text: t("Make your own pal") });
   makerToggle.addEventListener("click", () => {
     panel.hidden = !panel.hidden;
@@ -1041,9 +1076,11 @@ function characterRow(): HTMLElement {
       { class: "row" },
       h("label", { text: t("Character") }),
       select,
+      galleryToggle,
       makerToggle,
       preview,
     ),
+    galleryPanel,
     panel,
   );
 }

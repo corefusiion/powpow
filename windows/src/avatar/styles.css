@@ -1,4 +1,4 @@
-/* ── Embasa Avatar — Estilos e Animações de Alta Fidelidade ── */
+/* ── Embasa Avatar — Estilos e Animações de Alta Fidelidade (Rock-Solid Geometry) ── */
 
 .embasa-avatar-container {
   display: inline-block;
@@ -17,50 +17,124 @@
   transition: transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
-/* ── Elementos Semânticos Base ── */
-#body,
-#head,
-#left-eye,
-#right-eye,
-#left-pupil,
-#right-pupil,
-#left-eyebrow,
-#right-eyebrow,
-#mouth,
-#left-arm,
-#right-arm,
-#left-hand,
-#right-hand,
-#left-leg,
-#right-leg,
-#left-foot,
-#right-foot,
-#ribbon,
-#ribbon-back,
-#water-droplets {
-  transform-box: fill-box;
-  transform-origin: center;
-  transition: transform 0.28s cubic-bezier(0.34, 1.3, 0.64, 1), opacity 0.2s ease;
+/* ── Elementos Semânticos Base com Âncoras Absolutas no ViewBox (1024x1024) ── */
+#head {
+  transform-box: view-box;
+  transform-origin: 554px 380px;
+  transform: rotate(var(--head-tilt, 0deg));
+  transition: transform 0.3s cubic-bezier(0.34, 1.3, 0.64, 1);
 }
 
-/* ── Respiração Suave (Breathing) ── */
-.embasa-avatar-container.is-breathing #body {
-  transform-origin: 50% 85%;
-  animation: embasa-breath 3.8s ease-in-out infinite;
+#left-eye {
+  transform-box: view-box;
+  transform-origin: 418px 416px;
+  transition: transform 0.22s cubic-bezier(0.34, 1.4, 0.64, 1);
+}
+
+#right-eye {
+  transform-box: view-box;
+  transform-origin: 656px 377px;
+  transition: transform 0.22s cubic-bezier(0.34, 1.4, 0.64, 1);
+}
+
+#left-pupil {
+  transform-box: view-box;
+  transform-origin: 418px 425px;
+  transform: translate(calc(var(--gaze-x, 0) * 14px), calc(var(--gaze-y, 0) * 11px));
+  transition: transform 0.12s ease-out;
+}
+
+#right-pupil {
+  transform-box: view-box;
+  transform-origin: 656px 377px;
+  transform: translate(calc(var(--gaze-x, 0) * 14px), calc(var(--gaze-y, 0) * 11px));
+  transition: transform 0.12s ease-out;
+}
+
+#left-eyebrow {
+  transform-box: view-box;
+  transform-origin: 398px 302px;
+  transform: translateY(var(--eb-l-y, 0px)) rotate(var(--eb-l-rot, 0deg));
+  transition: transform 0.25s ease-out;
+}
+
+#right-eyebrow {
+  transform-box: view-box;
+  transform-origin: 627px 249px;
+  transform: translateY(var(--eb-r-y, 0px)) rotate(var(--eb-r-rot, 0deg));
+  transition: transform 0.25s ease-out;
+}
+
+#mouth {
+  transform-box: view-box;
+  transform-origin: 548px 519px;
+  transition: transform 0.22s cubic-bezier(0.34, 1.3, 0.64, 1);
+}
+
+#left-arm,
+#left-hand {
+  transform-box: view-box;
+  transform-origin: 245px 515px;
+  transition: transform 0.3s cubic-bezier(0.34, 1.3, 0.64, 1);
+}
+
+#right-arm,
+#right-hand {
+  transform-box: view-box;
+  transform-origin: 760px 470px;
+  transition: transform 0.3s cubic-bezier(0.34, 1.3, 0.64, 1);
+}
+
+#left-leg,
+#left-foot {
+  transform-box: view-box;
+  transform-origin: 430px 730px;
+  transition: transform 0.3s ease;
+}
+
+#right-leg,
+#right-foot {
+  transform-box: view-box;
+  transform-origin: 600px 760px;
+  transition: transform 0.3s ease;
+}
+
+#ribbon {
+  transform-box: view-box;
+  transform-origin: 272px 662px;
+  transition: transform 0.3s ease;
+  animation: ribbon-sway 4.8s ease-in-out infinite;
+}
+
+#ribbon-back {
+  transform-box: view-box;
+  transform-origin: 519px 506px;
+  transition: transform 0.3s ease;
+  animation: ribbon-sway-back 5.4s ease-in-out infinite;
+}
+
+#water-droplets {
+  animation: droplets-pulse 3.2s ease-in-out infinite;
+}
+
+/* ── Respiração Coesa e Natural (Sem Deformar ou Deslocar o Corpo) ── */
+.embasa-avatar-container.is-breathing .embasa-avatar-svg {
+  transform-origin: 519px 780px;
+  animation: embasa-breath 3.6s ease-in-out infinite;
 }
 
 @keyframes embasa-breath {
   0%, 100% {
-    transform: scale(1) translateY(0);
+    transform: scale(1, 1) translateY(0);
   }
   50% {
-    transform: scale(1.018, 0.985) translateY(2.5px);
+    transform: scale(1.018, 0.985) translateY(2.8px);
   }
 }
 
 /* ── Flutuação Idle ── */
 .embasa-avatar-container.is-idle-moving {
-  animation: embasa-float 4.5s ease-in-out infinite;
+  animation: embasa-float 4.8s ease-in-out infinite;
 }
 
 @keyframes embasa-float {
@@ -68,27 +142,17 @@
     transform: translateY(0px) rotate(0deg);
   }
   50% {
-    transform: translateY(-9px) rotate(0.8deg);
+    transform: translateY(-8px) rotate(0.6deg);
   }
 }
 
-/* ── Ribbon Flutuante (Front & Back) ── */
-#ribbon {
-  transform-origin: 30% 70%;
-  animation: ribbon-sway 5s ease-in-out infinite;
-}
-
-#ribbon-back {
-  transform-origin: 70% 30%;
-  animation: ribbon-sway-back 5.8s ease-in-out infinite;
-}
-
+/* ── Animações do Ribbon ── */
 @keyframes ribbon-sway {
   0%, 100% {
     transform: rotate(0deg) skewX(0deg);
   }
   50% {
-    transform: rotate(1.8deg) skewX(1deg) scale(1.01);
+    transform: rotate(1.2deg) skewX(0.8deg);
   }
 }
 
@@ -97,13 +161,8 @@
     transform: rotate(0deg);
   }
   50% {
-    transform: rotate(-1.4deg) translateY(-2px);
+    transform: rotate(-1.1deg) translateY(-2px);
   }
-}
-
-/* ── Gotículas e Splash ── */
-#water-droplets {
-  animation: droplets-pulse 3.2s ease-in-out infinite;
 }
 
 @keyframes droplets-pulse {
@@ -117,21 +176,14 @@
   }
 }
 
-/* ── Cabeça (Tilt) ── */
-#head {
-  transform-origin: 50% 70%;
-  transform: rotate(var(--head-tilt, 0deg));
-}
-
-/* ── Olhos e Piscar (Blink) ── */
-#left-eye,
-#right-eye {
-  transform-origin: center center;
-}
-
+/* ── Olhos e Piscar (Blink) Perfeito no Centro da Íris ── */
 .is-blinking #left-eye,
+.eye-blink #left-eye {
+  transform: scaleY(0.06) !important;
+  transition: transform 0.08s ease-in !important;
+}
+
 .is-blinking #right-eye,
-.eye-blink #left-eye,
 .eye-blink #right-eye {
   transform: scaleY(0.06) !important;
   transition: transform 0.08s ease-in !important;
@@ -144,106 +196,71 @@
 
 .eye-happy #left-eye,
 .eye-happy #right-eye {
-  transform: scale(1.04, 0.88) translateY(-2px);
+  transform: scale(1.05, 0.88) translateY(-2px);
 }
 
 .eye-worried #left-eye {
-  transform: rotate(-7deg) scale(0.96);
+  transform: rotate(-6deg) scale(0.96);
 }
 
 .eye-worried #right-eye {
-  transform: rotate(7deg) scale(0.96);
-}
-
-/* ── Gaze / Rastreamento dos Olhos (Pupils) ── */
-#left-pupil {
-  transform-origin: center center;
-  transform: translate(calc(var(--gaze-x, 0) * 16px), calc(var(--gaze-y, 0) * 13px));
-}
-
-#right-pupil {
-  transform-origin: center center;
-  transform: translate(calc(var(--gaze-x, 0) * 16px), calc(var(--gaze-y, 0) * 13px));
+  transform: rotate(6deg) scale(0.96);
 }
 
 /* Posições fixas de olhar */
 .eye-looking-left #left-pupil,
 .eye-looking-left #right-pupil {
-  transform: translate(-15px, 0);
+  transform: translate(-14px, 0);
 }
 
 .eye-looking-right #left-pupil,
 .eye-looking-right #right-pupil {
-  transform: translate(15px, 0);
+  transform: translate(14px, 0);
 }
 
 .eye-looking-up #left-pupil,
 .eye-looking-up #right-pupil {
-  transform: translate(0, -13px);
+  transform: translate(0, -11px);
 }
 
 .eye-looking-down #left-pupil,
 .eye-looking-down #right-pupil {
-  transform: translate(0, 13px);
+  transform: translate(0, 11px);
 }
 
-/* ── Sobrancelhas ── */
-#left-eyebrow {
-  transform-origin: 80% 50%;
-  transform: translateY(var(--eb-l-y, 0px)) rotate(var(--eb-l-rot, 0deg));
-}
-
-#right-eyebrow {
-  transform-origin: 20% 50%;
-  transform: translateY(var(--eb-r-y, 0px)) rotate(var(--eb-r-rot, 0deg));
-}
-
-/* ── Boca & Lip Sync (Fala) ── */
-#mouth {
-  transform-origin: center center;
-}
-
+/* ── Boca & Lip Sync ── */
 .mouth-smile #mouth {
-  transform: scale(1.06, 1.04) translateY(-1px);
+  transform: scale(1.05, 1.04) translateY(-1px);
 }
 
 .mouth-open #mouth {
-  transform: scale(1.12, 1.25) translateY(2px);
+  transform: scale(1.1, 1.22) translateY(2px);
 }
 
 .mouth-surprised #mouth {
-  transform: scale(1.15, 1.35) translateY(3px);
+  transform: scale(1.12, 1.3) translateY(3px);
 }
 
 .mouth-worried #mouth {
-  transform: scale(0.92, 0.85) translateY(-3px) rotate(3deg);
+  transform: scale(0.94, 0.88) translateY(-3px) rotate(2.5deg);
 }
 
 .mouth-talking #mouth,
 .is-speaking #mouth {
-  animation: embasa-mouth-talk 0.28s ease-in-out infinite alternate;
+  animation: embasa-mouth-talk 0.26s ease-in-out infinite alternate;
 }
 
 @keyframes embasa-mouth-talk {
   0% {
-    transform: scale(1, 0.85) translateY(0);
-  }
-  50% {
-    transform: scale(1.12, 1.28) translateY(2px);
+    transform: scale(0.96, 0.92);
   }
   100% {
-    transform: scale(0.95, 1.1) translateY(1px);
+    transform: scale(1.08, 1.22) translateY(2px);
   }
 }
 
 /* ── Gestos ── */
-
 /* Wave (Aceno com braço direito) */
-#right-arm,
-#right-hand {
-  transform-origin: 15% 45%;
-}
-
 .gesture-wave #right-arm,
 .gesture-wave #right-hand {
   animation: embasa-arm-wave 0.85s ease-in-out infinite alternate;
@@ -254,10 +271,10 @@
     transform: rotate(0deg) translateY(0);
   }
   50% {
-    transform: rotate(-18deg) translateY(-12px);
+    transform: rotate(-16deg) translateY(-10px);
   }
   100% {
-    transform: rotate(-28deg) translateY(-18px);
+    transform: rotate(-25deg) translateY(-16px);
   }
 }
 
@@ -269,25 +286,20 @@
 
 @keyframes embasa-thumbs {
   0%, 100% {
-    transform: rotate(-16deg) translateY(-14px);
+    transform: rotate(-14deg) translateY(-12px);
   }
   50% {
-    transform: rotate(-24deg) translateY(-20px) scale(1.05);
+    transform: rotate(-22deg) translateY(-18px) scale(1.04);
   }
 }
 
 /* Pointing (Apontar) */
 .gesture-pointing #right-arm,
 .gesture-pointing #right-hand {
-  transform: rotate(-12deg) translateX(12px) translateY(-8px);
+  transform: rotate(-10deg) translateX(10px) translateY(-8px);
 }
 
 /* Celebrating (Comemoração com ambos os braços) */
-#left-arm,
-#left-hand {
-  transform-origin: 85% 45%;
-}
-
 .gesture-celebrating #left-arm,
 .gesture-celebrating #left-hand {
   animation: embasa-arm-l-celeb 0.7s ease-in-out infinite alternate;
@@ -303,7 +315,7 @@
     transform: rotate(0deg);
   }
   100% {
-    transform: rotate(26deg) translateY(-20px);
+    transform: rotate(22deg) translateY(-18px);
   }
 }
 
@@ -312,18 +324,18 @@
     transform: rotate(0deg);
   }
   100% {
-    transform: rotate(-26deg) translateY(-20px);
+    transform: rotate(-22deg) translateY(-18px);
   }
 }
 
-/* Thinking (Dúvida / Pensando) */
+/* Thinking (Pensando) */
 .gesture-thinking #right-arm,
 .gesture-thinking #right-hand {
-  transform: rotate(-32deg) translateY(-22px) translateX(-10px);
+  transform: rotate(-26deg) translateY(-18px) translateX(-8px);
 }
 
 .gesture-thinking #head {
-  transform: rotate(8deg);
+  transform: rotate(7deg);
 }
 
 /* ── Variações de Emoção ── */
@@ -341,7 +353,7 @@
     transform: translateY(0);
   }
   100% {
-    transform: translateY(-12px) scale(1.02);
+    transform: translateY(-10px) scale(1.02);
   }
 }
 
@@ -354,7 +366,7 @@
     transform: translateY(0) scale(1);
   }
   100% {
-    transform: translateY(-16px) scale(1.03);
+    transform: translateY(-14px) scale(1.03);
   }
 }
 
