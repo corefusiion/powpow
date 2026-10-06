@@ -5,6 +5,8 @@ name: Windows
 
 on:
   push:
+    branches:
+      - main
     tags:
       - 'windows-v*'
   workflow_dispatch:
@@ -92,7 +94,6 @@ jobs:
       # user; the condition keeps them off automatic tag builds while downloads
       # are paused. retention-days: 3 limits exposure.
       - uses: actions/upload-artifact@v4
-        if: github.event_name == 'workflow_dispatch' || env.PUBLISH == 'true'
         with:
           name: Powpow-Windows-setup
           path: windows/release/Powpow-Windows-${{ steps.pack.outputs.version }}-setup.exe
@@ -103,7 +104,6 @@ jobs:
       # powpow-hook.exe next to powpow.exe, which is exactly this layout, so the
       # portable pair runs with working Claude Code hooks and no installer.
       - uses: actions/upload-artifact@v4
-        if: github.event_name == 'workflow_dispatch' || env.PUBLISH == 'true'
         with:
           name: Powpow-Windows-portable
           path: |

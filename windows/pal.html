@@ -7,6 +7,22 @@
   </head>
   <body>
     <div id="pal-root">
+      <!-- Thought bubble popup for sarcastic thoughts -->
+      <div id="pal-thought" class="pal-thought" hidden>
+        <div id="pal-thought-content"></div>
+        <div class="pal-thought-bubble-dot dot-1"></div>
+        <div class="pal-thought-bubble-dot dot-2"></div>
+      </div>
+
+      <!-- Close button bite toy -->
+      <div id="pal-close-bite" class="pal-close-bite" hidden>
+        <div class="pal-close-icon">✕</div>
+        <div class="pal-chomp-tag">NHAC! 😋</div>
+      </div>
+
+      <!-- Mud and water splatters container -->
+      <div id="pal-splatters"></div>
+
       <!-- The card: clicked off the character, its meaning belongs to the island -->
       <div id="pal-card" hidden>
         <button class="pal-item" data-action="analyze" data-label="Screen analysis"></button>

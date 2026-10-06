@@ -249,6 +249,67 @@ export const characters = {
     }),
   },
 
+  embasa: {
+    label: 'Embasa (Gota)',
+    color: '#0495f4',
+    tap: 'jump',
+    look: 8,
+    mouth: [100, 168],
+    cheek: 40,
+    eyes: { at: [[78, 136], [122, 136]], r: 12 },
+    render: ({ id, body }) => ({
+      defs: `
+        <linearGradient id="${id('embasa_ribbon')}" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0%" stop-color="#6DC152"/>
+          <stop offset="45%" stop-color="#F7F14E"/>
+          <stop offset="75%" stop-color="#1FBCF0"/>
+          <stop offset="100%" stop-color="#0454B0"/>
+        </linearGradient>
+        <radialGradient id="${id('embasa_body')}" cx="45%" cy="35%" r="65%">
+          <stop offset="0%" stop-color="#31BBF8"/>
+          <stop offset="60%" stop-color="#0495F4"/>
+          <stop offset="100%" stop-color="#0454B0"/>
+        </radialGradient>
+      `,
+      body: `
+        <!-- Water drop silhouette -->
+        <path fill="url(#${id('embasa_body')})" d="M100 24 C100 24 40 105 32 152 C24 198 56 262 100 262 C144 262 176 198 168 152 C160 105 100 24 100 24 Z"/>
+        <!-- Highlight curve -->
+        <path fill="#ffffff" opacity="0.32" d="M100 36 C100 36 62 105 52 144 C44 176 48 206 54 220 C46 200 44 165 56 136 C66 102 100 36 100 36 Z"/>
+      `,
+      accessories: `
+        <!-- Embasa signature colorful fluid ribbon -->
+        <path fill="none" stroke="url(#${id('embasa_ribbon')})" stroke-width="14" stroke-linecap="round" d="M22 195 C14 160 48 155 76 170 C114 190 148 175 166 150 C182 128 174 195 142 225 C116 250 54 246 36 218 Z"/>
+        <path fill="none" stroke="#6DC152" stroke-width="4" stroke-linecap="round" d="M28 205 C38 230 76 244 122 232 C154 224 172 190 162 165"/>
+      `,
+      face: `
+        <!-- Big expressive cartoon eyes with pupils and highlights -->
+        <g class="dp-look">
+          <g class="dp-blink">
+            <!-- Left eye -->
+            <ellipse cx="78" cy="136" rx="14" ry="17" fill="#ffffff"/>
+            <ellipse cx="80" cy="136" rx="9" ry="12" fill="#021836"/>
+            <ellipse cx="81" cy="138" rx="6" ry="8" fill="#0495F4"/>
+            <circle cx="76" cy="130" r="4.2" fill="#ffffff"/>
+            <circle cx="83" cy="142" r="2.1" fill="#ffffff"/>
+            <!-- Left eyebrow -->
+            <path d="M66 114 Q78 110 88 116" stroke="#0454B0" stroke-width="3" stroke-linecap="round" fill="none"/>
+          </g>
+          <g class="dp-blink">
+            <!-- Right eye -->
+            <ellipse cx="122" cy="136" rx="14" ry="17" fill="#ffffff"/>
+            <ellipse cx="120" cy="136" rx="9" ry="12" fill="#021836"/>
+            <ellipse cx="119" cy="138" rx="6" ry="8" fill="#0495F4"/>
+            <circle cx="116" cy="130" r="4.2" fill="#ffffff"/>
+            <circle cx="123" cy="142" r="2.1" fill="#ffffff"/>
+            <!-- Right eyebrow -->
+            <path d="M112 116 Q122 110 134 114" stroke="#0454B0" stroke-width="3" stroke-linecap="round" fill="none"/>
+          </g>
+        </g>
+      `,
+    }),
+  },
+
   byte: {
     label: 'Byte',
     color: '#16c6ae',

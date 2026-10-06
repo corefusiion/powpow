@@ -64,6 +64,7 @@ export default defineConfig({
         island: resolve(__dirname, "index.html"),
         pal: resolve(__dirname, "pal.html"),
         settings: resolve(__dirname, "settings.html"),
+        avatarDemo: resolve(__dirname, "avatar-demo.html"),
       },
     },
   },

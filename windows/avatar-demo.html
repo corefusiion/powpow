@@ -1,0 +1,374 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Avatar Interativo Embasa — Playground & Demonstração</title>
+    <link rel="stylesheet" href="/src/avatar/styles.css" />
+    <style>
+      :root {
+        --bg-main: #0a1128;
+        --bg-panel: rgba(16, 26, 56, 0.85);
+        --border-panel: rgba(4, 149, 244, 0.25);
+        --accent-blue: #0495f4;
+        --accent-cyan: #1fbcf0;
+        --accent-green: #6dc152;
+        --accent-yellow: #f7f14e;
+        --text-main: #f8fafc;
+        --text-sub: #94a3b8;
+      }
+
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+
+      body {
+        font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+        background: radial-gradient(circle at 50% 20%, #0d1b46 0%, #070d1e 100%);
+        color: var(--text-main);
+        min-height: 100vh;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        padding: 24px 16px;
+      }
+
+      header {
+        text-align: center;
+        margin-bottom: 24px;
+      }
+
+      header h1 {
+        font-size: 26px;
+        font-weight: 800;
+        background: linear-gradient(135deg, #38bdf8 0%, #60a5fa 50%, #4ade80 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        letter-spacing: -0.5px;
+      }
+
+      header p {
+        color: var(--text-sub);
+        font-size: 14px;
+        margin-top: 6px;
+      }
+
+      .demo-layout {
+        display: grid;
+        grid-template-columns: 1fr 380px;
+        gap: 24px;
+        max-width: 1060px;
+        width: 100%;
+      }
+
+      @media (max-width: 860px) {
+        .demo-layout {
+          grid-template-columns: 1fr;
+        }
+      }
+
+      .stage-card {
+        background: var(--bg-panel);
+        border: 1px solid var(--border-panel);
+        border-radius: 20px;
+        padding: 28px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        min-height: 480px;
+        position: relative;
+        box-shadow: 0 16px 40px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+        backdrop-filter: blur(12px);
+      }
+
+      .avatar-mount {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 100%;
+        max-width: 380px;
+        height: 380px;
+      }
+
+      .status-pill {
+        position: absolute;
+        top: 16px;
+        left: 16px;
+        padding: 6px 14px;
+        background: rgba(4, 149, 244, 0.15);
+        border: 1px solid rgba(4, 149, 244, 0.4);
+        border-radius: 20px;
+        font-size: 12px;
+        font-weight: 600;
+        color: #38bdf8;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+      }
+
+      .status-pill .dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: #22c55e;
+        box-shadow: 0 0 8px #22c55e;
+      }
+
+      .controls-card {
+        background: var(--bg-panel);
+        border: 1px solid var(--border-panel);
+        border-radius: 20px;
+        padding: 20px;
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+        box-shadow: 0 16px 40px rgba(0, 0, 0, 0.4);
+        backdrop-filter: blur(12px);
+      }
+
+      .section-title {
+        font-size: 12px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.8px;
+        color: #38bdf8;
+        margin-bottom: 6px;
+      }
+
+      .btn-grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 6px;
+      }
+
+      .btn {
+        background: rgba(255, 255, 255, 0.06);
+        border: 1px solid rgba(255, 255, 255, 0.12);
+        color: #e2e8f0;
+        padding: 7px 10px;
+        border-radius: 8px;
+        font-size: 12px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.18s ease;
+        text-align: center;
+      }
+
+      .btn:hover {
+        background: rgba(4, 149, 244, 0.25);
+        border-color: rgba(4, 149, 244, 0.6);
+        color: #fff;
+        transform: translateY(-1px);
+      }
+
+      .btn.active {
+        background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%);
+        border-color: #38bdf8;
+        color: #fff;
+        box-shadow: 0 0 12px rgba(56, 189, 248, 0.4);
+      }
+
+      .toggle-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 6px 0;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+        font-size: 12.5px;
+        color: #cbd5e1;
+      }
+
+      .toggle-row:last-child {
+        border-bottom: none;
+      }
+
+      .switch {
+        position: relative;
+        display: inline-block;
+        width: 38px;
+        height: 20px;
+      }
+
+      .switch input {
+        opacity: 0;
+        width: 0;
+        height: 0;
+      }
+
+      .slider {
+        position: absolute;
+        cursor: pointer;
+        inset: 0;
+        background-color: rgba(255, 255, 255, 0.15);
+        transition: 0.2s;
+        border-radius: 20px;
+      }
+
+      .slider:before {
+        position: absolute;
+        content: "";
+        height: 14px;
+        width: 14px;
+        left: 3px;
+        bottom: 3px;
+        background-color: white;
+        transition: 0.2s;
+        border-radius: 50%;
+      }
+
+      input:checked + .slider {
+        background-color: #0284c7;
+      }
+
+      input:checked + .slider:before {
+        transform: translateX(18px);
+      }
+
+      .gaze-pad {
+        width: 100%;
+        height: 80px;
+        background: rgba(0, 0, 0, 0.3);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 10px;
+        position: relative;
+        cursor: crosshair;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+
+      .gaze-reticle {
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+        background: #38bdf8;
+        box-shadow: 0 0 8px #38bdf8;
+        position: absolute;
+        transform: translate(-50%, -50%);
+        pointer-events: none;
+      }
+
+      .code-card {
+        background: rgba(3, 7, 18, 0.7);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 10px;
+        padding: 10px 12px;
+        font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+        font-size: 11px;
+        color: #38bdf8;
+        overflow-x: auto;
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      <h1>Avatar Interativo Embasa</h1>
+      <p>Mascote gota de água 3D com ribbon oficial, controle por código e 18 IDs semânticos</p>
+    </header>
+
+    <div class="demo-layout">
+      <!-- Palco Principal -->
+      <div class="stage-card">
+        <div class="status-pill">
+          <span class="dot"></span>
+          <span id="status-label">Emotion: neutral | Idle</span>
+        </div>
+
+        <div id="avatar-mount" class="avatar-mount"></div>
+
+        <div style="margin-top: 16px; width: 100%;">
+          <div class="section-title">Código em tempo real</div>
+          <div id="code-preview" class="code-card">avatar.setEmotion("neutral");</div>
+        </div>
+      </div>
+
+      <!-- Controles Manuais -->
+      <div class="controls-card">
+        <!-- Emoções -->
+        <div>
+          <div class="section-title">Expressões (Emotions)</div>
+          <div class="btn-grid" id="emotions-grid">
+            <button class="btn active" data-emotion="neutral">Neutral</button>
+            <button class="btn" data-emotion="happy">Happy</button>
+            <button class="btn" data-emotion="excited">Excited</button>
+            <button class="btn" data-emotion="thinking">Thinking</button>
+            <button class="btn" data-emotion="surprised">Surprised</button>
+            <button class="btn" data-emotion="worried">Worried</button>
+            <button class="btn" data-emotion="sad">Sad</button>
+            <button class="btn" data-emotion="celebrating">Celebrating</button>
+            <button class="btn" data-emotion="error">Error</button>
+          </div>
+        </div>
+
+        <!-- Gestos -->
+        <div>
+          <div class="section-title">Gestos (Gestures)</div>
+          <div class="btn-grid" id="gestures-grid">
+            <button class="btn active" data-gesture="idle">Idle</button>
+            <button class="btn" data-gesture="wave">Wave 👋</button>
+            <button class="btn" data-gesture="thumbs-up">Thumbs 👍</button>
+            <button class="btn" data-gesture="pointing">Point 👉</button>
+            <button class="btn" data-gesture="celebrating">Celebrate 🎉</button>
+            <button class="btn" data-gesture="thinking">Think 🤔</button>
+          </div>
+        </div>
+
+        <!-- Fala -->
+        <div>
+          <div class="section-title">Fala (Speech Animation)</div>
+          <div style="display: flex; gap: 8px;">
+            <button id="btn-speak-start" class="btn" style="flex: 1;">▶ Start Speaking</button>
+            <button id="btn-speak-stop" class="btn" style="flex: 1;">⏹ Stop Speaking</button>
+          </div>
+        </div>
+
+        <!-- Gaze Pad -->
+        <div>
+          <div class="section-title">Direção do Olhar (Gaze Pad)</div>
+          <div id="gaze-pad" class="gaze-pad">
+            <div id="gaze-reticle" class="gaze-reticle" style="left: 50%; top: 50%;"></div>
+            <span style="font-size: 11px; color: var(--text-sub); pointer-events: none;">Arraste para direcionar o olhar</span>
+          </div>
+        </div>
+
+        <!-- Comportamentos -->
+        <div>
+          <div class="section-title">Comportamentos</div>
+          <div class="toggle-row">
+            <span>Piscar automático (Blinking)</span>
+            <label class="switch">
+              <input type="checkbox" id="toggle-blink" checked />
+              <span class="slider"></span>
+            </label>
+          </div>
+          <div class="toggle-row">
+            <span>Respiração sutil (Breathing)</span>
+            <label class="switch">
+              <input type="checkbox" id="toggle-breath" checked />
+              <span class="slider"></span>
+            </label>
+          </div>
+          <div class="toggle-row">
+            <span>Flutuação idle (Movement)</span>
+            <label class="switch">
+              <input type="checkbox" id="toggle-idle" checked />
+              <span class="slider"></span>
+            </label>
+          </div>
+          <div class="toggle-row">
+            <span>Seguir o cursor (Eye Tracking)</span>
+            <label class="switch">
+              <input type="checkbox" id="toggle-tracking" />
+              <span class="slider"></span>
+            </label>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script type="module" src="/src/avatar-demo.ts"></script>
+  </body>
+</html>

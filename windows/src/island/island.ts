@@ -518,6 +518,7 @@ export class Island {
     switch (a.kind) {
       case "analyze": {
         try {
+          this.alert("prompt");
           const win = await Bridge.attachActiveWindow();
           State.droppedFile = { name: win.name, path: win.path };
           State.promptContext = { kind: "file", name: win.name, path: win.path };

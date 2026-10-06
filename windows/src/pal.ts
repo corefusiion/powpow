@@ -69,6 +69,109 @@ const searchOpenBtn = cardEl.querySelector<HTMLElement>('[data-action="search-op
 const searchInput = document.getElementById("pal-search-input") as HTMLInputElement;
 const engine = new BotEngine();
 
+// Mischievous features: sarcastic thoughts, close button biting, and splatters
+const thoughtEl = document.getElementById("pal-thought");
+const thoughtTextEl = document.getElementById("pal-thought-content");
+const closeBiteEl = document.getElementById("pal-close-bite");
+const splattersEl = document.getElementById("pal-splatters");
+
+let lastPrankTime = 0;
+const PRANK_INTERVAL_MS = 18000; // a random prank every ~18s
+
+const SARCASTIC_THOUGHTS = [
+  "Mais um bug que vai virar 'feature'...",
+  "Ele realmente vai compilar isso sem testar? Coragem...",
+  "git push --force na main numa terça-feira? Audacioso...",
+  "Esse código funciona puramente por intervenção divina.",
+  "Ctrl+C, Ctrl+V... a verdadeira arte da engenharia de software.",
+  "A tela tá linda, pena que a lógica tá chorando.",
+  "Fingindo que estou entendendo o que você tá digitando...",
+  "Mais café ou mais paciência? Vai precisar dos dois.",
+  "Quem precisa de documentação quando se tem fé e console.log?",
+  "Se der tela azul, a culpa foi do reinício de ontem!",
+  "Commit: 'ajustes finais agora vai final_mesmo_v2'...",
+  "// TODO: tratar esse erro depois. (Nunca tratou).",
+  "Olhando você debugar com print... que nostalgia dos anos 90!",
+  "Será que a IA vai substituir quem copia código do StackOverflow?",
+  "Respira fundo... falta pouco pro deploy dar ruim.",
+];
+
+function showSarcasticThought() {
+  if (!thoughtEl || !thoughtTextEl) return;
+  const thought = SARCASTIC_THOUGHTS[Math.floor(Math.random() * SARCASTIC_THOUGHTS.length)];
+  thoughtTextEl.textContent = thought;
+  thoughtEl.hidden = false;
+  engine.triggerEmote("wink");
+  if (pal) void pal.emote("star");
+  window.setTimeout(() => {
+    if (thoughtEl) thoughtEl.hidden = true;
+  }, 4800);
+}
+
+function biteCloseButton() {
+  if (!closeBiteEl) return;
+  closeBiteEl.classList.remove("is-chomped");
+  closeBiteEl.hidden = false;
+  engine.triggerEmote("surprised");
+  if (pal) void pal.emote("wide");
+
+  window.setTimeout(() => {
+    if (closeBiteEl) {
+      closeBiteEl.classList.add("is-chomped");
+      engine.triggerEmote("happy");
+      if (pal) void pal.emote("love");
+      window.setTimeout(() => {
+        if (closeBiteEl) closeBiteEl.hidden = true;
+      }, 1500);
+    }
+  }, 600);
+}
+
+function throwSplatters() {
+  if (!splattersEl) return;
+  splattersEl.innerHTML = "";
+  engine.triggerEmote("wink");
+  if (pal) void pal.emote("oops");
+
+  const colors = ["#452b14", "#2d4a22", "#0284c7", "#3b1a54", "#603813"];
+  for (let i = 0; i < 5; i++) {
+    const blob = document.createElement("div");
+    blob.className = "pal-splatter-blob";
+    const size = 12 + Math.random() * 20;
+    const left = 20 + Math.random() * 90;
+    const top = 30 + Math.random() * 100;
+    const color = colors[Math.floor(Math.random() * colors.length)];
+    const rot = Math.random() * 360;
+
+    blob.style.width = `${size}px`;
+    blob.style.height = `${size * (0.8 + Math.random() * 0.4)}px`;
+    blob.style.left = `${left}px`;
+    blob.style.top = `${top}px`;
+    blob.style.background = color;
+    blob.style.setProperty("--rot", `${rot}deg`);
+
+    splattersEl.appendChild(blob);
+  }
+
+  window.setTimeout(() => {
+    if (splattersEl) splattersEl.innerHTML = "";
+  }, 3600);
+}
+
+function maybeTriggerPrank(now: number) {
+  if (now - lastPrankTime < PRANK_INTERVAL_MS) return;
+  lastPrankTime = now;
+
+  const choice = Math.floor(Math.random() * 3);
+  if (choice === 0) {
+    showSarcasticThought();
+  } else if (choice === 1) {
+    biteCloseButton();
+  } else {
+    throwSplatters();
+  }
+}
+
 let screenInfo = { x: 0, y: 0, width: 1920, height: 1080, scale: 1 };
 let x = 0;
 let y = 0;
@@ -208,7 +311,10 @@ function tourPosts(): Pt[] {
   const midY = b.y0 + (b.y1 - b.y0) * 0.7;
   return [
     { x: b.x0, y: midY },
+    // Pousa na parte superior da tela (olhando o que digitamos)
+    clampTo({ x: screenInfo.x + (screenInfo.width - PAL_W) * 0.22, y: b.y0 + 4 }),
     clampTo({ x: screenInfo.x + (screenInfo.width - PAL_W) / 2, y: b.y1 - 24 }),
+    clampTo({ x: screenInfo.x + (screenInfo.width - PAL_W) * 0.78, y: b.y0 + 4 }),
     { x: b.x1, y: midY },
   ];
 }
@@ -287,6 +393,7 @@ function step(dt: number, now: number) {
       // The only randomness left: how long it lingers between the posts.
       idleUntil = now + IDLE_MIN + Math.random() * (IDLE_MAX - IDLE_MIN);
       tourAt = idleUntil;
+      maybeTriggerPrank(now);
     }
   }
   if (x !== ox || y !== oy) send();
@@ -299,7 +406,11 @@ function drawMochi(dt: number) {
   const hCss = BOT_SIZE + BOT_OVERHANG;
   const dpr = Math.min(2, window.devicePixelRatio || 1);
   engine.particleOverhang = BOT_OVERHANG;
-  if (eyeTo) {
+  if (y <= screenRect().y0 + 16) {
+    // Pousado no topo da tela: olha para baixo acompanhando a tela e o que digitamos
+    engine.lookX = Math.max(-0.6, Math.min(0.6, (cursorPos.x - (x + PAL_W / 2)) / 300));
+    engine.lookY = 1.0;
+  } else if (eyeTo) {
     const dx = eyeTo.x - (x + PAL_W / 2);
     const dy = eyeTo.y - (y + PAL_H / 2);
     const m = Math.max(40, Math.hypot(dx, dy));

@@ -157,15 +157,84 @@ pub fn attach(app: &AppHandle) -> Result<AttachedWindow, String> {
     save(target)
 }
 
+pub fn capture_screen() -> Result<AttachedWindow, String> {
+    unsafe {
+        use windows::Win32::UI::WindowsAndMessaging::{GetSystemMetrics, SM_CXSCREEN, SM_CYSCREEN};
+        let w = GetSystemMetrics(SM_CXSCREEN);
+        let h = GetSystemMetrics(SM_CYSCREEN);
+        let rect = RECT { left: 0, top: 0, right: w, bottom: h };
+        let (w, h, pixels) = capture(HWND(std::ptr::null_mut()), rect)?;
+        let img = image::RgbaImage::from_raw(w, h, pixels)
+            .ok_or_else(|| "captured image is corrupt".to_string())?;
+
+        let (w2, h2) = if w > 1568 {
+            let h2 = (h as f32 * 1568.0 / w as f32).round() as u32;
+            (1568, h2.max(1))
+        } else {
+            (w, h)
+        };
+        let img = image::imageops::resize(&img, w2, h2, image::imageops::FilterType::Triangle);
+
+        let dir = files::inbox_dir();
+        std::fs::create_dir_all(&dir).map_err(|e| e.to_string())?;
+        let stamp = std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .map(|d| d.as_secs())
+            .unwrap_or(0);
+        let dest = dir.join(format!("tela-{stamp}.png"));
+        img.save(&dest).map_err(|e| format!("cannot save capture: {e}"))?;
+        let size = std::fs::metadata(&dest).map(|m| m.len()).unwrap_or(0);
+
+        Ok(AttachedWindow {
+            name: dest
+                .file_name()
+                .map(|n| n.to_string_lossy().to_string())
+                .unwrap_or_else(|| "tela.png".into()),
+            path: dest.to_string_lossy().to_string(),
+            size,
+            app_name: "Tela".into(),
+            title: "Captura de tela".into(),
+        })
+    }
+}
+
 /// The window the user was working in before clicking the roaming pal. The pal
 /// is WS_EX_NOACTIVATE, so the click never changed what is in front.
 pub fn attach_active(app: &AppHandle) -> Result<AttachedWindow, String> {
-    let target = unsafe { GetForegroundWindow() };
-    if target.0.is_null() {
-        return Err("no active window".into());
+    let mut target = unsafe { GetForegroundWindow() };
+    let our_windows = ours(app);
+
+    if target.0.is_null() || our_windows.contains(&target) || unsafe { IsIconic(target) }.as_bool() {
+        let mut next = target;
+        while !next.0.is_null() {
+            next = unsafe { windows::Win32::UI::WindowsAndMessaging::GetWindow(next, windows::Win32::UI::WindowsAndMessaging::GW_HWNDNEXT) };
+            if next.0.is_null() {
+                break;
+            }
+            if !our_windows.contains(&next)
+                && !unsafe { IsIconic(next) }.as_bool()
+                && unsafe { windows::Win32::UI::WindowsAndMessaging::IsWindowVisible(next) }.as_bool()
+            {
+                let mut r = RECT::default();
+                if unsafe { GetWindowRect(next, &mut r) }.is_ok() {
+                    let w = r.right - r.left;
+                    let h = r.bottom - r.top;
+                    if w > 120 && h > 120 {
+                        target = next;
+                        break;
+                    }
+                }
+            }
+        }
     }
-    check_target(app, target, "capture another app's window, not Powpow's own")?;
-    save(target)
+
+    if !target.0.is_null() && !our_windows.contains(&target) && !unsafe { IsIconic(target) }.as_bool() {
+        if let Ok(attached) = save(target) {
+            return Ok(attached);
+        }
+    }
+
+    capture_screen()
 }
 
 /// Ours or minimized are clean errors, never a capture.
