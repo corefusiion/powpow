@@ -183,6 +183,23 @@ document.getElementById('btn-mini-walk')?.addEventListener('click', () => {
   }
 });
 
+// Acompanhar o mouse na área de caminhada
+miniWalkContainer?.addEventListener('mousemove', (e) => {
+  if (!miniPal) return;
+  const rect = miniPal.getBoundingClientRect();
+  const dx = e.clientX - (rect.left + rect.width / 2);
+  const dy = e.clientY - (rect.top + rect.height / 2);
+  const dist = Math.hypot(dx, dy);
+  if (dist > 0) {
+    const s = Math.tanh(dist / 140);
+    miniPal.lookAt((dx / dist) * s, (dy / dist) * s);
+  }
+});
+
+miniWalkContainer?.addEventListener('mouseleave', () => {
+  miniPal?.lookAt(0, 0);
+});
+
 // 4. Instancia o Seletor de Mascotes Completo (Embasa + 52 do page-mascot)
 const selectorMount = document.getElementById('mascot-selector-mount');
 if (selectorMount) {

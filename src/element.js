@@ -1095,6 +1095,9 @@ export class DotPal extends Base {
     for (const el of this.#lookEls) el.style.transform = t;
     if (this.#aeLook) this.#aeLook.style.transform = t;
     this.#applyEyeScale();
+    if (typeof this.#def?.onLook === 'function') {
+      try { this.#def.onLook(this, x, y, this.#svg); } catch {}
+    }
   }
 
   // -- internals -------------------------------------------------------------

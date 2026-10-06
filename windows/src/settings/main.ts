@@ -978,8 +978,8 @@ function buildMaker(onUse: (spec: Required<CustomPal>) => void): HTMLElement {
  */
 function characterRow(): HTMLElement {
   const preview = h("dot-pal", {
-    size: "48",
-    style: "width:48px;height:94px;pointer-events:none;flex:0 0 auto",
+    size: "64",
+    style: "width:64px;height:120px;pointer-events:none;flex:0 0 auto",
   });
   const select = h("select", {}) as HTMLSelectElement;
   // 1. Grupo Oficial Embasa

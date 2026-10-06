@@ -26,7 +26,7 @@ const PAL_H = 250;
 // body the dot-pal wears too — both sit on the centre of the body's box.
 const BOT_SIZE = 130;
 const BOT_OVERHANG = 40;
-const DP_SIZE = 78;
+const DP_SIZE = 106;
 
 // The stroll: a walk, not a dash, with pauses long enough to read as standing.
 const SPEED = 60;
@@ -427,6 +427,27 @@ function drawMochi(dt: number) {
   engine.draw(ctx, BOT_SIZE, hCss);
 }
 
+function updatePalGaze() {
+  if (!pal) return;
+  if (cursorAt >= 0) {
+    const eyeX = x + PAL_W / 2;
+    const eyeY = y + PAL_H / 2;
+    const dx = cursorPos.x - eyeX;
+    const dy = cursorPos.y - eyeY;
+    const dist = Math.hypot(dx, dy);
+    if (dist > 0) {
+      const s = Math.tanh(dist / 220);
+      const gx = Math.max(-1, Math.min(1, (dx / dist) * s));
+      const gy = Math.max(-1, Math.min(1, (dy / dist) * s));
+      pal.lookAt(gx, gy);
+    } else {
+      pal.lookAt(0, 0);
+    }
+  } else {
+    pal.lookAt(faceDir * 0.5, 0);
+  }
+}
+
 function tick(t: number) {
   raf = requestAnimationFrame(tick);
   const dt = Math.min(0.1, Math.max(0, (t - lastT) / 1000));
@@ -434,6 +455,7 @@ function tick(t: number) {
   frames++;
   step(dt, t);
   if (currentChar === "mochi") drawMochi(dt);
+  else if (pal) updatePalGaze();
 }
 
 /** Show the pal and let it walk, or park it and stop costing anything. */
@@ -614,6 +636,7 @@ async function main() {
   await onEvent<{ x: number; y: number; down: boolean }>("pal-cursor", (c) => {
     cursorPos = { x: c.x, y: c.y };
     cursorAt = performance.now();
+    updatePalGaze();
   });
   await onEvent<Settings>("settings-changed", (s) => {
     State.settings = { ...State.settings, ...s };

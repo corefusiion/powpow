@@ -64,6 +64,36 @@ export const PAGE_MASCOTS = [
   { id: 'rocket', label: 'Foguete (Rocket)', category: 'robots', color: '#ea2027' },
 ];
 
+const CELL_SIZE = 184;
+const TOTAL_SIZE = CELL_SIZE * 3; // 552
+const VIEW_X = 8;
+const VIEW_Y = 16;
+
+const LOOK_GRID = [
+  [2, 1], // 0: right (0 deg)
+  [2, 2], // 1: down-right (45 deg)
+  [1, 2], // 2: down (90 deg)
+  [0, 2], // 3: down-left (135 deg)
+  [0, 1], // 4: left (180 deg)
+  [0, 0], // 5: up-left (-135 deg)
+  [1, 0], // 6: up (-90 deg)
+  [2, 0], // 7: up-right (-45 deg)
+];
+
+function calcSpriteOffset(x, y) {
+  let col = 1;
+  let row = 1;
+  if (Math.hypot(x, y) >= 0.18) {
+    const angle = Math.atan2(y, x);
+    const sector = (Math.round((angle / (Math.PI * 2)) * 8) + 8) % 8;
+    [col, row] = LOOK_GRID[sector];
+  }
+  return {
+    x: VIEW_X - col * CELL_SIZE,
+    y: VIEW_Y - row * CELL_SIZE,
+  };
+}
+
 /**
  * Creates character definitions for all 52 page mascots.
  */
@@ -76,29 +106,37 @@ export function createPageMascotCharacters() {
       category: m.category,
       fur: false,
       tap: 'jump',
-      look: 8,
+      look: 5,
       mouth: [100, 172],
       cheek: 36,
+      onLook: (pal, x, y, svg) => {
+        const img = svg.querySelector('.dp-mascot-img');
+        if (!img) return;
+        const offset = calcSpriteOffset(x, y);
+        img.setAttribute('x', String(offset.x));
+        img.setAttribute('y', String(offset.y));
+      },
       render: ({ id }) => ({
         defs: `
           <clipPath id="${id('mascot_clip')}">
-            <rect x="25" y="45" width="150" height="150" rx="30"/>
+            <rect x="${VIEW_X}" y="${VIEW_Y}" width="${CELL_SIZE}" height="${CELL_SIZE}"/>
           </clipPath>
         `,
         body: `
-          <!-- Sombra e Base -->
-          <ellipse cx="100" cy="226" rx="55" ry="12" fill="#000000" opacity="0.22"/>
-          <!-- Sprite Center Cell com Mouse Tracking sutil -->
+          <!-- Soft floor shadow for grounding -->
+          <ellipse cx="100" cy="196" rx="46" ry="8" fill="#000000" opacity="0.14"/>
+          <!-- Mascot Interactive 3x3 Sprite Layer: 100% transparent background, tracks mouse -->
           <g clip-path="url(#${id('mascot_clip')})">
-            <g class="dp-look">
-              <image href="/mascots/${m.id}-directions.webp" x="-125" y="-105" width="450" height="450" preserveAspectRatio="none"/>
+            <g class="dp-blink">
+              <image class="dp-mascot-img" href="/mascots/${m.id}-directions.webp"
+                x="${VIEW_X - CELL_SIZE}" y="${VIEW_Y - CELL_SIZE}"
+                width="${TOTAL_SIZE}" height="${TOTAL_SIZE}"
+                preserveAspectRatio="none"/>
             </g>
           </g>
         `,
-        accessories: `
-          <rect x="25" y="45" width="150" height="150" rx="30" fill="none" stroke="${m.color}" stroke-width="2" opacity="0.35"/>
-        `,
-        face: ``,
+        accessories: '',
+        face: '',
       }),
     };
   }
