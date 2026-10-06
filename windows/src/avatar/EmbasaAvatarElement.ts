@@ -1,4 +1,4 @@
-import { EMBASA_GRADIENTS, EMBASA_PARTS } from './EmbasaAvatarData';
+import { EMBASA_DEFS, EMBASA_INNER_SVG } from './EmbasaAvatarData';
 import { AvatarStateMachine, EMOTION_PROFILES } from './stateMachine';
 import type {
   AvatarAPI,
@@ -11,7 +11,12 @@ import './styles.css';
 /**
  * Avatar Interativo Embasa em Web Component / Elemento Nativo DOM.
  * Pode ser instanciado via new EmbasaAvatarElement() ou <embasa-avatar>.
- * Implementa 100% da interface AvatarAPI solicitada.
+ * Implementa 100% da interface AvatarAPI solicitada:
+ * - 18 IDs semânticos acessíveis diretamente
+ * - Ordem nativa dos layers estritamente preservada (sem distorção 3D)
+ * - Rastreamento dos olhos e cursor do mouse
+ * - Blinking automático, breathing e floating idle
+ * - Lip sync ao falar
  */
 export class EmbasaAvatarElement extends HTMLElement implements AvatarAPI {
   private sm: AvatarStateMachine;
@@ -32,45 +37,15 @@ export class EmbasaAvatarElement extends HTMLElement implements AvatarAPI {
     this.svgEl = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
     this.svgEl.setAttribute('class', 'embasa-avatar-svg');
     this.svgEl.setAttribute('viewBox', '0 0 1024 1024');
+    this.svgEl.setAttribute('xmlns', 'http://www.w3.org/2000/svg');
+    this.svgEl.style.overflow = 'visible';
 
-    const defs = document.createElementNS('http://www.w3.org/2000/svg', 'defs');
-    defs.innerHTML = EMBASA_GRADIENTS;
-    this.svgEl.appendChild(defs);
-
-    const partOrder = [
-      'body',
-      'head',
-      'ribbon',
-      'left-leg',
-      'left-foot',
-      'right-leg',
-      'right-foot',
-      'left-arm',
-      'left-hand',
-      'right-arm',
-      'right-hand',
-      'left-eye',
-      'left-pupil',
-      'right-eye',
-      'right-pupil',
-      'left-eyebrow',
-      'right-eyebrow',
-      'mouth',
-    ];
-
-    for (const part of partOrder) {
-      const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
-      g.id = part;
-      const paths = EMBASA_PARTS[part] || [];
-      for (const p of paths) {
-        const pathEl = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-        pathEl.setAttribute('d', p.d);
-        if (p.fill) pathEl.setAttribute('fill', p.fill);
-        if (p.fillOpacity) pathEl.setAttribute('fill-opacity', p.fillOpacity);
-        g.appendChild(pathEl);
-      }
-      this.svgEl.appendChild(g);
-    }
+    this.svgEl.innerHTML = `
+      <defs>
+        ${EMBASA_DEFS}
+      </defs>
+      ${EMBASA_INNER_SVG}
+    `;
 
     this.containerEl.appendChild(this.svgEl);
   }
@@ -165,6 +140,10 @@ export class EmbasaAvatarElement extends HTMLElement implements AvatarAPI {
 
   public blink(): void {
     this.sm.blink();
+  }
+
+  public getSemanticElement(id: string): SVGElement | null {
+    return this.svgEl.querySelector(`#${id}`);
   }
 
   public getState(): AvatarState {

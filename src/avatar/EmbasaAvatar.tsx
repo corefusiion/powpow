@@ -6,7 +6,7 @@ import React, {
   useRef,
   useState,
 } from 'react';
-import { EMBASA_GRADIENTS, EMBASA_PARTS } from './EmbasaAvatarData';
+import { EMBASA_DEFS, EMBASA_INNER_SVG } from './EmbasaAvatarData';
 import { AvatarStateMachine, EMOTION_PROFILES } from './stateMachine';
 import './styles.css';
 import {
@@ -17,18 +17,6 @@ import {
   GazeCoords,
   Gesture,
 } from './types';
-
-function renderPaths(partName: string) {
-  const list = EMBASA_PARTS[partName] || [];
-  return list.map((p, idx) => (
-    <path
-      key={`${partName}-${idx}`}
-      d={p.d}
-      fill={p.fill || undefined}
-      fillOpacity={p.fillOpacity || undefined}
-    />
-  ));
-}
 
 export const EmbasaAvatar = forwardRef<AvatarAPI, AvatarProps>((props, ref) => {
   const {
@@ -58,25 +46,25 @@ export const EmbasaAvatar = forwardRef<AvatarAPI, AvatarProps>((props, ref) => {
   const [state, setState] = useState<AvatarState>(() => sm.getState());
 
   useEffect(() => {
-    const unsub = sm.subscribe((newState) => {
-      setState(newState);
+    const unsub = sm.subscribe((next) => {
+      setState(next);
+      onEmotionChange?.(next.emotion);
+      if (next.gesture === 'idle') {
+        onGestureEnd?.();
+      }
     });
-    return () => unsub();
-  }, [sm]);
-
-  // Sincroniza props declarativas
-  useEffect(() => {
-    if (emotion !== state.emotion) {
-      sm.setEmotion(emotion);
-      onEmotionChange?.(emotion);
-    }
-  }, [emotion, sm, onEmotionChange, state.emotion]);
+    return unsub;
+  }, [sm, onEmotionChange, onGestureEnd]);
 
   useEffect(() => {
-    if (gesture !== state.gesture) {
+    sm.setEmotion(emotion);
+  }, [emotion, sm]);
+
+  useEffect(() => {
+    if (gesture !== 'idle') {
       sm.playGesture(gesture);
     }
-  }, [gesture, sm, state.gesture]);
+  }, [gesture, sm]);
 
   useEffect(() => {
     if (isSpeaking) {
@@ -87,57 +75,51 @@ export const EmbasaAvatar = forwardRef<AvatarAPI, AvatarProps>((props, ref) => {
   }, [isSpeaking, sm]);
 
   useEffect(() => {
-    if (gaze && !enableCursorTracking) {
-      sm.setGaze(gaze.x, gaze.y);
-    }
-  }, [gaze, enableCursorTracking, sm]);
+    sm.setGaze(gaze.x, gaze.y);
+  }, [gaze.x, gaze.y, sm]);
 
   useEffect(() => {
     sm.startAutoBlinking(enableBlinking);
-    return () => sm.stopAutoBlinking();
   }, [enableBlinking, sm]);
 
-  // Cursor tracking
-  useEffect(() => {
-    if (!enableCursorTracking) return;
-
-    const handleMouseMove = (e: MouseEvent) => {
+  const handleMouseMove = useCallback(
+    (e: MouseEvent) => {
       if (!containerRef.current) return;
       const rect = containerRef.current.getBoundingClientRect();
       const cx = rect.left + rect.width / 2;
       const cy = rect.top + rect.height / 2;
-      const dx = (e.clientX - cx) / (window.innerWidth / 2);
-      const dy = (e.clientY - cy) / (window.innerHeight / 2);
-      sm.setGaze(dx, dy);
-    };
+      const nx = Math.max(-1, Math.min(1, (e.clientX - cx) / (window.innerWidth / 2)));
+      const ny = Math.max(-1, Math.min(1, (e.clientY - cy) / (window.innerHeight / 2)));
+      sm.setGaze(nx, ny);
+    },
+    [sm]
+  );
 
+  useEffect(() => {
+    if (!enableCursorTracking) return;
     window.addEventListener('mousemove', handleMouseMove);
     return () => window.removeEventListener('mousemove', handleMouseMove);
-  }, [enableCursorTracking, sm]);
+  }, [enableCursorTracking, handleMouseMove]);
 
-  // Expõe API imperativa para refs
   useImperativeHandle(
     ref,
     (): AvatarAPI => ({
-      setEmotion: (emo: Emotion) => {
-        sm.setEmotion(emo);
-        onEmotionChange?.(emo);
-      },
-      playGesture: (gest: Gesture, durationMs?: number) => {
-        sm.playGesture(gest, durationMs);
-      },
+      setEmotion: (emo: Emotion) => sm.setEmotion(emo),
+      playGesture: (gst: Gesture, durationMs?: number) => sm.playGesture(gst, durationMs),
       startSpeaking: () => sm.startSpeaking(),
       stopSpeaking: () => sm.stopSpeaking(),
       setGaze: (x: number, y: number) => sm.setGaze(x, y),
-      blink: () => sm.blink(),
+      getSemanticElement: (id: string) => {
+        return containerRef.current?.querySelector(`#${id}`) as SVGElement | null;
+      },
       getState: () => sm.getState(),
     }),
-    [sm, onEmotionChange]
+    [sm]
   );
 
   const profile = EMOTION_PROFILES[state.emotion] || EMOTION_PROFILES.neutral;
 
-  const cssVariables: Record<string, string> = {
+  const cssVariables = {
     '--head-tilt': `${state.headTilt}deg`,
     '--gaze-x': `${state.gaze.x}`,
     '--gaze-y': `${state.gaze.y}`,
@@ -145,7 +127,7 @@ export const EmbasaAvatar = forwardRef<AvatarAPI, AvatarProps>((props, ref) => {
     '--eb-l-rot': `${profile.eyebrowOffset.left.rotate}deg`,
     '--eb-r-y': `${profile.eyebrowOffset.right.y}px`,
     '--eb-r-rot': `${profile.eyebrowOffset.right.rotate}deg`,
-  };
+  } as React.CSSProperties;
 
   const containerClasses = [
     'embasa-avatar-container',
@@ -181,40 +163,10 @@ export const EmbasaAvatar = forwardRef<AvatarAPI, AvatarProps>((props, ref) => {
         xmlns="http://www.w3.org/2000/svg"
         viewBox="0 0 1024 1024"
         role="img"
+        style={{ overflow: 'visible' }}
       >
-        <defs dangerouslySetInnerHTML={{ __html: EMBASA_GRADIENTS }} />
-
-        {/* 1. Body (Gota base & sombreamento) */}
-        <g id="body">{renderPaths('body')}</g>
-
-        {/* 2. Head (Topo da gota & brilhos de iluminação) */}
-        <g id="head">{renderPaths('head')}</g>
-
-        {/* 3. Ribbon (Fita característica com as cores da Embasa) */}
-        <g id="ribbon">{renderPaths('ribbon')}</g>
-
-        {/* 4. Pernas e Pés */}
-        <g id="left-leg">{renderPaths('left-leg')}</g>
-        <g id="left-foot">{renderPaths('left-foot')}</g>
-        <g id="right-leg">{renderPaths('right-leg')}</g>
-        <g id="right-foot">{renderPaths('right-foot')}</g>
-
-        {/* 5. Braços e Mãos */}
-        <g id="left-arm">{renderPaths('left-arm')}</g>
-        <g id="left-hand">{renderPaths('left-hand')}</g>
-        <g id="right-arm">{renderPaths('right-arm')}</g>
-        <g id="right-hand">{renderPaths('right-hand')}</g>
-
-        {/* 6. Olhos, Pupilas e Sobrancelhas */}
-        <g id="left-eye">{renderPaths('left-eye')}</g>
-        <g id="left-pupil">{renderPaths('left-pupil')}</g>
-        <g id="right-eye">{renderPaths('right-eye')}</g>
-        <g id="right-pupil">{renderPaths('right-pupil')}</g>
-        <g id="left-eyebrow">{renderPaths('left-eyebrow')}</g>
-        <g id="right-eyebrow">{renderPaths('right-eyebrow')}</g>
-
-        {/* 7. Boca */}
-        <g id="mouth">{renderPaths('mouth')}</g>
+        <defs dangerouslySetInnerHTML={{ __html: EMBASA_DEFS }} />
+        <g dangerouslySetInnerHTML={{ __html: EMBASA_INNER_SVG }} />
       </svg>
     </div>
   );

@@ -1,11 +1,12 @@
-/* ── Embasa Avatar — Estilos e Animações ── */
+/* ── Embasa Avatar — Estilos e Animações de Alta Fidelidade ── */
 
 .embasa-avatar-container {
   display: inline-block;
   position: relative;
   overflow: visible;
   user-select: none;
-  filter: drop-shadow(0 12px 28px rgba(4, 149, 244, 0.22));
+  filter: drop-shadow(0 14px 32px rgba(4, 149, 244, 0.28));
+  transition: filter 0.3s ease;
 }
 
 .embasa-avatar-svg {
@@ -13,7 +14,7 @@
   width: 100%;
   height: 100%;
   overflow: visible;
-  transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+  transition: transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
 /* ── Elementos Semânticos Base ── */
@@ -34,15 +35,18 @@
 #right-leg,
 #left-foot,
 #right-foot,
-#ribbon {
+#ribbon,
+#ribbon-back,
+#water-droplets {
   transform-box: fill-box;
-  transition: transform 0.26s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.2s ease;
+  transform-origin: center;
+  transition: transform 0.28s cubic-bezier(0.34, 1.3, 0.64, 1), opacity 0.2s ease;
 }
 
-/* ── Respiração e Movimento Idle ── */
+/* ── Respiração Suave (Breathing) ── */
 .embasa-avatar-container.is-breathing #body {
-  animation: embasa-breath 3.6s ease-in-out infinite;
-  transform-origin: 512px 650px;
+  transform-origin: 50% 85%;
+  animation: embasa-breath 3.8s ease-in-out infinite;
 }
 
 @keyframes embasa-breath {
@@ -50,12 +54,13 @@
     transform: scale(1) translateY(0);
   }
   50% {
-    transform: scale(1.018, 0.985) translateY(3px);
+    transform: scale(1.018, 0.985) translateY(2.5px);
   }
 }
 
+/* ── Flutuação Idle ── */
 .embasa-avatar-container.is-idle-moving {
-  animation: embasa-float 4.2s ease-in-out infinite;
+  animation: embasa-float 4.5s ease-in-out infinite;
 }
 
 @keyframes embasa-float {
@@ -63,14 +68,19 @@
     transform: translateY(0px) rotate(0deg);
   }
   50% {
-    transform: translateY(-8px) rotate(0.6deg);
+    transform: translateY(-9px) rotate(0.8deg);
   }
 }
 
-/* ── Ribbon Flutuante ── */
+/* ── Ribbon Flutuante (Front & Back) ── */
 #ribbon {
-  transform-origin: 300px 750px;
-  animation: ribbon-sway 5.5s ease-in-out infinite;
+  transform-origin: 30% 70%;
+  animation: ribbon-sway 5s ease-in-out infinite;
+}
+
+#ribbon-back {
+  transform-origin: 70% 30%;
+  animation: ribbon-sway-back 5.8s ease-in-out infinite;
 }
 
 @keyframes ribbon-sway {
@@ -78,30 +88,53 @@
     transform: rotate(0deg) skewX(0deg);
   }
   50% {
-    transform: rotate(1.2deg) skewX(0.8deg);
+    transform: rotate(1.8deg) skewX(1deg) scale(1.01);
+  }
+}
+
+@keyframes ribbon-sway-back {
+  0%, 100% {
+    transform: rotate(0deg);
+  }
+  50% {
+    transform: rotate(-1.4deg) translateY(-2px);
+  }
+}
+
+/* ── Gotículas e Splash ── */
+#water-droplets {
+  animation: droplets-pulse 3.2s ease-in-out infinite;
+}
+
+@keyframes droplets-pulse {
+  0%, 100% {
+    transform: scale(1);
+    opacity: 0.95;
+  }
+  50% {
+    transform: scale(1.05) translateY(-3px);
+    opacity: 1;
   }
 }
 
 /* ── Cabeça (Tilt) ── */
 #head {
-  transform-origin: 512px 420px;
+  transform-origin: 50% 70%;
   transform: rotate(var(--head-tilt, 0deg));
 }
 
-/* ── Olhos e Pálpebras (Blink) ── */
-#left-eye {
-  transform-origin: 418px 414px;
-}
-
+/* ── Olhos e Piscar (Blink) ── */
+#left-eye,
 #right-eye {
-  transform-origin: 651px 362px;
+  transform-origin: center center;
 }
 
 .is-blinking #left-eye,
 .is-blinking #right-eye,
 .eye-blink #left-eye,
 .eye-blink #right-eye {
-  transform: scaleY(0.08) !important;
+  transform: scaleY(0.06) !important;
+  transition: transform 0.08s ease-in !important;
 }
 
 .eye-surprised #left-eye,
@@ -115,175 +148,235 @@
 }
 
 .eye-worried #left-eye {
-  transform: rotate(-7deg);
+  transform: rotate(-7deg) scale(0.96);
 }
 
 .eye-worried #right-eye {
-  transform: rotate(7deg);
+  transform: rotate(7deg) scale(0.96);
 }
 
-/* ── Pupil Tracking (Gaze) ── */
+/* ── Gaze / Rastreamento dos Olhos (Pupils) ── */
 #left-pupil {
-  transform-origin: 440px 415px;
-  transform: translate(calc(var(--gaze-x, 0) * 15px), calc(var(--gaze-y, 0) * 12px));
+  transform-origin: center center;
+  transform: translate(calc(var(--gaze-x, 0) * 16px), calc(var(--gaze-y, 0) * 13px));
 }
 
 #right-pupil {
-  transform-origin: 636px 379px;
-  transform: translate(calc(var(--gaze-x, 0) * 15px), calc(var(--gaze-y, 0) * 12px));
+  transform-origin: center center;
+  transform: translate(calc(var(--gaze-x, 0) * 16px), calc(var(--gaze-y, 0) * 13px));
 }
 
-/* Olhar específico por estado */
+/* Posições fixas de olhar */
 .eye-looking-left #left-pupil,
 .eye-looking-left #right-pupil {
-  transform: translate(-14px, 0);
+  transform: translate(-15px, 0);
 }
 
 .eye-looking-right #left-pupil,
 .eye-looking-right #right-pupil {
-  transform: translate(14px, 0);
+  transform: translate(15px, 0);
 }
 
 .eye-looking-up #left-pupil,
 .eye-looking-up #right-pupil {
-  transform: translate(0, -12px);
+  transform: translate(0, -13px);
 }
 
 .eye-looking-down #left-pupil,
 .eye-looking-down #right-pupil {
-  transform: translate(0, 12px);
+  transform: translate(0, 13px);
 }
 
 /* ── Sobrancelhas ── */
 #left-eyebrow {
-  transform-origin: 397px 301px;
+  transform-origin: 80% 50%;
   transform: translateY(var(--eb-l-y, 0px)) rotate(var(--eb-l-rot, 0deg));
 }
 
 #right-eyebrow {
-  transform-origin: 626px 249px;
+  transform-origin: 20% 50%;
   transform: translateY(var(--eb-r-y, 0px)) rotate(var(--eb-r-rot, 0deg));
 }
 
-/* ── Boca ── */
+/* ── Boca & Lip Sync (Fala) ── */
 #mouth {
-  transform-origin: 548px 519px;
+  transform-origin: center center;
 }
 
 .mouth-smile #mouth {
-  transform: scale(1.08, 1.05) translateY(-2px);
+  transform: scale(1.06, 1.04) translateY(-1px);
 }
 
 .mouth-open #mouth {
-  transform: scale(1.15, 1.25) translateY(4px);
+  transform: scale(1.12, 1.25) translateY(2px);
 }
 
 .mouth-surprised #mouth {
-  transform: scale(0.85, 1.35) translateY(2px);
+  transform: scale(1.15, 1.35) translateY(3px);
 }
 
 .mouth-worried #mouth {
-  transform: scale(0.92, 0.8) translateY(-4px);
+  transform: scale(0.92, 0.85) translateY(-3px) rotate(3deg);
 }
 
 .mouth-talking #mouth,
 .is-speaking #mouth {
-  animation: mouth-talk 0.28s ease-in-out infinite alternate;
+  animation: embasa-mouth-talk 0.28s ease-in-out infinite alternate;
 }
 
-@keyframes mouth-talk {
+@keyframes embasa-mouth-talk {
   0% {
-    transform: scale(0.95, 0.8) translateY(-2px);
+    transform: scale(1, 0.85) translateY(0);
+  }
+  50% {
+    transform: scale(1.12, 1.28) translateY(2px);
   }
   100% {
-    transform: scale(1.18, 1.28) translateY(5px);
+    transform: scale(0.95, 1.1) translateY(1px);
   }
 }
 
-/* ── Braços & Mãos — Gestos ── */
-#left-arm,
-#left-hand {
-  transform-origin: 260px 520px;
-}
+/* ── Gestos ── */
 
+/* Wave (Aceno com braço direito) */
 #right-arm,
 #right-hand {
-  transform-origin: 760px 480px;
+  transform-origin: 15% 45%;
 }
 
-/* Gesto: Wave (Acenando) */
 .gesture-wave #right-arm,
 .gesture-wave #right-hand {
-  animation: gesture-wave-anim 0.65s ease-in-out infinite alternate;
+  animation: embasa-arm-wave 0.85s ease-in-out infinite alternate;
 }
 
-@keyframes gesture-wave-anim {
+@keyframes embasa-arm-wave {
   0% {
-    transform: rotate(20deg) translateY(-25px);
+    transform: rotate(0deg) translateY(0);
+  }
+  50% {
+    transform: rotate(-18deg) translateY(-12px);
   }
   100% {
-    transform: rotate(-18deg) translateY(-45px);
+    transform: rotate(-28deg) translateY(-18px);
   }
 }
 
-/* Gesto: Thumbs-up (Joia) */
+/* Thumbs Up (Joinha) */
 .gesture-thumbs-up #right-arm,
 .gesture-thumbs-up #right-hand {
-  transform: rotate(-24deg) translateY(-30px) scale(1.08);
+  animation: embasa-thumbs 1.4s ease-in-out infinite;
 }
 
-/* Gesto: Pointing (Apontando) */
+@keyframes embasa-thumbs {
+  0%, 100% {
+    transform: rotate(-16deg) translateY(-14px);
+  }
+  50% {
+    transform: rotate(-24deg) translateY(-20px) scale(1.05);
+  }
+}
+
+/* Pointing (Apontar) */
 .gesture-pointing #right-arm,
 .gesture-pointing #right-hand {
-  transform: rotate(15deg) translateX(35px) translateY(-10px);
+  transform: rotate(-12deg) translateX(12px) translateY(-8px);
 }
 
-/* Gesto: Celebrating (Comemorando com ambos os braços) */
+/* Celebrating (Comemoração com ambos os braços) */
+#left-arm,
+#left-hand {
+  transform-origin: 85% 45%;
+}
+
 .gesture-celebrating #left-arm,
 .gesture-celebrating #left-hand {
-  animation: celebrate-left-arm 0.7s ease-in-out infinite alternate;
+  animation: embasa-arm-l-celeb 0.7s ease-in-out infinite alternate;
 }
 
 .gesture-celebrating #right-arm,
 .gesture-celebrating #right-hand {
-  animation: celebrate-right-arm 0.7s ease-in-out infinite alternate;
+  animation: embasa-arm-r-celeb 0.7s ease-in-out infinite alternate;
 }
 
-@keyframes celebrate-left-arm {
-  0% { transform: rotate(-35deg) translateY(-40px); }
-  100% { transform: rotate(-45deg) translateY(-60px); }
+@keyframes embasa-arm-l-celeb {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(26deg) translateY(-20px);
+  }
 }
 
-@keyframes celebrate-right-arm {
-  0% { transform: rotate(35deg) translateY(-40px); }
-  100% { transform: rotate(45deg) translateY(-60px); }
+@keyframes embasa-arm-r-celeb {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(-26deg) translateY(-20px);
+  }
 }
 
-.gesture-celebrating {
-  animation: celebrate-hop 0.7s ease-in-out infinite alternate;
-}
-
-@keyframes celebrate-hop {
-  0% { transform: translateY(0); }
-  100% { transform: translateY(-16px); }
-}
-
-/* Gesto: Thinking (Mão no queixo) */
+/* Thinking (Dúvida / Pensando) */
 .gesture-thinking #right-arm,
 .gesture-thinking #right-hand {
-  transform: rotate(-42deg) translateX(-60px) translateY(-85px);
+  transform: rotate(-32deg) translateY(-22px) translateX(-10px);
 }
 
-/* ── Efeito de Erro (Alerta suave) ── */
-.emotion-error #body {
-  filter: drop-shadow(0 0 16px rgba(255, 68, 68, 0.45));
+.gesture-thinking #head {
+  transform: rotate(8deg);
+}
+
+/* ── Variações de Emoção ── */
+.emotion-happy {
+  filter: drop-shadow(0 14px 34px rgba(4, 149, 244, 0.45));
+}
+
+.emotion-excited {
+  filter: drop-shadow(0 14px 36px rgba(109, 193, 82, 0.5));
+  animation: embasa-excited-bounce 0.75s ease-in-out infinite alternate;
+}
+
+@keyframes embasa-excited-bounce {
+  0% {
+    transform: translateY(0);
+  }
+  100% {
+    transform: translateY(-12px) scale(1.02);
+  }
+}
+
+.emotion-celebrating {
+  animation: embasa-jump-celebrate 0.65s ease-in-out infinite alternate;
+}
+
+@keyframes embasa-jump-celebrate {
+  0% {
+    transform: translateY(0) scale(1);
+  }
+  100% {
+    transform: translateY(-16px) scale(1.03);
+  }
+}
+
+.emotion-thinking {
+  filter: drop-shadow(0 14px 30px rgba(31, 188, 240, 0.35));
+}
+
+.emotion-worried {
+  filter: drop-shadow(0 14px 28px rgba(247, 241, 78, 0.35));
+}
+
+.emotion-sad {
+  filter: drop-shadow(0 14px 28px rgba(4, 84, 176, 0.4));
+  transform: translateY(4px) scale(0.98);
 }
 
 .emotion-error {
-  animation: error-shake 0.4s ease-in-out;
+  filter: drop-shadow(0 14px 32px rgba(235, 114, 0, 0.45));
+  animation: embasa-error-shake 0.4s ease-in-out;
 }
 
-@keyframes error-shake {
+@keyframes embasa-error-shake {
   0%, 100% { transform: translateX(0); }
   20%, 60% { transform: translateX(-6px); }
   40%, 80% { transform: translateX(6px); }

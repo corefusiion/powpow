@@ -1,140 +1,76 @@
-import { EMBASA_GRADIENTS, EMBASA_PARTS } from './avatar/EmbasaAvatarData';
-import { AvatarStateMachine, EMOTION_PROFILES } from './avatar/stateMachine';
+import { EmbasaAvatarElement } from './avatar/EmbasaAvatarElement';
 import type { Emotion, Gesture } from './avatar/types';
-import './avatar/styles.css';
+import { DotPal } from '../../src/index.js';
 
-// 1. Build the avatar DOM structure with all 18 semantic IDs
-function createAvatarDOM(): { root: HTMLDivElement } {
-  const root = document.createElement('div');
-  root.className = 'embasa-avatar-container is-breathing is-idle-moving';
-  root.style.width = '320px';
-  root.style.height = '320px';
-
-  const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-  svg.setAttribute('class', 'embasa-avatar-svg');
-  svg.setAttribute('viewBox', '0 0 1024 1024');
-
-  const defs = document.createElementNS('http://www.w3.org/2000/svg', 'defs');
-  defs.innerHTML = EMBASA_GRADIENTS;
-  svg.appendChild(defs);
-
-  const partOrder = [
-    'body',
-    'head',
-    'ribbon',
-    'left-leg',
-    'left-foot',
-    'right-leg',
-    'right-foot',
-    'left-arm',
-    'left-hand',
-    'right-arm',
-    'right-hand',
-    'left-eye',
-    'left-pupil',
-    'right-eye',
-    'right-pupil',
-    'left-eyebrow',
-    'right-eyebrow',
-    'mouth',
-  ];
-
-  for (const partName of partOrder) {
-    const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
-    g.id = partName;
-    const paths = EMBASA_PARTS[partName] || [];
-    for (const p of paths) {
-      const pathEl = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-      pathEl.setAttribute('d', p.d);
-      if (p.fill) pathEl.setAttribute('fill', p.fill);
-      if (p.fillOpacity) pathEl.setAttribute('fill-opacity', p.fillOpacity);
-      g.appendChild(pathEl);
-    }
-    svg.appendChild(g);
-  }
-
-  root.appendChild(svg);
-  return { root };
-}
-
-// 2. Initialize State Machine and mount
+// 1. Instancia o avatar interativo de alta resolução (Web Component)
 const mount = document.getElementById('avatar-mount')!;
-const { root } = createAvatarDOM();
-mount.appendChild(root);
-
-const sm = new AvatarStateMachine('neutral', 'idle');
-sm.startAutoBlinking(true);
+const avatarEl = new EmbasaAvatarElement();
+mount.appendChild(avatarEl);
 
 const statusLabel = document.getElementById('status-label')!;
 const codePreview = document.getElementById('code-preview')!;
 const gazeReticle = document.getElementById('gaze-reticle')!;
 
-// Synchronize state with DOM
-sm.subscribe((st) => {
-  const profile = EMOTION_PROFILES[st.emotion] || EMOTION_PROFILES.neutral;
+// 2. Mini Roaming Pal (Desktop Pal & Terminal)
+const miniPal = document.getElementById('demo-mini-pal') as DotPal | null;
+const miniSpeechInput = document.getElementById('mini-speech-input') as HTMLInputElement | null;
+const miniWalkContainer = document.getElementById('mini-pal-walkway') as HTMLDivElement | null;
 
-  // Root class names
-  root.className = [
-    'embasa-avatar-container',
-    `emotion-${st.emotion}`,
-    `gesture-${st.gesture}`,
-    `mouth-${st.mouth}`,
-    `eye-${st.eyeState}`,
-    st.isSpeaking ? 'is-speaking' : '',
-    st.isBlinking ? 'is-blinking' : '',
-    (document.getElementById('toggle-breath') as HTMLInputElement)?.checked ? 'is-breathing' : '',
-    (document.getElementById('toggle-idle') as HTMLInputElement)?.checked ? 'is-idle-moving' : '',
-  ]
-    .filter(Boolean)
-    .join(' ');
-
-  // CSS variables for head tilt, gaze, and eyebrows
-  root.style.setProperty('--head-tilt', `${st.headTilt}deg`);
-  root.style.setProperty('--gaze-x', `${st.gaze.x}`);
-  root.style.setProperty('--gaze-y', `${st.gaze.y}`);
-  root.style.setProperty('--eb-l-y', `${profile.eyebrowOffset.left.y}px`);
-  root.style.setProperty('--eb-l-rot', `${profile.eyebrowOffset.left.rotate}deg`);
-  root.style.setProperty('--eb-r-y', `${profile.eyebrowOffset.right.y}px`);
-  root.style.setProperty('--eb-r-rot', `${profile.eyebrowOffset.right.rotate}deg`);
-
-  // Status label
-  statusLabel.textContent = `Emotion: ${st.emotion} | Gesture: ${st.gesture} | Mouth: ${st.mouth}`;
-});
-
-// 3. UI Controls Event Listeners
-// Emotions
+// 3. UI Controls para o Avatar Principal
 const emotionBtns = document.querySelectorAll<HTMLButtonElement>('#emotions-grid button');
 emotionBtns.forEach((btn) => {
   btn.addEventListener('click', () => {
     const emo = btn.getAttribute('data-emotion') as Emotion;
     emotionBtns.forEach((b) => b.classList.remove('active'));
     btn.classList.add('active');
-    sm.setEmotion(emo);
+    avatarEl.setEmotion(emo);
+    statusLabel.textContent = `Emotion: ${emo} | Idle`;
     codePreview.textContent = `avatar.setEmotion("${emo}");`;
+
+    // Também sincroniza com o mini pal caso o usuário queira ver a reação
+    if (miniPal) {
+      if (emo === 'happy') miniPal.setState('done');
+      else if (emo === 'thinking') miniPal.setState('thinking');
+      else if (emo === 'surprised') void miniPal.emote('wide');
+      else if (emo === 'error') miniPal.setState('error');
+      else if (emo === 'sad') miniPal.setState('error');
+      else if (emo === 'excited') void miniPal.play('jump');
+      else miniPal.setState('idle');
+    }
   });
 });
 
-// Gestures
+// Gestos
 const gestureBtns = document.querySelectorAll<HTMLButtonElement>('#gestures-grid button');
 gestureBtns.forEach((btn) => {
   btn.addEventListener('click', () => {
     const gest = btn.getAttribute('data-gesture') as Gesture;
     gestureBtns.forEach((b) => b.classList.remove('active'));
     btn.classList.add('active');
-    sm.playGesture(gest, 3000);
+    avatarEl.playGesture(gest, 3200);
     codePreview.textContent = `avatar.playGesture("${gest}");`;
+
+    if (miniPal) {
+      if (gest === 'wave') void miniPal.play('hello');
+      else if (gest === 'thumbs-up') void miniPal.emote('star');
+      else if (gest === 'celebrating') void miniPal.play('jump');
+      else if (gest === 'thinking') miniPal.setState('thinking');
+      else void miniPal.play('wiggle');
+    }
   });
 });
 
-// Speech
+// Fala (Speech)
 document.getElementById('btn-speak-start')?.addEventListener('click', () => {
-  sm.startSpeaking();
+  avatarEl.startSpeaking();
   codePreview.textContent = `avatar.startSpeaking();`;
+  if (miniPal) miniPal.say('Tratando a água com qualidade e carinho!');
 });
 
 document.getElementById('btn-speak-stop')?.addEventListener('click', () => {
-  sm.stopSpeaking();
+  avatarEl.stopSpeaking();
   codePreview.textContent = `avatar.stopSpeaking();`;
+  if (miniPal) miniPal.say('');
 });
 
 // Gaze Pad
@@ -152,8 +88,12 @@ function updateGazeFromEvent(e: MouseEvent) {
   gazeReticle.style.left = `${(x / rect.width) * 100}%`;
   gazeReticle.style.top = `${(y / rect.height) * 100}%`;
 
-  sm.setGaze(nx, ny);
+  avatarEl.setGaze(nx, ny);
   codePreview.textContent = `avatar.setGaze(${nx.toFixed(2)}, ${ny.toFixed(2)});`;
+
+  if (miniPal) {
+    miniPal.lookAt(nx, ny);
+  }
 }
 
 gazePad.addEventListener('mousedown', (e) => {
@@ -164,13 +104,6 @@ gazePad.addEventListener('mousedown', (e) => {
 window.addEventListener('mousemove', (e) => {
   if (isDraggingGaze) {
     updateGazeFromEvent(e);
-  } else if ((document.getElementById('toggle-tracking') as HTMLInputElement)?.checked) {
-    const rect = mount.getBoundingClientRect();
-    const cx = rect.left + rect.width / 2;
-    const cy = rect.top + rect.height / 2;
-    const nx = Math.max(-1, Math.min(1, (e.clientX - cx) / (window.innerWidth / 2)));
-    const ny = Math.max(-1, Math.min(1, (e.clientY - cy) / (window.innerHeight / 2)));
-    sm.setGaze(nx, ny);
   }
 });
 
@@ -179,17 +112,72 @@ window.addEventListener('mouseup', () => {
 });
 
 // Toggles
-document.getElementById('toggle-blink')?.addEventListener('change', (e) => {
-  const checked = (e.target as HTMLInputElement).checked;
-  sm.startAutoBlinking(checked);
+const toggleBreath = document.getElementById('toggle-breath') as HTMLInputElement | null;
+toggleBreath?.addEventListener('change', () => {
+  const container = avatarEl.querySelector('.embasa-avatar-container');
+  container?.classList.toggle('is-breathing', toggleBreath.checked);
 });
 
-document.getElementById('toggle-breath')?.addEventListener('change', (e) => {
-  const checked = (e.target as HTMLInputElement).checked;
-  root.classList.toggle('is-breathing', checked);
+const toggleIdle = document.getElementById('toggle-idle') as HTMLInputElement | null;
+toggleIdle?.addEventListener('change', () => {
+  const container = avatarEl.querySelector('.embasa-avatar-container');
+  container?.classList.toggle('is-idle-moving', toggleIdle.checked);
 });
 
-document.getElementById('toggle-idle')?.addEventListener('change', (e) => {
-  const checked = (e.target as HTMLInputElement).checked;
-  root.classList.toggle('is-idle-moving', checked);
+const toggleTracking = document.getElementById('toggle-tracking') as HTMLInputElement | null;
+toggleTracking?.addEventListener('change', () => {
+  avatarEl.enableCursorTracking(!!toggleTracking?.checked);
+});
+
+// 4. Controles do Mini Roaming Pal
+document.querySelectorAll<HTMLButtonElement>('[data-mini-action]').forEach((btn) => {
+  btn.addEventListener('click', () => {
+    const act = btn.getAttribute('data-mini-action');
+    if (!miniPal || !act) return;
+    if (act.startsWith('emote:')) {
+      void miniPal.emote(act.split(':')[1] as any);
+    } else {
+      void miniPal.play(act);
+    }
+  });
+});
+
+document.getElementById('btn-mini-say')?.addEventListener('click', () => {
+  const text = miniSpeechInput?.value.trim() || 'Cuidando da nossa água! 💧';
+  miniPal?.say(text);
+});
+
+// Simulação de caminhada pela tela
+let isWalking = false;
+let walkInterval: number | null = null;
+let walkPos = 20;
+let walkDir = 1;
+
+document.getElementById('btn-mini-walk')?.addEventListener('click', () => {
+  if (!miniPal || !miniWalkContainer) return;
+  isWalking = !isWalking;
+  const btn = document.getElementById('btn-mini-walk') as HTMLButtonElement;
+  if (isWalking) {
+    btn.textContent = '⏹ Parar Caminhada';
+    btn.classList.add('active');
+    miniPal.idle = 'bounce';
+    walkInterval = window.setInterval(() => {
+      const max = miniWalkContainer.clientWidth - 110;
+      walkPos += walkDir * 4;
+      if (walkPos > max) {
+        walkDir = -1;
+        miniPal.style.transform = 'scaleX(-1)';
+      } else if (walkPos < 10) {
+        walkDir = 1;
+        miniPal.style.transform = 'scaleX(1)';
+      }
+      miniPal.style.left = `${walkPos}px`;
+    }, 50);
+  } else {
+    btn.textContent = '🚶 Andar pela Tela';
+    btn.classList.remove('active');
+    if (walkInterval) clearInterval(walkInterval);
+    miniPal.idle = 'float';
+    miniPal.style.transform = 'scaleX(1)';
+  }
 });
