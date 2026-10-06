@@ -73,9 +73,8 @@ fn process_name(pid: u32) -> String {
     }
 }
 
-/// Captures `hwnd` (rect in physical screen pixels) into an RGBA buffer.
-/// PrintWindow first so occluded windows still render; plain BitBlt fallback.
-fn capture(hwnd: HWND, rect: RECT) -> Result<(u32, u32, Vec<u8>), String> {
+/// Captures rect in physical screen pixels into an RGBA buffer.
+fn capture(rect: RECT) -> Result<(u32, u32, Vec<u8>), String> {
     let w = rect.right - rect.left;
     let h = rect.bottom - rect.top;
     if w < 8 || h < 8 || w > 8192 || h > 8192 {
@@ -163,7 +162,7 @@ pub fn capture_screen() -> Result<AttachedWindow, String> {
         let w = GetSystemMetrics(SM_CXSCREEN);
         let h = GetSystemMetrics(SM_CYSCREEN);
         let rect = RECT { left: 0, top: 0, right: w, bottom: h };
-        let (w, h, pixels) = capture(HWND(std::ptr::null_mut()), rect)?;
+        let (w, h, pixels) = capture(rect)?;
         let img = image::RgbaImage::from_raw(w, h, pixels)
             .ok_or_else(|| "captured image is corrupt".to_string())?;
 
@@ -207,10 +206,18 @@ pub fn attach_active(app: &AppHandle) -> Result<AttachedWindow, String> {
     if target.0.is_null() || our_windows.contains(&target) || unsafe { IsIconic(target) }.as_bool() {
         let mut next = target;
         while !next.0.is_null() {
-            next = unsafe { windows::Win32::UI::WindowsAndMessaging::GetWindow(next, windows::Win32::UI::WindowsAndMessaging::GW_HWNDNEXT) };
-            if next.0.is_null() {
+            let Ok(h) = (unsafe {
+                windows::Win32::UI::WindowsAndMessaging::GetWindow(
+                    next,
+                    windows::Win32::UI::WindowsAndMessaging::GW_HWNDNEXT,
+                )
+            }) else {
+                break;
+            };
+            if h.0.is_null() {
                 break;
             }
+            next = h;
             if !our_windows.contains(&next)
                 && !unsafe { IsIconic(next) }.as_bool()
                 && unsafe { windows::Win32::UI::WindowsAndMessaging::IsWindowVisible(next) }.as_bool()
@@ -264,7 +271,7 @@ fn save(target: HWND) -> Result<AttachedWindow, String> {
         .trim_end_matches(".EXE")
         .to_string();
 
-    let (w, h, pixels) = capture(target, rect)?;
+    let (w, h, pixels) = capture(rect)?;
     let img = image::RgbaImage::from_raw(w, h, pixels)
         .ok_or_else(|| "captured image is corrupt".to_string())?;
 
