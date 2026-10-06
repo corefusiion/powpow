@@ -191,11 +191,10 @@ if (selectorMount) {
     onSelect: (mascotId, info) => {
       console.log(`Mascote selecionado: ${mascotId} (${info.name})`);
       if (miniPal) {
+        miniPal.character = mascotId;
         if (mascotId === 'embasa') {
-          miniPal.character = 'embasa';
           miniPal.say('💧 Eu sou a Gota Embasa! Tratando água com carinho.');
         } else {
-          // Para outros mascotes, avisa o usuário com balão
           miniPal.say(`Mascote ativado: ${info.name}!`);
         }
       }

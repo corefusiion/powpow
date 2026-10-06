@@ -29,6 +29,8 @@
 //   .dp-eyes   – (optional) the parts hidden while expression eyes show;
 //                without it, the .dp-blink parts are hidden
 
+import { createPageMascotCharacters, PAGE_MASCOTS } from './pageMascots.js';
+
 const eyeShine = (cx, cy, r = 2.6) =>
   `<circle cx="${cx}" cy="${cy}" r="${r}" fill="#fff" opacity=".9"/>`;
 
@@ -257,6 +259,7 @@ export const characters = {
     look: 10,
     mouth: [100, 168],
     cheek: 44,
+    eyes: { at: [[76, 134], [124, 134]], r: 15 },
     render: ({ id }) => ({
       defs: `
         <radialGradient id="${id('drop_body')}" cx="36%" cy="28%" r="72%">
@@ -393,7 +396,11 @@ export const characters = {
         </g>`,
     }),
   },
+
+  ...createPageMascotCharacters(),
 };
+
+export { PAGE_MASCOTS };
 
 /**
  * Add (or replace) a character so it can be used as `<dot-pal character="name">`.

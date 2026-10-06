@@ -5,6 +5,7 @@
 import "./settings.css";
 import "../avatar/mascot-selector.css";
 import { MascotSelector } from "../avatar/MascotSelector";
+import { MASCOTS_CATALOG } from "../avatar/mascotCatalog";
 import { registerAllPageMascots } from "../avatar/registerMascots";
 
 // Registra todos os mascotes do page-mascot no runtime
@@ -981,13 +982,41 @@ function characterRow(): HTMLElement {
     style: "width:48px;height:94px;pointer-events:none;flex:0 0 auto",
   });
   const select = h("select", {}) as HTMLSelectElement;
-  // Every character the component knows, straight from dotpals: a new built-in
-  // shows up here without this list having to change.
-  const chars: [string, string][] = [
-    ["mochi", t("Mochi (notch original)")],
-    ...Object.entries(characters).map(([id, def]) => [id, def.label ?? id] as [string, string]),
-  ];
-  for (const [id, label] of chars) select.append(h("option", { value: id, text: label }));
+  // 1. Grupo Oficial Embasa
+  const groupEmbasa = h("optgroup", { label: "💧 " + t("Mascote Oficial Embasa") }) as HTMLOptGroupElement;
+  groupEmbasa.append(h("option", { value: "embasa", text: "Gota Embasa (Oficial 3D)" }));
+  select.append(groupEmbasa);
+
+  // 2. Grupo Clássicos Powpow
+  const groupClassics = h("optgroup", { label: "🌟 " + t("Clássicos Powpow") }) as HTMLOptGroupElement;
+  groupClassics.append(h("option", { value: "mochi", text: t("Mochi (notch original)") }));
+  const classicIds = ["blu", "hop", "sunny", "lovi", "muse", "grok", "nova", "byte"];
+  for (const cid of classicIds) {
+    const cdef = (characters as Record<string, any>)[cid];
+    groupClassics.append(h("option", { value: cid, text: cdef?.label ?? cid }));
+  }
+  select.append(groupClassics);
+
+  // 3. Grupo Animais
+  const groupAnimals = h("optgroup", { label: "🐾 " + t("Novos Mascotes: Animais") }) as HTMLOptGroupElement;
+  for (const m of MASCOTS_CATALOG.filter((m) => m.category === "animals")) {
+    groupAnimals.append(h("option", { value: m.id, text: m.name }));
+  }
+  select.append(groupAnimals);
+
+  // 4. Grupo Personagens
+  const groupPeople = h("optgroup", { label: "👤 " + t("Novos Mascotes: Personagens") }) as HTMLOptGroupElement;
+  for (const m of MASCOTS_CATALOG.filter((m) => m.category === "people")) {
+    groupPeople.append(h("option", { value: m.id, text: m.name }));
+  }
+  select.append(groupPeople);
+
+  // 5. Grupo Robôs & Criaturas
+  const groupRobots = h("optgroup", { label: "🤖 " + t("Novos Mascotes: Robôs & Criaturas") }) as HTMLOptGroupElement;
+  for (const m of MASCOTS_CATALOG.filter((m) => m.category === "robots")) {
+    groupRobots.append(h("option", { value: m.id, text: m.name }));
+  }
+  select.append(groupRobots);
 
   // Your own pal: the option only exists once a spec has been saved (dotpals
   // does the same), and the spec itself is registered for the preview.

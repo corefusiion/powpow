@@ -20,82 +20,82 @@
 /* ── Elementos Semânticos Base com Âncoras Absolutas no ViewBox (1024x1024) ── */
 #head {
   transform-box: view-box;
-  transform-origin: 554px 380px;
+  transform-origin: 512px 450px;
   transform: rotate(var(--head-tilt, 0deg));
   transition: transform 0.3s cubic-bezier(0.34, 1.3, 0.64, 1);
 }
 
 #left-eye {
   transform-box: view-box;
-  transform-origin: 418px 416px;
+  transform-origin: 430px 425px;
   transition: transform 0.22s cubic-bezier(0.34, 1.4, 0.64, 1);
 }
 
 #right-eye {
   transform-box: view-box;
-  transform-origin: 656px 377px;
+  transform-origin: 640px 405px;
   transition: transform 0.22s cubic-bezier(0.34, 1.4, 0.64, 1);
 }
 
 #left-pupil {
   transform-box: view-box;
-  transform-origin: 418px 425px;
-  transform: translate(calc(var(--gaze-x, 0) * 14px), calc(var(--gaze-y, 0) * 11px));
-  transition: transform 0.12s ease-out;
+  transform-origin: 438px 430px;
+  transform: translate(calc(var(--gaze-x, 0) * 36px), calc(var(--gaze-y, 0) * 28px));
+  transition: transform 0.1s ease-out;
 }
 
 #right-pupil {
   transform-box: view-box;
-  transform-origin: 656px 377px;
-  transform: translate(calc(var(--gaze-x, 0) * 14px), calc(var(--gaze-y, 0) * 11px));
-  transition: transform 0.12s ease-out;
+  transform-origin: 632px 410px;
+  transform: translate(calc(var(--gaze-x, 0) * 36px), calc(var(--gaze-y, 0) * 28px));
+  transition: transform 0.1s ease-out;
 }
 
 #left-eyebrow {
   transform-box: view-box;
-  transform-origin: 398px 302px;
+  transform-origin: 420px 315px;
   transform: translateY(var(--eb-l-y, 0px)) rotate(var(--eb-l-rot, 0deg));
   transition: transform 0.25s ease-out;
 }
 
 #right-eyebrow {
   transform-box: view-box;
-  transform-origin: 627px 249px;
+  transform-origin: 632px 305px;
   transform: translateY(var(--eb-r-y, 0px)) rotate(var(--eb-r-rot, 0deg));
   transition: transform 0.25s ease-out;
 }
 
 #mouth {
   transform-box: view-box;
-  transform-origin: 548px 519px;
+  transform-origin: 535px 550px;
   transition: transform 0.22s cubic-bezier(0.34, 1.3, 0.64, 1);
 }
 
 #left-arm,
 #left-hand {
   transform-box: view-box;
-  transform-origin: 245px 515px;
+  transform-origin: 285px 540px;
   transition: transform 0.3s cubic-bezier(0.34, 1.3, 0.64, 1);
 }
 
 #right-arm,
 #right-hand {
   transform-box: view-box;
-  transform-origin: 760px 470px;
+  transform-origin: 730px 530px;
   transition: transform 0.3s cubic-bezier(0.34, 1.3, 0.64, 1);
 }
 
 #left-leg,
 #left-foot {
   transform-box: view-box;
-  transform-origin: 430px 730px;
+  transform-origin: 430px 735px;
   transition: transform 0.3s ease;
 }
 
 #right-leg,
 #right-foot {
   transform-box: view-box;
-  transform-origin: 600px 760px;
+  transform-origin: 565px 745px;
   transition: transform 0.3s ease;
 }
 
