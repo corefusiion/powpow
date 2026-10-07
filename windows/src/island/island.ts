@@ -1283,6 +1283,7 @@ export class Island {
     if (!ctx) return;
 
     const focus = State.focusTask;
+    this.engine.showBadge = State.mode === "expanded";
     this.engine.bodyColor = focus?.isIntegration ? hexToRGB(focus.color) : null;
     this.engine.particleOverhang = BOT_OVERHANG;
     this.engine.lookX = this.lookX();
@@ -1391,7 +1392,8 @@ export class Island {
    * differently even though the component has no state for them.
    */
   private syncPal(s: BotStateName) {
-    const text = this.bubbleText(s);
+    const isExpanded = State.mode === "expanded";
+    const text = isExpanded ? this.bubbleText(s) : "";
     const changed = s !== this.palState;
     if (!changed && text === this.palStateText) return;
     this.palState = s;
@@ -1399,10 +1401,11 @@ export class Island {
     // The roaming pal wears the same face; only a real change reaches Rust.
     if (changed) void Bridge.setPalState(s);
     // The voice belongs to the state, not to the overlay: Mochi speaks too.
-    if (changed && PAL_VOICE.has(s)) Sound.say(text);
+    if (changed && isExpanded && PAL_VOICE.has(s)) Sound.say(text);
     const pal = this.pal;
     if (!pal) return;
-    pal.setState(PAL_STATE[s] ?? "idle", { text });
+    pal.setAttribute("bubble", isExpanded ? "text" : "none");
+    pal.setState(PAL_STATE[s] ?? "idle", isExpanded && text ? { text } : undefined);
     const emote = changed ? PAL_EMOTE[s] : undefined;
     if (emote) void pal.emote(emote);
   }

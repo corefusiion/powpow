@@ -29,13 +29,13 @@ const BOT_SIZE = 130;
 const BOT_OVERHANG = 40;
 const DP_SIZE = 106;
 
-// The stroll: a slow, natural, comfortable walk (52 px/s vs 110 px/s)
-const SPEED = 52;
+// The stroll: a gentle, calm, leisurely walk (28 px/s)
+const SPEED = 28;
 let walkSpeed = SPEED;
-const ACCEL = 85; // px/s^2 smooth acceleration / deceleration
+const ACCEL = 35; // px/s^2 soft acceleration / deceleration
 let currentVelocity = 0;
-const IDLE_MIN = 28000;
-const IDLE_MAX = 50000;
+const IDLE_MIN = 45000;
+const IDLE_MAX = 80000;
 const SETTLE = 2;
 // Clear of the screen edges, and of whatever sits along the bottom.
 const PAD_X = 8;
@@ -453,11 +453,17 @@ function postIsland(): Pt {
 
 let stationCursor: Pt = { x: -9999, y: -9999 };
 let stationShiftStart = 0;
-const SHIFT_THRESHOLD = 150; // Cursor must move >150px away from current station
-const SHIFT_SUSTAIN_MS = 2200; // Must stay in new area for 2.2s before moving
+const SHIFT_THRESHOLD = 240; // Cursor must move >240px away from current station to consider moving
+const SHIFT_SUSTAIN_MS = 3800; // Must stay in new area for 3.8s before moving
 let microPauseUntil = 0;
 let distanceWalkedInLeg = 0;
+let nextPauseDistance = 160 + Math.random() * 80;
 let lastGazeAdjust = 0;
+
+let currentGazeX = 0;
+let currentGazeY = 0;
+let targetGazeX = 0;
+let targetGazeY = 0;
 
 /**
  * Comfortable vantage point beside the active typing / work area.
@@ -524,24 +530,26 @@ function step(dt: number, now: number) {
     rule = next;
     legs = [];
     currentVelocity = 0;
-    idleUntil = 0;
     routedTo = null;
-    stationCursor = { x: -9999, y: -9999 };
     stationShiftStart = 0;
-    if (next === "tour") tourAt = now;
+    if (next === "tour") {
+      tourAt = now;
+      // Do not rush when entering tour: linger calmly where we are
+      idleUntil = Math.max(idleUntil, now + 30000);
+    }
   }
 
   // If in watch mode and stationed, allow occasional contextual observations
   if (rule === "watch" && !legs.length && now >= idleUntil) {
-    if (now - lastObservationTime > OBSERVATION_INTERVAL_MS && Math.random() < 0.4) {
+    if (now - lastObservationTime > OBSERVATION_INTERVAL_MS && Math.random() < 0.3) {
       void triggerContextualObservation(now);
     }
   }
 
-  // Micro adjustments while observing: subtle blink or gentle reaction
+  // Micro adjustments while observing: subtle blink
   if (rule === "watch" && !legs.length && now - lastGazeAdjust > 8000) {
     lastGazeAdjust = now;
-    if (Math.random() < 0.35) {
+    if (Math.random() < 0.3) {
       if (pal) pal.blink();
       engine.blink();
     }
@@ -558,7 +566,7 @@ function step(dt: number, now: number) {
     eyeTo = cursorAt >= 0 ? cursorPos : null;
     const distFromStation = Math.hypot(cursorPos.x - stationCursor.x, cursorPos.y - stationCursor.y);
     if (stationCursor.x === -9999 || distFromStation > SHIFT_THRESHOLD) {
-      // Activity moved to a noticeably different screen area (>150px away)
+      // Activity moved to a noticeably different screen area (>240px away)
       if (stationShiftStart === 0) {
         stationShiftStart = now;
       } else if (now - stationShiftStart >= SHIFT_SUSTAIN_MS) {
@@ -581,7 +589,7 @@ function step(dt: number, now: number) {
   }
 
   if (target) {
-    const follow = rule === "watch" ? 140 : ROUTE_EPS;
+    const follow = rule === "watch" ? 160 : ROUTE_EPS;
     const drift = routedTo
       ? Math.hypot(target.x - routedTo.x, target.y - routedTo.y)
       : Number.POSITIVE_INFINITY;
@@ -591,6 +599,7 @@ function step(dt: number, now: number) {
       routedTo = { ...target };
       currentVelocity = 0;
       distanceWalkedInLeg = 0;
+      nextPauseDistance = 160 + Math.random() * 80;
     }
   }
   if (!legs.length) return;
@@ -604,9 +613,9 @@ function step(dt: number, now: number) {
   if (dist > 0) {
     if (dx !== 0) faceDir = Math.sign(dx);
 
-    // Smooth acceleration and deceleration curve
+    // Smooth sinusoidal deceleration curve as we near target
     const maxSpeed = walkSpeed;
-    const targetVel = dist < 50 ? Math.max(16, maxSpeed * (dist / 50)) : maxSpeed;
+    const targetVel = dist < 55 ? Math.max(8, walkSpeed * Math.sin((dist / 55) * (Math.PI / 2))) : maxSpeed;
     if (currentVelocity < targetVel) {
       currentVelocity = Math.min(targetVel, currentVelocity + ACCEL * dt);
     } else {
@@ -619,11 +628,11 @@ function step(dt: number, now: number) {
 
     // Organic micro-pause during longer walks
     distanceWalkedInLeg += stride;
-    if (distanceWalkedInLeg > 220 && dist > 70 && Math.random() < 0.2) {
+    if (distanceWalkedInLeg >= nextPauseDistance && dist > 70) {
       distanceWalkedInLeg = 0;
-      microPauseUntil = now + 420;
+      nextPauseDistance = 160 + Math.random() * 80;
+      microPauseUntil = now + 600;
       currentVelocity = 0;
-      if (pal) pal.lookAt(0, 0);
     }
   }
 
@@ -636,17 +645,55 @@ function step(dt: number, now: number) {
     if (!legs.length) {
       // Arrived at destination!
       if (rule === "watch") {
-        // Stationed observing for 16-28 seconds
-        idleUntil = now + 16000 + Math.random() * 12000;
+        // Stationed observing for 35-65 seconds!
+        idleUntil = now + 35000 + Math.random() * 30000;
         void triggerContextualObservation(now);
       } else if (rule === "tour") {
-        // Quiet resting station for 28-50 seconds
+        // Quiet resting station for 45-80 seconds
         idleUntil = now + IDLE_MIN + Math.random() * (IDLE_MAX - IDLE_MIN);
         tourAt = idleUntil;
       }
     }
   }
   if (x !== ox || y !== oy) send();
+}
+
+function computeGaze(dt: number, now: number) {
+  // If stationed at the very top of the screen: look down towards workspace
+  if (y <= screenRect().y0 + 20) {
+    const rawDx = (cursorPos.x - (x + PAL_W / 2)) / 450;
+    targetGazeX = Math.max(-0.35, Math.min(0.35, rawDx));
+    targetGazeY = 0.55;
+  } else if (cursorAt >= 0 && now - cursorAt < 6000) {
+    // User active: glance softly in direction of activity, clamped to gentle angles
+    const dx = cursorPos.x - (x + PAL_W / 2);
+    const dy = cursorPos.y - (y + PAL_H / 2);
+    const dist = Math.hypot(dx, dy);
+
+    if (dist > 70) {
+      // Gentle direction: clamped to friendly max ±0.35 horizontal, ±0.25 vertical
+      const s = Math.tanh(dist / 400);
+      targetGazeX = Math.max(-0.35, Math.min(0.35, (dx / dist) * s * 0.6));
+      targetGazeY = Math.max(-0.25, Math.min(0.25, (dy / dist) * s * 0.45));
+    } else {
+      // Close by: relaxed forward gaze
+      targetGazeX = faceDir * 0.12;
+      targetGazeY = 0.04;
+    }
+  } else {
+    // Idle/quiet: resting relaxed gaze facing forward
+    targetGazeX = faceDir * 0.15;
+    targetGazeY = 0.04;
+  }
+
+  // Damped exponential smoothing for fluid, calm, lifelike gaze
+  const kGaze = 1 - Math.pow(0.003, dt);
+  currentGazeX += (targetGazeX - currentGazeX) * kGaze;
+  currentGazeY += (targetGazeY - currentGazeY) * kGaze;
+
+  if (pal) {
+    pal.lookAt(currentGazeX, currentGazeY);
+  }
 }
 
 function drawMochi(dt: number) {
@@ -656,52 +703,13 @@ function drawMochi(dt: number) {
   const hCss = BOT_SIZE + BOT_OVERHANG;
   const dpr = Math.min(2, window.devicePixelRatio || 1);
   engine.particleOverhang = BOT_OVERHANG;
-  if (y <= screenRect().y0 + 16) {
-    // Pousado no topo da tela: olha para baixo acompanhando a tela e o que digitamos
-    engine.lookX = Math.max(-0.6, Math.min(0.6, (cursorPos.x - (x + PAL_W / 2)) / 300));
-    engine.lookY = 1.0;
-  } else if (eyeTo) {
-    const dx = eyeTo.x - (x + PAL_W / 2);
-    const dy = eyeTo.y - (y + PAL_H / 2);
-    const m = Math.max(40, Math.hypot(dx, dy));
-    engine.lookX = Math.max(-1, Math.min(1, (dx / m) * 1.4));
-    engine.lookY = Math.max(-1, Math.min(1, (dy / m) * 1.4));
-  } else {
-    engine.lookX = faceDir * 0.6;
-    engine.lookY = 0;
-  }
+  engine.lookX = currentGazeX;
+  engine.lookY = currentGazeY;
   engine.slotHTarget = 0;
   engine.update(dt);
   ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
   ctx.clearRect(0, 0, BOT_SIZE, hCss);
   engine.draw(ctx, BOT_SIZE, hCss);
-}
-
-function updatePalGaze() {
-  if (!pal) return;
-  if (y <= screenRect().y0 + 16) {
-    // Pousado no topo da tela: olha para baixo acompanhando a tela e o que digitamos
-    const gx = Math.max(-0.6, Math.min(0.6, (cursorPos.x - (x + PAL_W / 2)) / 300));
-    pal.lookAt(gx, 0.85);
-    return;
-  }
-  if (cursorAt >= 0) {
-    const eyeX = x + PAL_W / 2;
-    const eyeY = y + PAL_H / 2;
-    const dx = cursorPos.x - eyeX;
-    const dy = cursorPos.y - eyeY;
-    const dist = Math.hypot(dx, dy);
-    if (dist > 0) {
-      const s = Math.tanh(dist / 220);
-      const gx = Math.max(-1, Math.min(1, (dx / dist) * s));
-      const gy = Math.max(-1, Math.min(1, (dy / dist) * s));
-      pal.lookAt(gx, gy);
-    } else {
-      pal.lookAt(0, 0);
-    }
-  } else {
-    pal.lookAt(faceDir * 0.5, 0);
-  }
 }
 
 function tick(t: number) {
@@ -710,8 +718,8 @@ function tick(t: number) {
   lastT = t;
   frames++;
   step(dt, t);
+  computeGaze(dt, t);
   if (currentChar === "mochi") drawMochi(dt);
-  else if (pal) updatePalGaze();
 }
 
 /** Show the pal and let it walk, or park it and stop costing anything. */
@@ -906,7 +914,6 @@ async function main() {
   await onEvent<{ x: number; y: number; down: boolean }>("pal-cursor", (c) => {
     cursorPos = { x: c.x, y: c.y };
     cursorAt = performance.now();
-    updatePalGaze();
   });
   await onEvent<Settings>("settings-changed", (s) => {
     State.settings = { ...State.settings, ...s };

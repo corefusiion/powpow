@@ -197,6 +197,7 @@ export class BotEngine {
   miniNextBehavior = 0;
 
   badge: Badge | null = null;
+  showBadge = true;
   private badgeKey = "none";
   private badgeToken = 0;
 
@@ -680,7 +681,7 @@ export class BotEngine {
 
     x.restore();
 
-    if (this.badge && this.badgeS > 0.01 && this.morph < 0.25) {
+    if (this.showBadge && this.badge && this.badgeS > 0.01 && this.morph < 0.25) {
       this.drawBadge(x, this.badge, R, cx, cy);
     }
     this.drawParticles(x, R, cx, cy);
