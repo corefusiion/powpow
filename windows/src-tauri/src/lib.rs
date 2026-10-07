@@ -272,6 +272,11 @@ fn attach_active_window(app: AppHandle) -> Result<capture::AttachedWindow, Strin
     capture::attach_active(&app)
 }
 
+#[tauri::command]
+fn get_active_window_bounds(app: AppHandle) -> Option<capture::ActiveWindowBounds> {
+    capture::active_window_bounds(&app)
+}
+
 #[derive(Clone, Serialize)]
 struct PalAction {
     kind: String,
@@ -649,6 +654,7 @@ pub fn run() {
             set_pal_state,
             pal_state,
             attach_active_window,
+            get_active_window_bounds,
             pal_action,
             set_pal_rect,
             set_pal_focus,

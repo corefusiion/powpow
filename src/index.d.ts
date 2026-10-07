@@ -77,13 +77,31 @@ export interface ActionDefinition {
   particles?: ParticleKind | (string & {});
 }
 
+export type MascotPose =
+  | 'idle'
+  | 'walk'
+  | 'run'
+  | 'sit'
+  | 'lie'
+  | 'sleep'
+  | 'observe'
+  | 'think'
+  | 'curious'
+  | 'wave'
+  | 'celebrate'
+  | 'error';
+
 export declare class DotPal extends HTMLElement {
   character: BuiltInCharacter | (string & {});
   color: string | null;
   idle: IdleAnimation;
   mood: Mood;
   state: AgentState;
+  pose: MascotPose | (string & {});
+  fullBody: boolean;
   look: 'cursor' | 'none';
+  setPose(pose: MascotPose | string): void;
+  setDirection(dir: number): void;
   /** Speech bubble mode (`bubble` attribute): progress glyph, text only, or no bubble at all. */
   bubble: BubbleMode;
   static: boolean;

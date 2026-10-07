@@ -24,6 +24,8 @@ body {
 dot-pal {
   position: absolute;
   pointer-events: none;
+  filter: drop-shadow(0 10px 20px rgba(0, 0, 0, 0.32));
+  transition: filter 0.3s ease;
 }
 
 /* The card: to the right of the character, in the window's spare width. */

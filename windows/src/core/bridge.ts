@@ -140,6 +140,8 @@ export const Bridge = {
   palState: () => call<string>("pal_state"),
   /** The window the user was working in - the pal's Screen analysis. */
   attachActiveWindow: () => callOrThrow<AttachedWindow>("attach_active_window"),
+  /** Screen bounds of active window without screenshot overhead for perching. */
+  activeWindowBounds: () => call<ActiveWindowBounds | null>("get_active_window_bounds"),
   /** A card button pressed on the pal; the island owns what it means. */
   palAction: (kind: string, query?: string) => call<void>("pal_action", { kind, query }),
   /** The pal's clickable area, window-local logical px (character + card). */
@@ -148,6 +150,15 @@ export const Bridge = {
   /** Typing in the card: let the window take focus, then give it back. */
   setPalFocus: (focused: boolean) => call<void>("set_pal_focus", { focused }),
 };
+
+export interface ActiveWindowBounds {
+  appName: string;
+  title: string;
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+}
 
 export interface IntegrationUpdate {
   id: string;

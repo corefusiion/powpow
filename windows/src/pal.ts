@@ -325,6 +325,12 @@ async function triggerContextualObservation(now: number, force = false) {
 }
 
 function onPalSummoned() {
+  if (pal) {
+    pal.setPose("wave");
+    window.setTimeout(() => {
+      if (pal && pal.pose === "wave") pal.setPose("idle");
+    }, 2800);
+  }
   showThought("Aqui para acompanhar! 👀", "star");
 }
 
@@ -465,12 +471,82 @@ let currentGazeY = 0;
 let targetGazeX = 0;
 let targetGazeY = 0;
 
+interface CachedWindowBounds {
+  appName: string;
+  title: string;
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  at: number;
+}
+let cachedWindowBounds: CachedWindowBounds | null = null;
+let lastWindowPoll = 0;
+const WINDOW_POLL_INTERVAL_MS = 3200;
+let isPerchedOnWindow = false;
+
+async function pollActiveWindowBounds() {
+  const now = performance.now();
+  if (now - lastWindowPoll < WINDOW_POLL_INTERVAL_MS) return;
+  lastWindowPoll = now;
+  try {
+    const b = await Bridge.activeWindowBounds();
+    if (b && b.width >= 160 && b.height >= 160) {
+      cachedWindowBounds = { ...b, at: now };
+    }
+  } catch {
+    // Graceful fallback
+  }
+}
+
+/**
+ * Calculates a comfortable perch on top of or along the active window border
+ * (e.g. VS Code header, Terminal border, Browser top bar).
+ */
+function postWindowPerch(): Pt | null {
+  if (!cachedWindowBounds || performance.now() - cachedWindowBounds.at > 14000) return null;
+  const w = cachedWindowBounds;
+  const b = screenRect();
+  const k = islandRect();
+
+  // Prefer top-right corner of the window (like: Terminal/VS Code 🐾)
+  let targetX = w.x + w.width - PAL_W - 36;
+  // If window is very wide and cursor is active, place closer to cursor side
+  if (cursorAt >= 0 && Math.abs(cursorPos.x - targetX) > 480) {
+    targetX = cursorPos.x > w.x + w.width / 2 ? w.x + w.width - PAL_W - 36 : w.x + 36;
+  }
+
+  // Vertical placement: perched resting on the top edge of the window
+  let targetY = w.y - PAL_H + 46;
+  if (targetY < b.y0) {
+    targetY = Math.max(b.y0, w.y + 4);
+  }
+
+  const spot = clampTo({ x: targetX, y: targetY });
+  // Avoid island keep-out
+  if (standsInBand(spot.x, spot.y)) {
+    if (spot.x > screenInfo.x + screenInfo.width / 2) {
+      spot.x = Math.min(b.x1, k.x1 + 16);
+    } else {
+      spot.x = Math.max(b.x0, k.x0 - PAL_W - 16);
+    }
+  }
+  return spot;
+}
+
 /**
  * Comfortable vantage point beside the active typing / work area.
- * Keeps an intermediate, comfortable distance (~110-130px laterally, ~20px vertically).
- * Never on top of the cursor or text, never too far away.
+ * Prefers sitting on top of the active window ledge when available,
+ * otherwise keeps an intermediate, comfortable distance (~110-130px laterally).
  */
 function postWatch(): Pt {
+  const perch = postWindowPerch();
+  if (perch) {
+    isPerchedOnWindow = true;
+    return perch;
+  }
+  isPerchedOnWindow = false;
+
   if (cursorAt < 0) return postIsland();
   const k = islandRect();
   const b = screenRect();
@@ -611,7 +687,13 @@ function step(dt: number, now: number) {
   const dy = t.y - y;
   const dist = Math.hypot(dx, dy);
   if (dist > 0) {
-    if (dx !== 0) faceDir = Math.sign(dx);
+    if (dx !== 0) {
+      faceDir = Math.sign(dx);
+      if (pal) pal.setDirection(faceDir);
+    }
+    if (pal && currentVelocity > 3) {
+      pal.setPose(dist > 350 ? "run" : "walk");
+    }
 
     // Smooth sinusoidal deceleration curve as we near target
     const maxSpeed = walkSpeed;
@@ -633,6 +715,7 @@ function step(dt: number, now: number) {
       nextPauseDistance = 160 + Math.random() * 80;
       microPauseUntil = now + 600;
       currentVelocity = 0;
+      if (pal) pal.setPose("idle");
     }
   }
 
@@ -645,13 +728,17 @@ function step(dt: number, now: number) {
     if (!legs.length) {
       // Arrived at destination!
       if (rule === "watch") {
+        if (pal) pal.setPose(isPerchedOnWindow ? "sit" : "observe");
         // Stationed observing for 35-65 seconds!
         idleUntil = now + 35000 + Math.random() * 30000;
         void triggerContextualObservation(now);
       } else if (rule === "tour") {
+        if (pal) pal.setPose(Math.random() < 0.5 ? "sit" : "lie");
         // Quiet resting station for 45-80 seconds
         idleUntil = now + IDLE_MIN + Math.random() * (IDLE_MAX - IDLE_MIN);
         tourAt = idleUntil;
+      } else if (rule === "report") {
+        if (pal) pal.setPose("idle");
       }
     }
   }
@@ -719,6 +806,7 @@ function tick(t: number) {
   frames++;
   step(dt, t);
   computeGaze(dt, t);
+  void pollActiveWindowBounds();
   if (currentChar === "mochi") drawMochi(dt);
 }
 
@@ -743,6 +831,13 @@ function applyState(s: BotStateName) {
   engine.setState(s);
   if (!pal) return;
   pal.setState(PAL_STATE[s] ?? "idle");
+  if (s === "finished") {
+    pal.setPose("celebrate");
+  } else if (s === "error") {
+    pal.setPose("error");
+  } else if (s === "thinking" || s === "question") {
+    pal.setPose("think");
+  }
   const emote = PAL_EMOTE[s];
   if (emote) void pal.emote(emote);
 }
@@ -775,13 +870,14 @@ function syncCharacter() {
     canvas = el;
   } else {
     // bubble="none": the roaming pal carries no speech; the island has it.
-    const el = h("dot-pal", { id: "pal-overlay", bubble: "none", size: String(DP_SIZE) });
+    const el = h("dot-pal", { id: "pal-overlay", bubble: "none", size: String(DP_SIZE), "full-body": "" });
     el.style.height = `${Math.round(DP_SIZE * PAL_H_RATIO)}px`;
     el.style.left = `${Math.round((PAL_W - DP_SIZE) / 2)}px`;
     el.style.top = `${Math.round(PAL_H / 2 - DP_SIZE * 0.65)}px`;
     el.character = want;
     root.append(el);
     pal = el;
+    pal.setDirection(faceDir);
   }
   applyState(lastState);
 }

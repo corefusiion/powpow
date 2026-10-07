@@ -212,6 +212,7 @@ const styles = `
   :host {
     --dp-size: 160px;
     --dp-glow: transparent;
+    --face-dir: 1;
     display: inline-block;
     position: relative;
     width: var(--dp-size);
@@ -221,6 +222,16 @@ const styles = `
     clip-path: inset(-100vh -100vw 0 -100vw);
     -webkit-tap-highlight-color: transparent;
     user-select: none;
+  }
+  :host([full-body]),
+  :host([roaming]),
+  :host([pose]) {
+    clip-path: none;
+  }
+  :host([full-body]) .dp-ledge,
+  :host([roaming]) .dp-ledge,
+  :host([pose]) .dp-ledge {
+    overflow-y: visible;
   }
   :host([hidden]) { display: none; }
   :host(:not([static])) { cursor: pointer; }
@@ -233,6 +244,11 @@ const styles = `
   :host([state="done"][mood="happy"]) { --dp-glow: #2fd67b; }
 
   .dp-root, .dp-pose, .dp-actor { width: 100%; height: 100%; }
+  .dp-actor {
+    transform-origin: 50% 100%;
+    transform: scaleX(var(--face-dir, 1));
+    transition: transform 0.22s ease-out;
+  }
   /* Everything below the bottom edge (the ledge) is cut off, and doesn't count as
      overflow either, so rising up from below never adds scrollbars to the page.
      The box reaches far up so jumps and the bubble stay visible. */
@@ -247,10 +263,178 @@ const styles = `
     pointer-events: none;
   }
   .dp-idle { position: absolute; left: 0; bottom: 0; width: 100%; height: 20%; pointer-events: auto; }
-  .dp-idle, .dp-pose, .dp-actor { transform-origin: 50% 100%; }
+  .dp-idle, .dp-pose { transform-origin: 50% 100%; }
   .dp-idle { perspective: 600px; }
   .dp-pose { transition: transform .8s cubic-bezier(.25, .8, .35, 1); }
   svg { display: block; width: 100%; height: 100%; overflow: visible; transition: filter .4s; }
+
+  /* -- Poses & Articulated Kinematics ------------------------------------ */
+  .dp-leg-l, .dp-leg-r, .dp-arm-l, .dp-arm-r, .dp-torso, .dp-shadow {
+    transform-box: fill-box;
+    transition: transform 0.3s cubic-bezier(0.25, 0.8, 0.35, 1);
+  }
+
+  /* WALK CYCLE: coordinated alternating legs, arms in anti-phase, bobbing body */
+  :host([pose="walk"]) .dp-leg-l {
+    animation: dp-walk-leg-l 0.55s ease-in-out infinite alternate;
+    transform-origin: 50% 0%;
+  }
+  :host([pose="walk"]) .dp-leg-r {
+    animation: dp-walk-leg-r 0.55s ease-in-out infinite alternate;
+    transform-origin: 50% 0%;
+  }
+  :host([pose="walk"]) .dp-arm-l {
+    animation: dp-walk-arm-l 0.55s ease-in-out infinite alternate;
+    transform-origin: top center;
+  }
+  :host([pose="walk"]) .dp-arm-r {
+    animation: dp-walk-arm-r 0.55s ease-in-out infinite alternate;
+    transform-origin: top center;
+  }
+  :host([pose="walk"]) .dp-pose {
+    animation: dp-walk-bob 0.275s ease-in-out infinite alternate;
+  }
+  :host([pose="walk"]) .dp-shadow {
+    animation: dp-walk-shadow 0.275s ease-in-out infinite alternate;
+    transform-origin: center;
+  }
+
+  @keyframes dp-walk-leg-l {
+    0%   { transform: rotate(-18deg) translateY(-2px); }
+    100% { transform: rotate(18deg) translateY(0px); }
+  }
+  @keyframes dp-walk-leg-r {
+    0%   { transform: rotate(18deg) translateY(0px); }
+    100% { transform: rotate(-18deg) translateY(-2px); }
+  }
+  @keyframes dp-walk-arm-l {
+    0%   { transform: rotate(16deg); }
+    100% { transform: rotate(-16deg); }
+  }
+  @keyframes dp-walk-arm-r {
+    0%   { transform: rotate(-16deg); }
+    100% { transform: rotate(16deg); }
+  }
+  @keyframes dp-walk-bob {
+    0%   { transform: translateY(0) scale(1, 1); }
+    100% { transform: translateY(-3.5px) scale(0.98, 1.02); }
+  }
+  @keyframes dp-walk-shadow {
+    0%   { transform: scale(1, 1); opacity: 0.2; }
+    100% { transform: scale(0.86, 0.8); opacity: 0.14; }
+  }
+
+  /* RUN CYCLE: faster stride, forward lean */
+  :host([pose="run"]) .dp-leg-l {
+    animation: dp-walk-leg-l 0.32s ease-in-out infinite alternate;
+    transform-origin: 50% 0%;
+  }
+  :host([pose="run"]) .dp-leg-r {
+    animation: dp-walk-leg-r 0.32s ease-in-out infinite alternate;
+    transform-origin: 50% 0%;
+  }
+  :host([pose="run"]) .dp-arm-l {
+    animation: dp-walk-arm-l 0.32s ease-in-out infinite alternate;
+    transform-origin: top center;
+  }
+  :host([pose="run"]) .dp-arm-r {
+    animation: dp-walk-arm-r 0.32s ease-in-out infinite alternate;
+    transform-origin: top center;
+  }
+  :host([pose="run"]) .dp-pose {
+    animation: dp-run-bob 0.16s ease-in-out infinite alternate;
+  }
+  @keyframes dp-run-bob {
+    0%   { transform: translateY(0) rotate(5deg); }
+    100% { transform: translateY(-5px) rotate(8deg); }
+  }
+
+  /* SIT POSE: resting on a window ledge or surface */
+  :host([pose="sit"]) .dp-leg-l,
+  :host([pose="sit"]) .dp-leg-r {
+    transform: translateY(3px) scaleY(0.7) rotate(12deg);
+  }
+  :host([pose="sit"]) .dp-pose {
+    transform: translateY(5px);
+  }
+  :host([pose="sit"]) .dp-shadow {
+    transform: translateY(4px) scale(1.15, 1.25);
+    opacity: 0.26;
+  }
+
+  /* LIE POSE: reclined on a toolbar or surface */
+  :host([pose="lie"]) .dp-pose {
+    transform: translateY(12px) rotate(12deg) scale(0.96, 0.9);
+  }
+  :host([pose="lie"]) .dp-leg-l,
+  :host([pose="lie"]) .dp-leg-r {
+    transform: translateY(6px) scaleY(0.65) rotate(18deg);
+  }
+  :host([pose="lie"]) .dp-shadow {
+    transform: translateY(12px) scale(1.28, 1.4);
+    opacity: 0.28;
+  }
+
+  /* SLEEP POSE: resting relaxed with snore */
+  :host([pose="sleep"]) .dp-pose {
+    transform: translateY(12px) rotate(12deg) scale(0.96, 0.9);
+    animation: dp-snore 4.5s ease-in-out infinite;
+  }
+  :host([pose="sleep"]) .dp-blink {
+    transform: scaleY(0.08);
+  }
+  :host([pose="sleep"]) .dp-shadow {
+    transform: translateY(12px) scale(1.28, 1.4);
+    opacity: 0.28;
+  }
+
+  /* OBSERVE POSE: focused attentive posture */
+  :host([pose="observe"]) .dp-pose {
+    transform: translateY(-2px) scale(1.02, 1.02);
+  }
+
+  /* THINK POSE: hand to chin, looking up */
+  :host([pose="think"]) .dp-pose {
+    transform: rotate(-4deg) translateY(-2px);
+  }
+  :host([pose="think"]) .dp-arm-r {
+    transform: rotate(-38deg) translateY(-8px);
+  }
+
+  /* CURIOUS POSE: body and head tilted inquiringly */
+  :host([pose="curious"]) .dp-pose {
+    transform: rotate(11deg) translateY(-2px);
+  }
+
+  /* WAVE POSE: cheerful waving greeting */
+  :host([pose="wave"]) .dp-arm-r {
+    animation: dp-wave-hand 0.42s ease-in-out infinite alternate;
+    transform-origin: 80% 80%;
+  }
+  @keyframes dp-wave-hand {
+    0%   { transform: rotate(-10deg); }
+    100% { transform: rotate(38deg); }
+  }
+
+  /* CELEBRATE POSE: joyful jumping with arms raised */
+  :host([pose="celebrate"]) .dp-pose {
+    animation: dp-celebrate-jump 0.75s ease-in-out infinite;
+  }
+  :host([pose="celebrate"]) .dp-arm-l {
+    transform: rotate(-45deg) translateY(-8px);
+  }
+  :host([pose="celebrate"]) .dp-arm-r {
+    transform: rotate(45deg) translateY(-8px);
+  }
+  @keyframes dp-celebrate-jump {
+    0%, 100% { transform: translateY(0) scale(1.05, 0.95); }
+    45%      { transform: translateY(-16px) scale(0.95, 1.05); }
+  }
+
+  /* ERROR POSE: slight shrink / worried posture */
+  :host([pose="error"]) .dp-pose {
+    transform: translateY(2px) scale(0.94);
+  }
 
   /* Stays inside the host box (so it never adds scrollbars); the halo is a shadow,
      which doesn't count as overflow. The bottom edge is clipped like the pal. */
@@ -607,7 +791,7 @@ export function bubbleContent(mood, mode = 'auto') {
 // ---------------------------------------------------------------------------
 
 export class DotPal extends Base {
-  static observedAttributes = ['character', 'color', 'size', 'label', 'mood', 'state', 'idle', 'lean', 'bubble'];
+  static observedAttributes = ['character', 'color', 'size', 'label', 'mood', 'state', 'idle', 'lean', 'bubble', 'pose', 'full-body', 'roaming'];
 
   #n = ++uid;
   #uid = `dp${this.#n}`;
@@ -758,12 +942,40 @@ export class DotPal extends Base {
     else if (name === 'color') this.#applyColor();
     else if (name === 'label') this.#applyLabel();
     else if (name === 'state') this.#applyState();
+    else if (name === 'pose') this.#applyPose();
     else if (name === 'lean') this.#lean(this.#gaze.x);
     else if (name === 'bubble') this.#syncBubble();
     else if (this.#def) this.#render();
   }
 
+  #applyPose() {
+    const p = this.getAttribute('pose');
+    if (!p) return;
+    if (p === 'sleep') this.#setMood('sleepy');
+    else if (p === 'celebrate') this.#setMood('happy');
+    else if (p === 'error') this.#setMood('sad');
+    else if (p === 'think') this.#setMood('thinking');
+  }
+
   // -- properties ------------------------------------------------------------
+
+  get pose() { return this.getAttribute('pose') || 'idle'; }
+  set pose(v) {
+    if (!v || v === 'idle') this.removeAttribute('pose');
+    else this.setAttribute('pose', v);
+  }
+
+  setPose(v) {
+    this.pose = v;
+  }
+
+  get fullBody() { return this.hasAttribute('full-body') || this.hasAttribute('roaming'); }
+  set fullBody(v) { this.toggleAttribute('full-body', !!v); }
+
+  setDirection(dir) {
+    const d = dir < 0 ? -1 : 1;
+    this.style.setProperty('--face-dir', String(d));
+  }
 
   get character() { return this.getAttribute('character') || 'blu'; }
   set character(v) { this.setAttribute('character', v); }

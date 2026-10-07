@@ -307,3 +307,81 @@ fn save(target: HWND) -> Result<AttachedWindow, String> {
         title,
     })
 }
+
+#[derive(Serialize, Clone, Debug)]
+#[serde(rename_all = "camelCase")]
+pub struct ActiveWindowBounds {
+    pub app_name: String,
+    pub title: String,
+    pub x: i32,
+    pub y: i32,
+    pub width: i32,
+    pub height: i32,
+}
+
+/// Returns screen bounds and app info of the currently focused/active window
+/// without taking screenshots or doing heavy image processing.
+pub fn active_window_bounds(app: &AppHandle) -> Option<ActiveWindowBounds> {
+    let mut target = unsafe { GetForegroundWindow() };
+    let our_windows = ours(app);
+
+    if target.0.is_null() || our_windows.contains(&target) || unsafe { IsIconic(target) }.as_bool() {
+        let mut next = target;
+        while !next.0.is_null() {
+            let Ok(h) = (unsafe {
+                windows::Win32::UI::WindowsAndMessaging::GetWindow(
+                    next,
+                    windows::Win32::UI::WindowsAndMessaging::GW_HWNDNEXT,
+                )
+            }) else {
+                break;
+            };
+            if h.0.is_null() {
+                break;
+            }
+            next = h;
+            if !our_windows.contains(&next)
+                && !unsafe { IsIconic(next) }.as_bool()
+                && unsafe { windows::Win32::UI::WindowsAndMessaging::IsWindowVisible(next) }.as_bool()
+            {
+                let mut r = RECT::default();
+                if unsafe { GetWindowRect(next, &mut r) }.is_ok() {
+                    let w = r.right - r.left;
+                    let h = r.bottom - r.top;
+                    if w > 120 && h > 120 {
+                        target = next;
+                        break;
+                    }
+                }
+            }
+        }
+    }
+
+    if target.0.is_null() || our_windows.contains(&target) || unsafe { IsIconic(target) }.as_bool() {
+        return None;
+    }
+
+    let mut rect = RECT::default();
+    unsafe {
+        GetWindowRect(target, &mut rect).ok()?;
+    }
+
+    let title = window_text(target);
+    let mut pid = 0u32;
+    unsafe {
+        GetWindowThreadProcessId(target, Some(&mut pid));
+    }
+    let app_name = process_name(pid)
+        .trim_end_matches(".exe")
+        .trim_end_matches(".EXE")
+        .to_string();
+
+    Some(ActiveWindowBounds {
+        app_name,
+        title,
+        x: rect.left,
+        y: rect.top,
+        width: rect.right - rect.left,
+        height: rect.bottom - rect.top,
+    })
+}

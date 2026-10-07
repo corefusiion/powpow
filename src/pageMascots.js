@@ -124,7 +124,38 @@ export function createPageMascotCharacters() {
         `,
         body: `
           <!-- Soft floor shadow for grounding -->
-          <ellipse cx="100" cy="196" rx="46" ry="8" fill="#000000" opacity="0.14"/>
+          <ellipse class="dp-shadow" cx="100" cy="192" rx="46" ry="6.5" fill="#000000" opacity="0.18"/>
+          <!-- Category-aware articulated legs and feet -->
+          ${m.category === 'robots' ? `
+            <g class="dp-leg-l" style="transform-origin: 74px 166px">
+              <rect x="66" y="162" width="16" height="22" rx="4" fill="#2d3436"/>
+              <ellipse class="dp-foot-l" cx="74" cy="186" rx="14" ry="6" fill="${m.color}"/>
+            </g>
+            <g class="dp-leg-r" style="transform-origin: 126px 166px">
+              <rect x="118" y="162" width="16" height="22" rx="4" fill="#2d3436"/>
+              <ellipse class="dp-foot-r" cx="126" cy="186" rx="14" ry="6" fill="${m.color}"/>
+            </g>
+          ` : m.category === 'people' ? `
+            <g class="dp-leg-l" style="transform-origin: 76px 166px">
+              <rect x="70" y="162" width="12" height="22" rx="6" fill="#2d3436"/>
+              <ellipse class="dp-foot-l" cx="74" cy="186" rx="12" ry="6" fill="${m.color}"/>
+            </g>
+            <g class="dp-leg-r" style="transform-origin: 124px 166px">
+              <rect x="118" y="162" width="12" height="22" rx="6" fill="#2d3436"/>
+              <ellipse class="dp-foot-r" cx="126" cy="186" rx="12" ry="6" fill="${m.color}"/>
+            </g>
+          ` : `
+            <g class="dp-leg-l" style="transform-origin: 74px 166px">
+              <rect x="68" y="162" width="13" height="22" rx="6.5" fill="${m.color}"/>
+              <ellipse class="dp-foot-l" cx="72" cy="186" rx="12" ry="6" fill="${m.color}"/>
+              <circle cx="72" cy="185" r="3" fill="#ffffff" opacity="0.4"/>
+            </g>
+            <g class="dp-leg-r" style="transform-origin: 126px 166px">
+              <rect x="119" y="162" width="13" height="22" rx="6.5" fill="${m.color}"/>
+              <ellipse class="dp-foot-r" cx="128" cy="186" rx="12" ry="6" fill="${m.color}"/>
+              <circle cx="128" cy="185" r="3" fill="#ffffff" opacity="0.4"/>
+            </g>
+          `}
           <!-- Mascot Interactive 3x3 Sprite Layer: 100% transparent background, tracks mouse -->
           <g clip-path="url(#${id('mascot_clip')})">
             <image class="dp-mascot-img" href="/mascots/${m.id}-directions.webp"
