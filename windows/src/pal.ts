@@ -9,7 +9,7 @@
 import "./pal.css";
 import { Bridge, IS_TAURI, onEvent, type BootInfo } from "./core/bridge";
 import { PANEL_H, PANEL_W, type BotStateName } from "./core/layout";
-import { PAL_EMOTE, PAL_H_RATIO, PAL_MID_RATIO, PAL_STATE } from "./island/palState";
+import { PAL_EMOTE, PAL_H_RATIO, PAL_STATE } from "./island/palState";
 import { BotEngine } from "./mochi/engine";
 import { State, type Settings } from "./core/state";
 import { t } from "./core/i18n";
@@ -308,19 +308,59 @@ async function autonomousScreenCommentary(force = false) {
   }
 }
 
+function throwPlayfulParticles() {
+  if (!splattersEl) return;
+  splattersEl.innerHTML = "";
+  engine.triggerEmote("happy");
+  if (pal) void pal.emote("star");
+  Sound.play("wink");
+
+  const symbols = ["✨", "💖", "⭐", "🎉", "🌟", "🎈"];
+  for (let i = 0; i < 7; i++) {
+    const p = document.createElement("div");
+    p.className = "pal-playful-particle";
+    p.textContent = symbols[Math.floor(Math.random() * symbols.length)];
+    p.style.left = `${20 + Math.random() * 95}px`;
+    p.style.top = `${30 + Math.random() * 90}px`;
+    p.style.fontSize = `${16 + Math.random() * 12}px`;
+    splattersEl.appendChild(p);
+  }
+
+  window.setTimeout(() => {
+    if (splattersEl) splattersEl.innerHTML = "";
+  }, 3000);
+}
+
+function onPalSummoned() {
+  if (thoughtEl && thoughtTextEl) {
+    thoughtTextEl.textContent = "Opa, cheguei! 🚀";
+    thoughtEl.hidden = false;
+    Sound.play("peek");
+    engine.triggerEmote("happy");
+    if (pal) void pal.emote("star");
+    window.setTimeout(() => {
+      if (thoughtEl) thoughtEl.hidden = true;
+    }, 3600);
+  }
+}
+
 function maybeTriggerPrank(now: number) {
   if (now - lastPrankTime < PRANK_INTERVAL_MS) return;
   lastPrankTime = now;
 
-  const choice = Math.floor(Math.random() * 5);
-  if (choice === 0 || choice === 1) {
+  const choice = Math.floor(Math.random() * 6);
+  if (choice === 0) {
     void autonomousScreenCommentary(true);
+  } else if (choice === 1) {
+    throwPlayfulParticles();
   } else if (choice === 2) {
     showSarcasticThought();
   } else if (choice === 3) {
     biteCloseButton();
-  } else {
+  } else if (choice === 4) {
     throwSplatters();
+  } else {
+    void autonomousScreenCommentary(true);
   }
 }
 
@@ -622,10 +662,12 @@ function tick(t: number) {
 /** Show the pal and let it walk, or park it and stop costing anything. */
 function setWander(on: boolean) {
   if (on === running) return;
+  const wasRunning = running;
   running = on;
   if (on) {
     lastT = performance.now();
     raf = requestAnimationFrame(tick);
+    if (!wasRunning) onPalSummoned();
   } else if (raf) {
     cancelAnimationFrame(raf);
     raf = 0;
@@ -673,7 +715,7 @@ function syncCharacter() {
     const el = h("dot-pal", { id: "pal-overlay", bubble: "none", size: String(DP_SIZE) });
     el.style.height = `${Math.round(DP_SIZE * PAL_H_RATIO)}px`;
     el.style.left = `${Math.round((PAL_W - DP_SIZE) / 2)}px`;
-    el.style.top = `${Math.round(PAL_H / 2 - DP_SIZE * PAL_MID_RATIO)}px`;
+    el.style.top = `${Math.round(PAL_H / 2 - DP_SIZE * 0.65)}px`;
     el.character = want;
     root.append(el);
     pal = el;
@@ -841,6 +883,13 @@ async function main() {
   });
   searchInput.addEventListener("focus", () => void Bridge.setPalFocus(true));
   searchInput.addEventListener("blur", () => void Bridge.setPalFocus(false));
+  window.addEventListener("keydown", (e) => {
+    if (e.ctrlKey && (e.key === "8" || e.code === "Digit8")) {
+      e.preventDefault();
+      void Bridge.setPalWander(false);
+    }
+  });
+
   searchInput.addEventListener("keydown", (e) => {
     if ((e as KeyboardEvent).key === "Enter") {
       e.preventDefault();

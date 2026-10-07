@@ -131,7 +131,7 @@ export const DEFAULT_SETTINGS: Settings = {
   soundVolume: 0.12,
   // Off until asked for: a voice that starts talking on its own is a surprise.
   voiceEnabled: false,
-  wander: true,
+  wander: false,
   autoCloseInterval: 15,
   absenceInterval: 180,
   activeIntegrations: [

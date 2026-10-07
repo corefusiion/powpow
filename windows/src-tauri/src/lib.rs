@@ -684,6 +684,29 @@ pub fn run() {
             crate::droptarget::ensure_all(&handle);
             pipe::start(handle.clone());
             integrations::start(handle.clone());
+
+            // Global hotkey Ctrl+8 to summon/toggle roaming desktop companion
+            let hotkey_app = handle.clone();
+            std::thread::spawn(move || {
+                use windows::Win32::UI::Input::KeyboardAndMouse::{GetAsyncKeyState, VK_CONTROL};
+                let mut was_pressed = false;
+                loop {
+                    std::thread::sleep(std::time::Duration::from_millis(35));
+                    let ctrl = unsafe { (GetAsyncKeyState(VK_CONTROL.0 as i32) as u16 & 0x8000) != 0 };
+                    let eight = unsafe { (GetAsyncKeyState(0x38) as u16 & 0x8000) != 0 };
+                    let pressed = ctrl && eight;
+                    if pressed && !was_pressed {
+                        was_pressed = true;
+                        let current = PAL_WANDER.load(Ordering::Relaxed);
+                        let next = !current;
+                        set_pal_wander(hotkey_app.clone(), next);
+                        let _ = hotkey_app.emit_to(island::WINDOW_LABEL, "pal-wander-toggle", next);
+                    } else if !pressed && was_pressed {
+                        was_pressed = false;
+                    }
+                }
+            });
+
             Ok(())
         })
         .run(tauri::generate_context!())

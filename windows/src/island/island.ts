@@ -24,7 +24,7 @@ import { h } from "../views/dom";
 // whenever Settings › Character picks something else (registerCustom feeds "custom").
 import { DotPal, characters, registerCustom, type CustomPal } from "../../../src/index.js";
 import { IslandStateMachine } from "./fsm";
-import { PAL_EMOTE, PAL_H_RATIO, PAL_MID_RATIO, PAL_STATE } from "./palState";
+import { PAL_EMOTE, PAL_STATE } from "./palState";
 
 const BOT_OVERHANG = 40;
 /** Same margin as the Rust hit test (src-tauri/src/island.rs). */
@@ -913,6 +913,49 @@ export class Island {
    * the user's eyes or hands: open island, pointer resting on it, an approval or
    * chat waiting, a drag owning the screen, pause, or reduced motion.
    */
+  togglePalWander() {
+    State.settings.wander = !State.settings.wander;
+    void Bridge.saveSettings(State.settings);
+    this.syncPalWander();
+    Sound.play(State.settings.wander ? "attach" : "pop");
+  }
+
+  private startCompactPlayfulness() {
+    window.setInterval(() => {
+      if (State.mode !== "compact" || State.paused) return;
+      const r = Math.random();
+      if (r < 0.35) {
+        const lines = [
+          "✨ Foco total!",
+          "🚀 Bora lá!",
+          "💡 Ideia genial?",
+          "☕ Já bebeu água hoje?",
+          "👋 Tô de olho aqui!",
+          "⚡ Arrebenta no código!",
+        ];
+        const text = lines[Math.floor(Math.random() * lines.length)];
+        if (this.pal) {
+          void this.pal.emote("star");
+          this.pal.say(text, { duration: 2800 });
+        }
+        this.engine.triggerEmote("happy");
+        Sound.play("wink");
+      } else if (r < 0.65) {
+        if (this.pal) void this.pal.emote("love");
+        this.engine.triggerEmote("love");
+        Sound.play("love");
+      } else {
+        if (this.pal) {
+          this.pal.blink();
+          void this.pal.emote("happy");
+        }
+        this.engine.triggerEmote("wink");
+        Sound.play("wink");
+      }
+      this.ensureRunning();
+    }, 19000);
+  }
+
   private syncPalWander() {
     const on =
       State.settings.wander &&
@@ -959,11 +1002,24 @@ export class Island {
     window.addEventListener("mouseup", () => this.onMouseUp(State.mouse.x, State.mouse.y));
 
     window.addEventListener("keydown", (e) => {
+      if (e.ctrlKey && (e.key === "8" || e.code === "Digit8")) {
+        e.preventDefault();
+        this.togglePalWander();
+      }
       // Esc always collapses except while an approval decision is pending —
       // drop/chat pins must never trap the user (collapse() clears them).
       if (e.key === "Escape" && State.mode === "expanded" && !State.pendingApproval) this.collapse();
       State.lastActivity = performance.now();
     });
+
+    void onEvent<boolean>("pal-wander-toggle", (on) => {
+      State.settings.wander = on;
+      void Bridge.saveSettings(State.settings);
+      this.syncPalWander();
+      Sound.play(on ? "attach" : "pop");
+    });
+
+    this.startCompactPlayfulness();
 
     void onDragDrop((e) => this.onDragDrop(e));
     // Our own OLE target (droptarget.rs) emits the same shape when it wins
@@ -1202,15 +1258,19 @@ export class Island {
   private drawBot(dt: number) {
     const size = this.botSize.value;
     if (this.pal) {
-      // Same centre and same body diameter as Mochi's (the canvas is botSize
-      // wide, the body is 60 % of it). `size` feeds --dp-size, which scales the
-      // pal's own glow and "tiny" mode with it.
-      const d = Math.round(size * 1.15);
-      const px = String(Math.round(d));
+      const isCompact = State.mode === "compact";
+      const d = isCompact ? Math.max(18, Math.round(size * 1.1)) : Math.round(size * 1.1);
+      const px = String(d);
       if (this.pal.getAttribute("size") !== px) this.pal.setAttribute("size", px);
-      this.pal.style.height = `${Math.round(d * PAL_H_RATIO)}px`;
-      this.pal.style.left = `${this.botCx.value - d / 2}px`;
-      this.pal.style.top = `${this.botCy.value - d * PAL_MID_RATIO}px`;
+      if (isCompact) {
+        this.pal.style.height = `${d}px`;
+        this.pal.style.left = `${this.botCx.value - d / 2}px`;
+        this.pal.style.top = `${this.botCy.value - d / 2 + 1}px`;
+      } else {
+        this.pal.style.height = `${Math.round(d * 1.25)}px`;
+        this.pal.style.left = `${this.botCx.value - d / 2}px`;
+        this.pal.style.top = `${this.botCy.value - d * 0.58}px`;
+      }
     }
     const w = Math.max(1, Math.round(size));
     const hCss = w + BOT_OVERHANG;

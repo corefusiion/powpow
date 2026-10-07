@@ -62,7 +62,7 @@ fn default_voice() -> bool {
 }
 
 fn default_wander() -> bool {
-    true
+    false
 }
 
 fn default_theme() -> String {
