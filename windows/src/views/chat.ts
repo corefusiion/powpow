@@ -97,7 +97,7 @@ export function buildPrompt(actions: ViewActions, onHeightChange: () => void): V
       const reply = await Promise.race([
         Bridge.chatSend(query, context),
         new Promise<never>((_, reject) =>
-          window.setTimeout(() => reject(new Error("Timed out talking to the model — try again.")), 60_000),
+          window.setTimeout(() => reject(new Error(t("Timed out talking to the model — try again."))), 60_000),
         ),
       ]);
       State.chatHistory.push({ id: nextId++, role: "assistant", content: reply.text });

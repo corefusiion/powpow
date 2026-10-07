@@ -256,18 +256,18 @@ export const characters = {
     color: '#0495f4',
     fur: false,
     tap: 'jump',
-    look: 10,
-    mouth: [100, 168],
-    cheek: 44,
-    eyes: { at: [[76, 134], [124, 134]], r: 15 },
+    look: 8,
+    mouth: [100, 138],
+    cheek: 42,
+    eyes: { at: [[76, 108], [124, 108]], r: 15, own: ['wide'] },
     render: ({ id }) => ({
       defs: `
         <radialGradient id="${id('drop_body')}" cx="36%" cy="28%" r="72%">
-          <stop offset="0%" stop-color="#7ee4ff"/>
-          <stop offset="22%" stop-color="#26c1f8"/>
+          <stop offset="0%" stop-color="#8ae0ff"/>
+          <stop offset="22%" stop-color="#34c2fb"/>
           <stop offset="58%" stop-color="#0495f4"/>
-          <stop offset="86%" stop-color="#0454b0"/>
-          <stop offset="100%" stop-color="#02285a"/>
+          <stop offset="86%" stop-color="#0354b0"/>
+          <stop offset="100%" stop-color="#012b6b"/>
         </radialGradient>
         <radialGradient id="${id('drop_sclera')}" cx="38%" cy="32%" r="68%">
           <stop offset="0%" stop-color="#ffffff"/>
@@ -282,91 +282,100 @@ export const characters = {
           <stop offset="100%" stop-color="#0454b0"/>
         </linearGradient>
         <linearGradient id="${id('limb_grad')}" x1="0%" y1="0%" x2="0%" y2="100%">
-          <stop offset="0%" stop-color="#34c2fb"/>
+          <stop offset="0%" stop-color="#38c6ff"/>
           <stop offset="100%" stop-color="#0467c4"/>
         </linearGradient>
         <linearGradient id="${id('foot_grad')}" x1="0%" y1="0%" x2="100%" y2="100%">
-          <stop offset="0%" stop-color="#1eb8f4"/>
-          <stop offset="100%" stop-color="#044da8"/>
+          <stop offset="0%" stop-color="#24baf8"/>
+          <stop offset="100%" stop-color="#034898"/>
         </linearGradient>
       `,
       body: `
-        <!-- Feet peeking below -->
+        <!-- Soft grounding shadow -->
+        <ellipse cx="100" cy="190" rx="46" ry="6" fill="#000000" opacity="0.18"/>
+        <!-- Feet resting safely on the baseline, never clipped -->
         <g fill="url(#${id('foot_grad')})">
-          <ellipse cx="74" cy="244" rx="16" ry="10" transform="rotate(-8 74 244)"/>
-          <ellipse cx="126" cy="244" rx="16" ry="10" transform="rotate(8 126 244)"/>
+          <ellipse cx="76" cy="186" rx="16" ry="9" transform="rotate(-6 76 186)"/>
+          <ellipse cx="124" cy="186" rx="16" ry="9" transform="rotate(6 124 186)"/>
         </g>
-        <g fill="#99e8ff" opacity="0.75">
-          <ellipse cx="72" cy="240" rx="10" ry="4" transform="rotate(-8 72 240)"/>
-          <ellipse cx="124" cy="240" rx="10" ry="4" transform="rotate(8 124 240)"/>
+        <g fill="#99e8ff" opacity="0.8">
+          <ellipse cx="74" cy="184" rx="9" ry="3.5" transform="rotate(-6 74 184)"/>
+          <ellipse cx="122" cy="184" rx="9" ry="3.5" transform="rotate(6 122 184)"/>
         </g>
-        <!-- Ribbon back pass -->
-        <path fill="none" stroke="url(#${id('ribbon_grad')})" stroke-width="13" stroke-linecap="round" opacity="0.85"
-          d="M34 165 C12 182 18 216 48 232 C80 246 130 246 160 228 C186 212 188 182 170 162"/>
+        <!-- Fluid Ribbon back pass -->
+        <path fill="none" stroke="url(#${id('ribbon_grad')})" stroke-width="10" stroke-linecap="round" opacity="0.75"
+          d="M38 140 C18 152 24 176 50 184 C80 190 120 190 150 180 C174 168 178 148 162 136"/>
         <!-- Main 3D Water Droplet Body -->
-        <path fill="url(#${id('drop_body')})" d="M100 18 C100 18 40 98 30 148 C18 204 52 266 100 266 C148 266 182 204 170 148 C160 98 100 18 100 18 Z"/>
+        <path fill="url(#${id('drop_body')})" stroke="#022e6b" stroke-width="1.2"
+          d="M100 20 C94 48 40 92 36 128 C32 164 62 178 100 178 C138 178 168 164 164 128 C160 92 106 48 100 20 Z"/>
         <!-- 3D Specular Highlight Crescent (Glossy Water Droplet) -->
-        <path fill="#ffffff" opacity="0.45" d="M100 26 C100 26 56 94 44 138 C36 172 40 206 48 226 C40 202 38 166 50 130 C60 94 100 26 100 26 Z"/>
-        <ellipse cx="70" cy="80" rx="10" ry="24" transform="rotate(-30 70 80)" fill="#ffffff" opacity="0.28"/>
+        <path fill="#ffffff" opacity="0.45"
+          d="M100 26 C96 48 46 92 44 124 C42 148 54 162 66 166 C50 156 46 136 50 114 C56 84 94 36 100 26 Z"/>
+        <ellipse cx="84" cy="62" rx="7" ry="16" transform="rotate(-30 84 62)" fill="#ffffff" opacity="0.65"/>
+        <circle cx="83" cy="58" r="3.2" fill="#ffffff" opacity="0.95"/>
         <!-- Soft inner reflection bottom right -->
-        <path fill="#38bdf8" opacity="0.32" d="M142 160 C158 186 156 222 134 248 C154 228 158 195 142 160 Z"/>
-        <!-- Running Arms & Cute Hands -->
+        <path fill="#38bdf8" opacity="0.35" d="M142 120 C154 140 152 165 136 174 C148 164 150 142 142 120 Z"/>
+        <!-- Left Arm (Active pose) -->
         <g fill="url(#${id('limb_grad')})">
-          <path d="M40 170 C24 174 16 188 20 202 C22 208 30 208 36 200 C42 192 46 182 46 172 Z"/>
-          <circle cx="22" cy="200" r="7.5"/>
-          <circle cx="19" cy="195" r="3.8"/>
-          <path d="M160 170 C176 174 184 188 180 202 C178 208 170 208 164 200 C158 192 154 182 154 172 Z"/>
-          <circle cx="178" cy="200" r="7.5"/>
-          <circle cx="181" cy="195" r="3.8"/>
+          <path d="M42 126 C28 130 18 144 22 156 C24 162 32 162 38 154 C44 146 48 136 48 126 Z"/>
+          <circle cx="24" cy="154" r="7"/>
+          <circle cx="22" cy="150" r="3.5" fill="#8ae0ff"/>
+        </g>
+        <!-- Right Arm (Friendly waving / gesturing greeting) -->
+        <g fill="url(#${id('limb_grad')})">
+          <path d="M158 126 C172 120 184 108 186 96 C186 90 176 90 172 98 C166 108 160 118 152 126 Z"/>
+          <circle cx="184" cy="94" r="7"/>
+          <circle cx="188" cy="88" r="3.8"/>
+          <circle cx="182" cy="92" r="3.2" fill="#8ae0ff"/>
         </g>
       `,
       accessories: `
         <!-- Signature Embasa Fluid Ribbon (front swirl) -->
-        <path fill="none" stroke="url(#${id('ribbon_grad')})" stroke-width="13" stroke-linecap="round"
-          d="M24 194 C16 160 48 154 78 172 C118 194 154 178 174 150 C186 134 180 190 148 222 C120 250 56 246 36 214 Z"/>
-        <path fill="none" stroke="#6dc152" stroke-width="3.5" stroke-linecap="round" opacity="0.92"
-          d="M32 202 C42 226 80 240 126 226 C156 216 172 182 162 160"/>
+        <path fill="none" stroke="url(#${id('ribbon_grad')})" stroke-width="12" stroke-linecap="round"
+          d="M34 142 C64 162 136 162 166 142"/>
+        <path fill="none" stroke="#6dc152" stroke-width="3" stroke-linecap="round" opacity="0.92"
+          d="M40 146 C66 164 134 164 160 146"/>
         <!-- Ambient Water Droplets & Splashes -->
-        <circle cx="42" cy="74" r="5" fill="#38bdf8" opacity="0.8"/>
-        <circle cx="40.5" cy="72" r="2" fill="#ffffff" opacity="0.95"/>
-        <circle cx="160" cy="84" r="5.5" fill="#38bdf8" opacity="0.8"/>
-        <circle cx="158" cy="82" r="2.2" fill="#ffffff" opacity="0.95"/>
-        <circle cx="168" cy="122" r="3.8" fill="#6dc152" opacity="0.75"/>
-        <circle cx="30" cy="136" r="3.2" fill="#1fbcf0" opacity="0.75"/>
+        <circle cx="34" cy="64" r="4.5" fill="#38bdf8" opacity="0.85"/>
+        <circle cx="33" cy="62" r="1.8" fill="#ffffff" opacity="0.95"/>
+        <circle cx="166" cy="68" r="5" fill="#38bdf8" opacity="0.85"/>
+        <circle cx="164.5" cy="66" r="2" fill="#ffffff" opacity="0.95"/>
+        <circle cx="174" cy="132" r="3.5" fill="#6dc152" opacity="0.75"/>
+        <circle cx="28" cy="116" r="3.2" fill="#1fbcf0" opacity="0.75"/>
       `,
       face: `
         <!-- Cheerful Eyebrows -->
-        <g fill="none" stroke="#0454b0" stroke-width="3.4" stroke-linecap="round">
-          <path d="M62 110 Q76 104 88 112"/>
-          <path d="M112 112 Q124 104 138 110"/>
+        <g fill="none" stroke="#0454b0" stroke-width="3.5" stroke-linecap="round">
+          <path d="M64 88 Q76 81 88 88"/>
+          <path d="M112 88 Q124 81 136 88"/>
         </g>
         <!-- Big Expressive Pixar Eyes (Follows cursor smoothly!) -->
         <g class="dp-blink">
           <!-- Left Eye Sclera (White) -->
-          <ellipse cx="76" cy="134" rx="15" ry="18" fill="url(#${id('drop_sclera')})" stroke="#02285a" stroke-width="1.4"/>
+          <ellipse cx="76" cy="108" rx="14" ry="17" fill="url(#${id('drop_sclera')})" stroke="#02285a" stroke-width="1.3"/>
           <!-- Left Eye Pupil & Iris (Tracks Mouse Cursor) -->
           <g class="dp-look">
-            <ellipse cx="76.5" cy="134" rx="10" ry="13" fill="#021432"/>
+            <ellipse cx="76.5" cy="108" rx="9.5" ry="12.5" fill="#021432"/>
             <!-- Vibrant blue iris reflection crescent -->
-            <path d="M69 137 A8.5 10.5 0 0 0 84 137 A7.5 8.5 0 0 1 71 135 Z" fill="#0495f4"/>
-            <ellipse cx="77.5" cy="138" rx="5.5" ry="4" fill="#38bdf8" opacity="0.85"/>
+            <path d="M69 111 A8.5 9.5 0 0 0 84 111 A7.5 8.5 0 0 1 71 109 Z" fill="#0495f4"/>
+            <ellipse cx="77.5" cy="112" rx="5" ry="3.5" fill="#38bdf8" opacity="0.85"/>
             <!-- Dual Specular Glints -->
-            ${eyeShine(72.5, 127.5, 4)}
-            ${eyeShine(81, 140, 1.9)}
+            ${eyeShine(72.5, 102.5, 3.8)}
+            ${eyeShine(80.5, 113.5, 1.8)}
           </g>
         </g>
         <g class="dp-blink">
           <!-- Right Eye Sclera (White) -->
-          <ellipse cx="124" cy="134" rx="15" ry="18" fill="url(#${id('drop_sclera')})" stroke="#02285a" stroke-width="1.4"/>
+          <ellipse cx="124" cy="108" rx="14" ry="17" fill="url(#${id('drop_sclera')})" stroke="#02285a" stroke-width="1.3"/>
           <!-- Right Eye Pupil & Iris (Tracks Mouse Cursor) -->
           <g class="dp-look">
-            <ellipse cx="123.5" cy="134" rx="10" ry="13" fill="#021432"/>
+            <ellipse cx="123.5" cy="108" rx="9.5" ry="12.5" fill="#021432"/>
             <!-- Vibrant blue iris reflection crescent -->
-            <path d="M116 137 A8.5 10.5 0 0 0 131 137 A7.5 8.5 0 0 1 118 135 Z" fill="#0495f4"/>
-            <ellipse cx="122.5" cy="138" rx="5.5" ry="4" fill="#38bdf8" opacity="0.85"/>
+            <path d="M116 111 A8.5 9.5 0 0 0 131 111 A7.5 8.5 0 0 1 118 109 Z" fill="#0495f4"/>
+            <ellipse cx="122.5" cy="112" rx="5" ry="3.5" fill="#38bdf8" opacity="0.85"/>
             <!-- Dual Specular Glints -->
-            ${eyeShine(119.5, 127.5, 4)}
-            ${eyeShine(128, 140, 1.9)}
+            ${eyeShine(119.5, 102.5, 3.8)}
+            ${eyeShine(127.5, 113.5, 1.8)}
           </g>
         </g>
       `,

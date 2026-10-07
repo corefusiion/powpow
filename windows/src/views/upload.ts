@@ -106,7 +106,7 @@ export function buildChoose(actions: ViewActions): ViewHost {
     { class: "actions" },
     h("button", {
       class: "btn primary",
-      text: t("Ask a question"),
+      text: t("Ask a question about it..."),
       onclick: () => actions.setView("prompt"),
     }),
     h("button", {

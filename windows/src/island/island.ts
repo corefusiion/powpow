@@ -1253,17 +1253,18 @@ export class Island {
       if (this.pal.getAttribute("bubble") !== targetBubble) {
         this.pal.setAttribute("bubble", targetBubble);
       }
-      const d = isCompact ? Math.max(18, Math.round(size * 1.1)) : Math.round(size * 1.1);
+      const d = isCompact ? Math.min(22, Math.max(18, Math.round(size * 1.0))) : Math.round(size * 1.05);
       const px = String(d);
       if (this.pal.getAttribute("size") !== px) this.pal.setAttribute("size", px);
+      this.pal.style.width = `${d}px`;
       if (isCompact) {
         this.pal.style.height = `${d}px`;
-        this.pal.style.left = `${this.botCx.value - d / 2}px`;
-        this.pal.style.top = `${this.botCy.value - d / 2 + 1}px`;
+        this.pal.style.left = `${Math.round(this.botCx.value - d / 2)}px`;
+        this.pal.style.top = `${Math.round(this.botCy.value - d / 2)}px`;
       } else {
-        this.pal.style.height = `${Math.round(d * 1.25)}px`;
-        this.pal.style.left = `${this.botCx.value - d / 2}px`;
-        this.pal.style.top = `${this.botCy.value - d * 0.58}px`;
+        this.pal.style.height = `${d}px`;
+        this.pal.style.left = `${Math.round(this.botCx.value - d / 2)}px`;
+        this.pal.style.top = `${Math.round(this.botCy.value - d / 2)}px`;
       }
     }
     const w = Math.max(1, Math.round(size));
@@ -1523,9 +1524,13 @@ export class Island {
 
   /** Island theme is pure CSS: one attribute, instant, no rebuild. */
   private applyTheme() {
-    const theme = State.settings.theme === "ice" || State.settings.theme === "frost"
-      ? State.settings.theme
-      : "onyx";
+    const theme =
+      State.settings.theme === "ice" ||
+      State.settings.theme === "frost" ||
+      State.settings.theme === "glass" ||
+      State.settings.theme === "aqua"
+        ? State.settings.theme
+        : "onyx";
     this.root.dataset.theme = theme;
   }
 

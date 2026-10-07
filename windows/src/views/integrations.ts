@@ -15,7 +15,7 @@ export function timeAgo(value: unknown): string {
   const date = typeof value === "number" ? new Date(value) : new Date(String(value));
   const diff = (Date.now() - date.getTime()) / 1000;
   if (!Number.isFinite(diff)) return "";
-  if (diff < 60) return "just now";
+  if (diff < 60) return t("just now");
   if (diff < 3600) return `${Math.floor(diff / 60)}m`;
   if (diff < 86400) return `${Math.floor(diff / 3600)}h`;
   return `${Math.floor(diff / 86400)}d`;
@@ -64,7 +64,7 @@ function idleCard(task: AgentTask, openSettings: () => void): HTMLElement {
     : task.id === "integration_spotify" ? t("Nothing playing")
     : task.id === "integration_whatsapp" ? t("Open WhatsApp Web in your browser")
     : t("Key not configured");
-  const label = error ?? (configured ? "Connected · loading…" : missing);
+  const label = error ?? (configured ? t("Connected · loading…") : missing);
   const statusColor = error || !configured ? "#F4505E" : "#22C55E";
 
   const actions = h("div", { class: "int-actions" });
@@ -132,7 +132,7 @@ function vercelCard(onDetail: () => void): HTMLElement {
     if (i === 0) {
       const more = h(
         "button",
-        { class: "int-more", title: "Details", onclick: onDetail },
+        { class: "int-more", title: t("Details"), onclick: onDetail },
         svg(ICONS.ellipsis, 8),
       );
       rows.append(listRow(accent, true, name, ago, more));
@@ -140,19 +140,19 @@ function vercelCard(onDetail: () => void): HTMLElement {
       rows.append(listRow(accent, false, name, ago));
     }
   });
-  return h("div", { class: "int-card" }, header("#7C5CFF", "Vercel", "Deployments"), rows);
+  return h("div", { class: "int-card" }, header("#7C5CFF", "Vercel", t("Deployments")), rows);
 }
 
 function vercelDetail(onBack: () => void): HTMLElement {
   const d = arr("integration_vercel", "deployments")[0] ?? {};
   const success = d.state === "READY";
   const accent = success ? "#22C55E" : "#F4505E";
-  const status = success ? "Ready" : d.state === "CANCELED" ? "Canceled" : "Error";
+  const status = success ? t("Ready") : d.state === "CANCELED" ? t("Canceled") : t("Error");
   const body = h("div", { class: "int-detail-body" });
   if (d.commitMessage) body.append(h("div", { class: "int-commit", text: String(d.commitMessage) }));
   const meta = h("div", { class: "int-meta" });
   if (d.branch) meta.append(h("span", { text: String(d.branch) }));
-  meta.append(h("span", { text: `${timeAgo(d.createdAt)} ago` }));
+  meta.append(h("span", { text: `${timeAgo(d.createdAt)} ${t("ago")}` }));
   body.append(meta);
   if (d.url) {
     body.append(
@@ -171,7 +171,7 @@ function vercelDetail(onBack: () => void): HTMLElement {
       { class: "int-detail-head" },
       h("button", { class: "int-back", onclick: onBack }, svg(ICONS.chevronLeft, 10, { stroke: 2.4 })),
       dot(accent, 6),
-      h("b", { text: String(d.projectName ?? "Deployment") }),
+      h("b", { text: String(d.projectName ?? t("Deployment")) }),
       h("span", { class: "int-badge", style: `color:${accent};background:${accent}24`, text: status }),
     ),
     body,
@@ -200,7 +200,7 @@ function resendCard(): HTMLElement {
     if (i === 0 && e.subject) cells.push(h("span", { class: "int-sub", text: String(e.subject) }));
     rows.append(listRow(accent, i === 0, ...cells));
   });
-  return h("div", { class: "int-card" }, header("#22C55E", "Resend", "Emails", extra), rows);
+  return h("div", { class: "int-card" }, header("#22C55E", "Resend", t("Emails"), extra), rows);
 }
 
 // ── GitHub ────────────────────────────────────────────────────────────────────
@@ -210,7 +210,7 @@ function statRow(icon: string, color: string, label: string, value: string): HTM
     "div",
     { class: "int-stat" },
     h("i", { class: "int-stat-icon", style: `color:${color}` }, svg(icon, 10)),
-    h("span", { class: "int-stat-label", text: label }),
+    h("span", { class: "int-stat-label", text: t(label) }),
     h("span", { class: "int-stat-value", text: value }),
   );
 }
@@ -223,7 +223,7 @@ function githubCard(): HTMLElement {
   return h(
     "div",
     { class: "int-card" },
-    header("#F4505E", "GitHub", "Overview"),
+    header("#F4505E", "GitHub", t("Overview")),
     h(
       "div",
       { class: "int-stats" },
@@ -366,7 +366,7 @@ function stripeCard(): HTMLElement {
         "div",
         { class: "int-row" },
         dot(accent, 5),
-        h("span", { class: "int-name", text: String(p.description ?? "Payment") }),
+        h("span", { class: "int-name", text: String(p.description ? t(String(p.description)) : t("Payment")) }),
         h("span", {
           class: "int-amount",
           style: "color:#22c55e",
@@ -379,7 +379,7 @@ function stripeCard(): HTMLElement {
   return h(
     "div",
     { class: "int-card" },
-    header("#0570DE", "Stripe", "Payments"),
+    header("#0570DE", "Stripe", t("Payments")),
     h("div", { class: "int-balance" }, h("span", { text: balance }), h("i", { text: currency })),
     rows,
   );
@@ -402,12 +402,12 @@ function notionCard(): HTMLElement {
         p.emoji
           ? h("span", { class: "int-emoji", text: String(p.emoji) })
           : h("i", { class: "int-emoji" }, svg(ICONS.doc, 9)),
-        h("span", { class: "int-name", text: String(p.title ?? "Untitled") }),
+        h("span", { class: "int-name", text: String(p.title ?? t("Untitled")) }),
         h("span", { class: "int-ago", text: timeAgo(p.lastEditedAt) }),
       ),
     );
   }
-  return h("div", { class: "int-card" }, header("#E8E8E8", "Notion", "Recent"), rows);
+  return h("div", { class: "int-card" }, header("#E8E8E8", "Notion", t("Recent")), rows);
 }
 
 // ── Cal.com ───────────────────────────────────────────────────────────────────
@@ -430,11 +430,11 @@ function calcomCard(): HTMLElement {
         { class: "int-row" },
         dot("#C9956A", 4),
         h("span", { class: "int-time", text: `${day} ${time}` }),
-        h("span", { class: "int-name", text: String(b.title ?? "Meeting") }),
+        h("span", { class: "int-name", text: String(b.title ?? t("Meeting")) }),
       ),
     );
   }
-  return h("div", { class: "int-card" }, header("#C9956A", "Cal.com", "Schedule"), rows);
+  return h("div", { class: "int-card" }, header("#C9956A", "Cal.com", t("Schedule")), rows);
 }
 
 // ── n8n ───────────────────────────────────────────────────────────────────────
@@ -447,7 +447,7 @@ function n8nCard(task: AgentTask, onDetail: () => void, openSettings: () => void
   return h(
     "div",
     { class: "int-card" },
-    header("#F29B38", "n8n", "Workflow"),
+    header("#F29B38", "n8n", t("Workflow")),
     h(
       "div",
       { class: "int-actions" },
@@ -459,7 +459,7 @@ function n8nCard(task: AgentTask, onDetail: () => void, openSettings: () => void
           onclick: onDetail,
         },
         dot(accent, 5),
-        h("span", { class: "int-name", text: task.steps[0] ?? "Workflow" }),
+        h("span", { class: "int-name", text: task.steps[0] ?? t("Workflow") }),
         svg(ICONS.ellipsis, 8),
       ),
     ),
@@ -478,18 +478,18 @@ function n8nDetail(task: AgentTask, onBack: () => void): HTMLElement {
       { class: "int-detail-head" },
       h("button", { class: "int-back", onclick: onBack }, svg(ICONS.chevronLeft, 10, { stroke: 2.4 })),
       dot(accent, 6),
-      h("b", { text: task.steps[0] ?? "Workflow" }),
+      h("b", { text: task.steps[0] ?? t("Workflow") }),
       h("span", {
         class: "int-badge",
         style: `color:${accent};background:${accent}24`,
-        text: success ? "Success" : "Failed",
+        text: success ? t("Success") : t("Failed"),
       }),
     ),
     detail
       ? h("pre", { class: "int-detail-text", text: detail })
       : h("div", {
           class: "int-status",
-          text: success ? "Completed successfully." : "No error details available.",
+          text: success ? t("Completed successfully.") : t("No error details available."),
         }),
   );
 }

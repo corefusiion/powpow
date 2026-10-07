@@ -2047,6 +2047,96 @@ p.said.bad {
   backdrop-filter: blur(16px) saturate(1.25);
 }
 
+/* Glass — modern dark glassmorphism with subtle highlights and refined depth */
+#root[data-theme="glass"] {
+  color-scheme: dark;
+  --ink: #f8fafc;
+  --ink-2: #e2e8f0;
+  --dim: #94a3b8;
+  --dim-2: #8092a8;
+  --dim-3: #64748b;
+  --dim-4: #475569;
+  --dim-5: #334155;
+  --card: rgba(22, 27, 36, 0.65);
+  --card-flat: rgba(14, 18, 26, 0.72);
+  --tab-on: rgba(255, 255, 255, 0.12);
+  --hairline: rgba(255, 255, 255, 0.12);
+}
+
+#root[data-theme="glass"] #island {
+  background: linear-gradient(180deg, rgba(28, 34, 46, 0.78) 0%, rgba(15, 19, 28, 0.86) 100%);
+  backdrop-filter: blur(28px) saturate(1.35);
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.55),
+              inset 0 1px 1px rgba(255, 255, 255, 0.22),
+              inset 0 -1px 1px rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-top: none;
+}
+
+#root[data-theme="glass"] #island::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 10%;
+  right: 10%;
+  height: 1px;
+  background: linear-gradient(90deg, transparent 0%, rgba(255, 255, 255, 0.4) 50%, transparent 100%);
+  pointer-events: none;
+}
+
+/* Aqua — fresh aquatic liquid surface, subtle ripples and water sheen */
+#root[data-theme="aqua"] {
+  color-scheme: dark;
+  --ink: #f0fdfa;
+  --ink-2: #ccfbf1;
+  --dim: #5eead4;
+  --dim-2: #2dd4bf;
+  --dim-3: #14b8a6;
+  --dim-4: #0f766e;
+  --dim-5: #115e59;
+  --card: rgba(8, 36, 49, 0.65);
+  --card-flat: rgba(4, 25, 36, 0.75);
+  --tab-on: rgba(45, 212, 191, 0.2);
+  --hairline: rgba(94, 234, 212, 0.16);
+}
+
+#root[data-theme="aqua"] #island {
+  background: linear-gradient(180deg, rgba(8, 36, 52, 0.8) 0%, rgba(4, 20, 32, 0.9) 100%);
+  backdrop-filter: blur(24px) saturate(1.3);
+  box-shadow: 0 16px 38px rgba(1, 28, 40, 0.55),
+              inset 0 1px 2px rgba(94, 234, 212, 0.32),
+              inset 0 -1px 1px rgba(20, 184, 166, 0.15);
+  border: 1px solid rgba(45, 212, 191, 0.22);
+  border-top: none;
+}
+
+#root[data-theme="aqua"] #island::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, rgba(45, 212, 191, 0.1) 0%, rgba(94, 234, 212, 0.45) 50%, rgba(45, 212, 191, 0.1) 100%);
+  pointer-events: none;
+}
+
+#root[data-theme="aqua"] #island::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: radial-gradient(circle at 50% -20%, rgba(94, 234, 212, 0.12) 0%, transparent 70%);
+  pointer-events: none;
+  animation: aqua-shimmer 7s ease-in-out infinite alternate;
+}
+
+@keyframes aqua-shimmer {
+  0% { opacity: 0.4; transform: translateY(0); }
+  50% { opacity: 0.75; transform: translateY(1px); }
+  100% { opacity: 0.4; transform: translateY(0); }
+}
+
 /* System "reduce motion" (Settings › Accessibility): everything above stops
    moving. The JS half is core/motion.ts — springs snap, Mochi holds still,
    the diff stops typing; `<dot-pal>` reads the same switch itself. */

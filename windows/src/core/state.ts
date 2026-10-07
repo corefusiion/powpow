@@ -8,7 +8,7 @@ export type AgentSource =
   | "media" | "n8n" | "agent";
 export type PillBadge = "approval" | "finished" | "error";
 export type Lang = "en" | "pt-BR";
-export type IslandTheme = "onyx" | "ice" | "frost";
+export type IslandTheme = "onyx" | "ice" | "frost" | "glass" | "aqua";
 
 export interface AgentTask {
   id: string;
@@ -143,7 +143,7 @@ export const DEFAULT_SETTINGS: Settings = {
   model: "claude-opus-5",
   chatProvider: "claude",
   geminiModel: "gemini-3.5-flash",
-  language: "en",
+  language: "pt-BR",
   theme: "onyx",
   approvedTools: [],
   character: "mochi",

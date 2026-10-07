@@ -1162,18 +1162,73 @@ function generalSection(): HTMLElement {
     location.reload();
   });
 
-  const theme = h("select", {}) as HTMLSelectElement;
-  theme.append(
-    h("option", { value: "onyx", text: t("Onyx (black)") }),
-    h("option", { value: "ice", text: t("Ice (frost white)") }),
-    h("option", { value: "frost", text: t("Frost (translucent blue)") }),
-  );
-  theme.value = settings.theme ?? "onyx";
-  theme.addEventListener("change", () => {
-    settings.theme = theme.value as Settings["theme"];
-    document.documentElement.dataset.theme = settings.theme;
-    void save();
-  });
+  const THEME_OPTIONS: { id: Settings["theme"]; name: string; desc: string; previewClass: string; dotColor: string }[] = [
+    {
+      id: "onyx",
+      name: t("Onyx Black"),
+      desc: t("Classic dark island with high contrast and stealth aesthetics"),
+      previewClass: "theme-preview-onyx",
+      dotColor: "#38bdf8",
+    },
+    {
+      id: "ice",
+      name: t("Ice White"),
+      desc: t("Clean, bright frosted surface inspired by crisp snow and ice"),
+      previewClass: "theme-preview-ice",
+      dotColor: "#0284c7",
+    },
+    {
+      id: "frost",
+      name: t("Frost Blue"),
+      desc: t("Translucent deep blue glass with atmospheric frosty glow"),
+      previewClass: "theme-preview-frost",
+      dotColor: "#7dd3fc",
+    },
+    {
+      id: "glass",
+      name: t("Glassmorphism"),
+      desc: t("Dark smoked glass with delicate blur and illuminated specular borders"),
+      previewClass: "theme-preview-glass",
+      dotColor: "#67e8f9",
+    },
+    {
+      id: "aqua",
+      name: t("Aqua Liquid"),
+      desc: t("Living liquid surface with deep oceanic gradients and aquatic sheen"),
+      previewClass: "theme-preview-aqua",
+      dotColor: "#2dd4bf",
+    },
+  ];
+
+  const themeGrid = h("div", { class: "theme-grid" });
+  const themeCards: HTMLElement[] = [];
+
+  for (const opt of THEME_OPTIONS) {
+    const isCur = (settings.theme ?? "onyx") === opt.id;
+    const miniDot = h("i", { class: "mini-dot", style: `background:${opt.dotColor};box-shadow:0 0 6px ${opt.dotColor}` });
+    const miniPill1 = h("div", { class: "mini-pill" });
+    const miniPill2 = h("div", { class: "mini-pill", style: "width:16px" });
+    const miniIsland = h("div", { class: "mini-island" }, miniDot, miniPill1, miniPill2);
+    const previewBox = h("div", { class: `theme-preview-box ${opt.previewClass}` }, miniIsland);
+
+    const title = h("span", { class: "theme-card-title", text: opt.name });
+    const badge = h("span", { class: "theme-card-badge", text: t("✓ Selecionado") });
+    const titleRow = h("div", { class: "theme-card-title-row" }, title, badge);
+    const desc = h("span", { class: "theme-card-desc", text: opt.desc });
+    const info = h("div", { class: "theme-card-info" }, titleRow, desc);
+
+    const card = h("div", { class: `theme-card${isCur ? " is-active" : ""}` }, previewBox, info);
+    card.addEventListener("click", () => {
+      settings.theme = opt.id;
+      document.documentElement.dataset.theme = settings.theme;
+      themeCards.forEach((c) => c.classList.remove("is-active"));
+      card.classList.add("is-active");
+      void save();
+    });
+
+    themeCards.push(card);
+    themeGrid.append(card);
+  }
 
   return h(
     "section",
@@ -1183,9 +1238,9 @@ function generalSection(): HTMLElement {
       h("label", { text: t("Language") }),
       language,
     ),
-    h("div", { class: "row" },
-      h("label", { text: t("Theme") }),
-      theme,
+    h("div", { style: "display:flex;flex-direction:column;gap:6px;width:100%" },
+      h("label", { style: "color:var(--dim);font-size:12.5px;font-weight:600", text: t("Theme") }),
+      themeGrid,
     ),
     characterRow(),
     h("div", { class: "row" },
