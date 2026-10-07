@@ -925,18 +925,8 @@ export class Island {
       if (State.mode !== "compact" || State.paused) return;
       const r = Math.random();
       if (r < 0.35) {
-        const lines = [
-          "✨ Foco total!",
-          "🚀 Bora lá!",
-          "💡 Ideia genial?",
-          "☕ Já bebeu água hoje?",
-          "👋 Tô de olho aqui!",
-          "⚡ Arrebenta no código!",
-        ];
-        const text = lines[Math.floor(Math.random() * lines.length)];
         if (this.pal) {
           void this.pal.emote("star");
-          this.pal.say(text, { duration: 2800 });
         }
         this.engine.triggerEmote("happy");
         Sound.play("wink");
@@ -1259,6 +1249,10 @@ export class Island {
     const size = this.botSize.value;
     if (this.pal) {
       const isCompact = State.mode === "compact";
+      const targetBubble = isCompact ? "none" : "text";
+      if (this.pal.getAttribute("bubble") !== targetBubble) {
+        this.pal.setAttribute("bubble", targetBubble);
+      }
       const d = isCompact ? Math.max(18, Math.round(size * 1.1)) : Math.round(size * 1.1);
       const px = String(d);
       if (this.pal.getAttribute("size") !== px) this.pal.setAttribute("size", px);
@@ -1489,7 +1483,10 @@ export class Island {
         // Same contract as the canvas: invisible to the mouse, so the island's
         // own hit test (isBotHit) keeps driving hover, slaps and drag-out.
         // bubble="text": the short line syncPal() picks, never the progress glyph.
-        const el = h("dot-pal", { id: "bot-pal", bubble: "text" });
+        const el = h("dot-pal", {
+          id: "bot-pal",
+          bubble: State.mode === "compact" ? "none" : "text",
+        });
         this.botCanvas.after(el);
         this.pal = el;
       }

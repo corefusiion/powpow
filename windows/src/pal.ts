@@ -8,13 +8,13 @@
 
 import "./pal.css";
 import { Bridge, IS_TAURI, onEvent, type BootInfo } from "./core/bridge";
-import { PANEL_H, PANEL_W, type BotStateName } from "./core/layout";
+import { PANEL_H, PANEL_W, type BotStateName, type BotEmoteName } from "./core/layout";
 import { PAL_EMOTE, PAL_H_RATIO, PAL_STATE } from "./island/palState";
 import { BotEngine } from "./mochi/engine";
 import { State, type Settings } from "./core/state";
 import { t } from "./core/i18n";
 import { h } from "./views/dom";
-import { DotPal, registerCustom, type CustomPal } from "../../src/index.js";
+import { DotPal, registerCustom, type CustomPal, type Emote } from "../../src/index.js";
 import { Sound } from "./core/sound";
 
 // Window geometry — mirrors tauri.conf.json's "pal" entry. The body keeps the
@@ -29,11 +29,13 @@ const BOT_SIZE = 130;
 const BOT_OVERHANG = 40;
 const DP_SIZE = 106;
 
-// The stroll: a walk, not a dash, with pauses long enough to read as standing.
-const SPEED = 110;
+// The stroll: a slow, natural, comfortable walk (52 px/s vs 110 px/s)
+const SPEED = 52;
 let walkSpeed = SPEED;
-const IDLE_MIN = 900;
-const IDLE_MAX = 4200;
+const ACCEL = 85; // px/s^2 smooth acceleration / deceleration
+let currentVelocity = 0;
+const IDLE_MIN = 28000;
+const IDLE_MAX = 50000;
 const SETTLE = 2;
 // Clear of the screen edges, and of whatever sits along the bottom.
 const PAD_X = 8;
@@ -41,10 +43,8 @@ const PAD_TOP = 8;
 const PAD_BOTTOM = 64;
 // The island owns the top centre; the pal never walks under it.
 const KEEP_OUT = 24;
-// Watching: follow the cursor only when it has clearly left, and only while
-// it is still moving — a hand on the mouse must not make the pal creep.
-const WATCH_STILL_MS = 6000;
-const WATCH_FOLLOW = 40;
+// Watching: consider user active if cursor moved in the last 8 seconds
+const WATCH_STILL_MS = 8000;
 const ROUTE_EPS = 12;
 // "Back to the island": steer there for a while, whatever else is going on.
 const ESCORT_MS = 15000;
@@ -70,221 +70,244 @@ const searchOpenBtn = cardEl.querySelector<HTMLElement>('[data-action="search-op
 const searchInput = document.getElementById("pal-search-input") as HTMLInputElement;
 const engine = new BotEngine();
 
-// Mischievous features: sarcastic thoughts, close button biting, and splatters
+// Attentive desktop companion thoughts and observation system
 const thoughtEl = document.getElementById("pal-thought");
 const thoughtTextEl = document.getElementById("pal-thought-content");
-const closeBiteEl = document.getElementById("pal-close-bite");
-const splattersEl = document.getElementById("pal-splatters");
 
-let lastPrankTime = 0;
-const PRANK_INTERVAL_MS = 18000; // a random prank every ~18s
+let thoughtTimer: number | null = null;
+let lastObservationTime = 0;
+const OBSERVATION_INTERVAL_MS = 48000; // minimum 48s between thoughts (anti-spam)
 
-const SARCASTIC_THOUGHTS = [
-  "Mais um bug que vai virar 'feature'...",
-  "Ele realmente vai compilar isso sem testar? Coragem...",
-  "git push --force na main numa terça-feira? Audacioso...",
-  "Esse código funciona puramente por intervenção divina.",
-  "Ctrl+C, Ctrl+V... a verdadeira arte da engenharia de software.",
-  "A tela tá linda, pena que a lógica tá chorando.",
-  "Fingindo que estou entendendo o que você tá digitando...",
-  "Mais café ou mais paciência? Vai precisar dos dois.",
-  "Quem precisa de documentação quando se tem fé e console.log?",
-  "Se der tela azul, a culpa foi do reinício de ontem!",
-  "Commit: 'ajustes finais agora vai final_mesmo_v2'...",
-  "// TODO: tratar esse erro depois. (Nunca tratou).",
-  "Olhando você debugar com print... que nostalgia dos anos 90!",
-  "Será que a IA vai substituir quem copia código do StackOverflow?",
-  "Respira fundo... falta pouco pro deploy dar ruim.",
-];
+let lastAiInspectTime = 0;
+const AI_INSPECT_COOLDOWN_MS = 120000; // 2 minutes cooldown (economical)
+let lastInspectedApp = "";
+let lastInspectedTitle = "";
+let isAiInspectBusy = false;
 
-function showSarcasticThought() {
+type CompanionEmote = "happy" | "star" | "wink" | "love" | "surprised";
+
+interface ContextObservation {
+  text: string;
+  emote?: CompanionEmote;
+}
+
+const CONTEXT_OBSERVATIONS: Record<string, ContextObservation[]> = {
+  editor: [
+    { text: "Esse texto ficou bem organizado.", emote: "star" },
+    { text: "Acho que encontrei uma palavra digitada incorretamente.", emote: "surprised" },
+    { text: "Estrutura de código bem definida.", emote: "happy" },
+    { text: "Acompanhando com atenção essas linhas.", emote: "star" },
+    { text: "Código limpo e bem modularizado.", emote: "happy" },
+  ],
+  terminal: [
+    { text: "Esse comando parece ter terminado.", emote: "happy" },
+    { text: "Tem bastante coisa acontecendo nesse terminal.", emote: "star" },
+    { text: "Acho que esse processo está demorando um pouco.", emote: "surprised" },
+    { text: "Parece que essa tarefa terminou.", emote: "happy" },
+    { text: "Acompanhando a saída dos comandos...", emote: "wink" },
+  ],
+  explorer: [
+    { text: "Essa pasta poderia ficar mais organizada.", emote: "wink" },
+    { text: "Navegando pela estrutura de arquivos...", emote: "happy" },
+    { text: "Mapeando os diretórios do projeto.", emote: "star" },
+  ],
+  browser: [
+    { text: "Pesquisa focada para resolver a questão.", emote: "happy" },
+    { text: "Bastante documentação relevante por aqui.", emote: "star" },
+    { text: "Navegando em busca de boas referências.", emote: "wink" },
+  ],
+  error: [
+    { text: "Tem um erro aparecendo aqui.", emote: "surprised" },
+    { text: "Acho que algo retornou um erro nessa execução.", emote: "surprised" },
+    { text: "Vale a pena dar uma olhada nesse aviso.", emote: "wink" },
+  ],
+  waiting: [
+    { text: "Acho que esse processo está demorando um pouco.", emote: "surprised" },
+    { text: "Aguardando a conclusão da tarefa...", emote: "wink" },
+    { text: "Parece que essa tarefa terminou.", emote: "happy" },
+  ],
+  general: [
+    { text: "Acompanhando o fluxo de trabalho.", emote: "happy" },
+    { text: "Foco total na atividade!", emote: "star" },
+    { text: "Tudo fluindo tranquilamente por aqui.", emote: "happy" },
+  ],
+};
+
+function triggerEmote(emote: CompanionEmote) {
+  const engineEmote: BotEmoteName = emote === "star" ? "happy" : emote;
+  const palEmote: Emote =
+    emote === "surprised" ? "wide" : emote === "wink" ? "happy" : emote;
+  engine.triggerEmote(engineEmote);
+  if (pal) void pal.emote(palEmote);
+}
+
+function showThought(text: string, emote: CompanionEmote = "happy") {
   if (!thoughtEl || !thoughtTextEl) return;
-  const thought = SARCASTIC_THOUGHTS[Math.floor(Math.random() * SARCASTIC_THOUGHTS.length)];
-  thoughtTextEl.textContent = thought;
+  if (thoughtTimer != null) {
+    window.clearTimeout(thoughtTimer);
+    thoughtTimer = null;
+  }
+  thoughtTextEl.textContent = text;
   thoughtEl.hidden = false;
-  engine.triggerEmote("wink");
-  if (pal) void pal.emote("star");
-  window.setTimeout(() => {
+  Sound.play("peek");
+  triggerEmote(emote);
+
+  thoughtTimer = window.setTimeout(() => {
     if (thoughtEl) thoughtEl.hidden = true;
+    thoughtTimer = null;
   }, 4800);
 }
 
-function biteCloseButton() {
-  if (!closeBiteEl) return;
-  closeBiteEl.classList.remove("is-chomped");
-  closeBiteEl.hidden = false;
-  engine.triggerEmote("surprised");
-  if (pal) void pal.emote("wide");
-
-  window.setTimeout(() => {
-    if (closeBiteEl) {
-      closeBiteEl.classList.add("is-chomped");
-      engine.triggerEmote("happy");
-      if (pal) void pal.emote("love");
-      window.setTimeout(() => {
-        if (closeBiteEl) closeBiteEl.hidden = true;
-      }, 1500);
+function classifyContext(appName: string, title: string): string {
+  const s = `${appName} ${title}`.toLowerCase();
+  if (
+    s.includes("error") ||
+    s.includes("falha") ||
+    s.includes("exception") ||
+    s.includes("failed") ||
+    s.includes("warning") ||
+    s.includes("erro ") ||
+    s.includes("panic")
+  ) {
+    return "error";
+  }
+  if (
+    s.includes("terminal") ||
+    s.includes("powershell") ||
+    s.includes("cmd") ||
+    s.includes("bash") ||
+    s.includes("zsh") ||
+    s.includes("git") ||
+    s.includes("console")
+  ) {
+    if (
+      s.includes("wait") ||
+      s.includes("sleep") ||
+      s.includes("running") ||
+      s.includes("build") ||
+      s.includes("install") ||
+      s.includes("compil")
+    ) {
+      return "waiting";
     }
-  }, 600);
+    return "terminal";
+  }
+  if (
+    s.includes("code") ||
+    s.includes("cursor") ||
+    s.includes("visual studio") ||
+    s.includes("sublime") ||
+    s.includes("intellij") ||
+    s.includes("pycharm") ||
+    s.includes("webstorm") ||
+    s.includes("nvim") ||
+    s.includes("vim") ||
+    s.includes("notepad") ||
+    s.includes("rust") ||
+    s.includes("python") ||
+    s.includes("editor")
+  ) {
+    return "editor";
+  }
+  if (
+    s.includes("explorer") ||
+    s.includes("arquivos") ||
+    s.includes("files") ||
+    s.includes("pasta") ||
+    s.includes("folder") ||
+    s.includes("diretório")
+  ) {
+    return "explorer";
+  }
+  if (
+    s.includes("chrome") ||
+    s.includes("edge") ||
+    s.includes("firefox") ||
+    s.includes("brave") ||
+    s.includes("arc") ||
+    s.includes("github") ||
+    s.includes("stackoverflow")
+  ) {
+    return "browser";
+  }
+  return "general";
 }
 
-function throwSplatters() {
-  if (!splattersEl) return;
-  splattersEl.innerHTML = "";
-  engine.triggerEmote("wink");
-  if (pal) void pal.emote("oops");
-
-  const colors = ["#452b14", "#2d4a22", "#0284c7", "#3b1a54", "#603813"];
-  for (let i = 0; i < 5; i++) {
-    const blob = document.createElement("div");
-    blob.className = "pal-splatter-blob";
-    const size = 12 + Math.random() * 20;
-    const left = 20 + Math.random() * 90;
-    const top = 30 + Math.random() * 100;
-    const color = colors[Math.floor(Math.random() * colors.length)];
-    const rot = Math.random() * 360;
-
-    blob.style.width = `${size}px`;
-    blob.style.height = `${size * (0.8 + Math.random() * 0.4)}px`;
-    blob.style.left = `${left}px`;
-    blob.style.top = `${top}px`;
-    blob.style.background = color;
-    blob.style.setProperty("--rot", `${rot}deg`);
-
-    splattersEl.appendChild(blob);
-  }
-
-  window.setTimeout(() => {
-    if (splattersEl) splattersEl.innerHTML = "";
-  }, 3600);
-}
-
-function generateContextComment(appName: string, title: string): string {
-  const context = `${appName} ${title}`.toLowerCase();
-
-  // Code / IDEs / Terminal
-  if (
-    context.includes("code") ||
-    context.includes("cursor") ||
-    context.includes("visual studio") ||
-    context.includes("sublime") ||
-    context.includes("terminal") ||
-    context.includes("powershell") ||
-    context.includes("cmd") ||
-    context.includes("git") ||
-    context.includes("bash") ||
-    context.includes("rust") ||
-    context.includes("python") ||
-    context.includes("nvim") ||
-    context.includes("vim") ||
-    context.includes("intellij") ||
-    context.includes("webstorm") ||
-    context.includes("pycharm")
-  ) {
-    const codeComments = [
-      "Uaal, que código elegante! 🚀",
-      "Digitando na velocidade da luz! ⚡",
-      "Nem pisca! Foco absurdo nessa função.",
-      "Uau, esse commit vai ficar uma obra de arte!",
-      "Refatoração de mestre! Tô impressionado. 💻",
-      "Compilando sem medo do amanhã! Mandou bem.",
-      "Olha essa lógica impecável! Parabéns pelo foco. ✨",
-      "Uaal, vi esse algoritmo nascendo da tela! Brilhante.",
-    ];
-    return codeComments[Math.floor(Math.random() * codeComments.length)];
-  }
-
-  // Web Browsers / Research
-  if (
-    context.includes("chrome") ||
-    context.includes("edge") ||
-    context.includes("firefox") ||
-    context.includes("brave") ||
-    context.includes("arc") ||
-    context.includes("opera") ||
-    context.includes("safari") ||
-    context.includes("github") ||
-    context.includes("stack overflow") ||
-    context.includes("google") ||
-    context.includes("chatgpt") ||
-    context.includes("claude")
-  ) {
-    const webComments = [
-      "Uaal, pesquisa de respeito! Ideia genial vindo aí. 💡",
-      "Uau, quanta aba aberta! Multitarefa nível pro. 🔥",
-      "Essa documentação é ouro puro! Tô anotando tudo.",
-      "Navegando firme rumo à solução perfeita!",
-      "Boa referência achada! Vai enriquecer muito o projeto.",
-      "Uaal, caçando conhecimento com maestria! 🧠",
-    ];
-    return webComments[Math.floor(Math.random() * webComments.length)];
-  }
-
-  // Design / Creativity
-  if (
-    context.includes("figma") ||
-    context.includes("photoshop") ||
-    context.includes("illustrator") ||
-    context.includes("blender") ||
-    context.includes("canva") ||
-    context.includes("paint") ||
-    context.includes("inkscape")
-  ) {
-    const artComments = [
-      "Uaal, que paleta de cores incrível! 🎨",
-      "Esse design tá ficando de outro planeta!",
-      "Pixel perfect total! Olho clínico apurado.",
-      "Adorei a composição! Tá com cara de projeto premiado. ✨",
-      "Traço firme e visão criativa! Mandando ver.",
-    ];
-    return artComments[Math.floor(Math.random() * artComments.length)];
-  }
-
-  // Communication & Productivity
-  if (
-    context.includes("slack") ||
-    context.includes("teams") ||
-    context.includes("discord") ||
-    context.includes("whatsapp") ||
-    context.includes("telegram") ||
-    context.includes("notion") ||
-    context.includes("excel") ||
-    context.includes("word") ||
-    context.includes("trello")
-  ) {
-    const commComments = [
-      "Uaal, comunicação alinhada resolve tudo! 💬",
-      "Produtividade a mil por hora! Nada passa batido.",
-      "Digitando no ritmo! Resposta certeira.",
-      "Organização nota 10! Dá gosto de acompanhar.",
-    ];
-    return commComments[Math.floor(Math.random() * commComments.length)];
-  }
-
-  // General positive / proactive comments
-  const generalComments = [
-    "Uaal, legal o que você está fazendo! 🤩",
-    "Tô de olho aqui e achando o máximo!",
-    "Ritmo excelente! Segue o jogo com tudo. 🚀",
-    "Foco total na missão! Tô torcendo por você.",
-    "Que concentração de respeito! Não para não! ⚡",
-    "Trabalho de qualidade é isso aí! Continue brilhando. ✨",
-    "Uau, gostei do que vi na tela agora!",
-  ];
-  return generalComments[Math.floor(Math.random() * generalComments.length)];
-}
-
-let lastCommentaryTime = 0;
-const COMMENTARY_INTERVAL_MS = 20000;
-
-async function autonomousScreenCommentary(force = false) {
+async function tryAiAutonomousObservation(): Promise<boolean> {
   const now = performance.now();
-  if (!force && now - lastCommentaryTime < COMMENTARY_INTERVAL_MS) return;
-  lastCommentaryTime = now;
+  if (now - lastAiInspectTime < AI_INSPECT_COOLDOWN_MS || isAiInspectBusy) return false;
 
+  let hasKey = false;
+  try {
+    const hasGemini = (await Bridge.secretPresent("gemini-api-key")) ?? false;
+    const hasClaude = (await Bridge.secretPresent("anthropic-api-key")) ?? false;
+    hasKey = hasGemini || hasClaude;
+  } catch {
+    return false;
+  }
+  if (!hasKey) return false;
+
+  isAiInspectBusy = true;
+  lastAiInspectTime = now;
+
+  try {
+    const attached = await Bridge.attachActiveWindow();
+    if (!attached || !attached.path) {
+      isAiInspectBusy = false;
+      return false;
+    }
+
+    const app = (attached.appName || "").toLowerCase();
+    const title = (attached.title || "").toLowerCase();
+    if (app === lastInspectedApp && title === lastInspectedTitle) {
+      // Screen context hasn't changed apps/tasks: skip to save API tokens
+      isAiInspectBusy = false;
+      return false;
+    }
+    lastInspectedApp = app;
+    lastInspectedTitle = title;
+
+    const prompt =
+      "Você é um mascote assistente atento que acompanha o trabalho do usuário. Observe a tela anexada e retorne apenas UMA frase curta e natural (máximo 8 a 10 palavras em português, sem aspas, sem introdução) observando o que está acontecendo (ex: 'Esse texto ficou bem organizado.', 'Esse comando parece ter terminado.', 'Tem bastante coisa acontecendo nesse terminal.', 'Essa pasta poderia ficar mais organizada.', etc.).";
+
+    const reply = await Bridge.chatSend(prompt, {
+      kind: "file",
+      name: attached.name,
+      path: attached.path,
+    });
+
+    if (reply?.text) {
+      let text = reply.text
+        .replace(/^["'«“]|["'»”]$/g, "")
+        .replace(/\n.*/s, "")
+        .trim();
+      if (text.length > 70) text = text.slice(0, 68) + "…";
+
+      if (text) {
+        showThought(text, "star");
+        isAiInspectBusy = false;
+        return true;
+      }
+    }
+  } catch {
+    // Graceful fallback to contextual observations
+  } finally {
+    isAiInspectBusy = false;
+  }
+  return false;
+}
+
+async function triggerContextualObservation(now: number, force = false) {
+  if (!force && now - lastObservationTime < OBSERVATION_INTERVAL_MS) return;
+  lastObservationTime = now;
+
+  // 1. Try smart economical AI visual observation first if API key is configured
+  const aiHandled = await tryAiAutonomousObservation();
+  if (aiHandled) return;
+
+  // 2. Fallback to realistic contextual thoughts
   let appName = "";
   let title = "";
-
   try {
     const attached = await Bridge.attachActiveWindow();
     if (attached) {
@@ -292,76 +315,17 @@ async function autonomousScreenCommentary(force = false) {
       title = attached.title || "";
     }
   } catch {
-    // Graceful fallback to default screen commentary
+    // Ignore error
   }
 
-  const comment = generateContextComment(appName, title);
-  if (thoughtEl && thoughtTextEl) {
-    thoughtTextEl.textContent = comment;
-    thoughtEl.hidden = false;
-    Sound.play("peek");
-    engine.triggerEmote("happy");
-    if (pal) void pal.emote("star");
-    window.setTimeout(() => {
-      if (thoughtEl) thoughtEl.hidden = true;
-    }, 5200);
-  }
-}
-
-function throwPlayfulParticles() {
-  if (!splattersEl) return;
-  splattersEl.innerHTML = "";
-  engine.triggerEmote("happy");
-  if (pal) void pal.emote("star");
-  Sound.play("wink");
-
-  const symbols = ["✨", "💖", "⭐", "🎉", "🌟", "🎈"];
-  for (let i = 0; i < 7; i++) {
-    const p = document.createElement("div");
-    p.className = "pal-playful-particle";
-    p.textContent = symbols[Math.floor(Math.random() * symbols.length)];
-    p.style.left = `${20 + Math.random() * 95}px`;
-    p.style.top = `${30 + Math.random() * 90}px`;
-    p.style.fontSize = `${16 + Math.random() * 12}px`;
-    splattersEl.appendChild(p);
-  }
-
-  window.setTimeout(() => {
-    if (splattersEl) splattersEl.innerHTML = "";
-  }, 3000);
+  const category = classifyContext(appName, title);
+  const pool = CONTEXT_OBSERVATIONS[category] ?? CONTEXT_OBSERVATIONS.general;
+  const item = pool[Math.floor(Math.random() * pool.length)];
+  showThought(item.text, item.emote ?? "happy");
 }
 
 function onPalSummoned() {
-  if (thoughtEl && thoughtTextEl) {
-    thoughtTextEl.textContent = "Opa, cheguei! 🚀";
-    thoughtEl.hidden = false;
-    Sound.play("peek");
-    engine.triggerEmote("happy");
-    if (pal) void pal.emote("star");
-    window.setTimeout(() => {
-      if (thoughtEl) thoughtEl.hidden = true;
-    }, 3600);
-  }
-}
-
-function maybeTriggerPrank(now: number) {
-  if (now - lastPrankTime < PRANK_INTERVAL_MS) return;
-  lastPrankTime = now;
-
-  const choice = Math.floor(Math.random() * 6);
-  if (choice === 0) {
-    void autonomousScreenCommentary(true);
-  } else if (choice === 1) {
-    throwPlayfulParticles();
-  } else if (choice === 2) {
-    showSarcasticThought();
-  } else if (choice === 3) {
-    biteCloseButton();
-  } else if (choice === 4) {
-    throwSplatters();
-  } else {
-    void autonomousScreenCommentary(true);
-  }
+  showThought("Aqui para acompanhar! 👀", "star");
 }
 
 let screenInfo = { x: 0, y: 0, width: 1920, height: 1080, scale: 1 };
@@ -487,27 +451,55 @@ function postIsland(): Pt {
   });
 }
 
-/** Beside the cursor: standing where the user is working, just below it. */
+let stationCursor: Pt = { x: -9999, y: -9999 };
+let stationShiftStart = 0;
+const SHIFT_THRESHOLD = 150; // Cursor must move >150px away from current station
+const SHIFT_SUSTAIN_MS = 2200; // Must stay in new area for 2.2s before moving
+let microPauseUntil = 0;
+let distanceWalkedInLeg = 0;
+let lastGazeAdjust = 0;
+
+/**
+ * Comfortable vantage point beside the active typing / work area.
+ * Keeps an intermediate, comfortable distance (~110-130px laterally, ~20px vertically).
+ * Never on top of the cursor or text, never too far away.
+ */
 function postWatch(): Pt {
   if (cursorAt < 0) return postIsland();
   const k = islandRect();
-  const spot = clampTo({ x: cursorPos.x - PAL_W / 2 - 20, y: cursorPos.y + 56 });
-  // A cursor parked on the island itself must not put the pal inside the band.
-  if (standsInBand(spot.x, spot.y)) spot.y = Math.max(spot.y, k.y1 + 8);
+  const b = screenRect();
+
+  // Try placing to the right first; if not enough room, place to the left
+  const rightSpace = b.x1 - (cursorPos.x + 110 + PAL_W);
+  const leftSpace = cursorPos.x - 110 - PAL_W - b.x0;
+
+  let targetX = 0;
+  if (rightSpace >= 0 && (rightSpace >= leftSpace || leftSpace < 0)) {
+    targetX = cursorPos.x + 110;
+  } else if (leftSpace >= 0) {
+    targetX = cursorPos.x - 110 - PAL_W;
+  } else {
+    targetX = rightSpace >= leftSpace ? cursorPos.x + 80 : cursorPos.x - 80 - PAL_W;
+  }
+
+  // Vertical placement: line of sight slightly above or level with work area (-30px)
+  let targetY = cursorPos.y - 30;
+
+  const spot = clampTo({ x: targetX, y: targetY });
+  // Never stand in the Island's keep-out band
+  if (standsInBand(spot.x, spot.y)) {
+    spot.y = Math.max(spot.y, k.y1 + 8);
+  }
   return spot;
 }
 
-/** The quiet tour: three spots, taken in order while nothing is happening. */
+/** The quiet tour: resting vantage points when no activity is detected for a long time. */
 function tourPosts(): Pt[] {
   const b = screenRect();
-  const midY = b.y0 + (b.y1 - b.y0) * 0.7;
   return [
-    { x: b.x0, y: midY },
-    // Pousa na parte superior da tela (olhando o que digitamos)
-    clampTo({ x: screenInfo.x + (screenInfo.width - PAL_W) * 0.22, y: b.y0 + 4 }),
-    clampTo({ x: screenInfo.x + (screenInfo.width - PAL_W) / 2, y: b.y1 - 24 }),
-    clampTo({ x: screenInfo.x + (screenInfo.width - PAL_W) * 0.78, y: b.y0 + 4 }),
-    { x: b.x1, y: midY },
+    clampTo({ x: b.x1 - 24, y: b.y1 - 10 }),
+    clampTo({ x: screenInfo.x + (screenInfo.width - PAL_W) * 0.82, y: b.y0 + 8 }),
+    clampTo({ x: b.x0 + 24, y: b.y1 - 10 }),
   ];
 }
 
@@ -521,31 +513,64 @@ function send() {
 }
 
 function step(dt: number, now: number) {
-  if (hovered) return; // the pointer is on the pal: it stays put for the click
+  if (hovered) return; // pointer on the pal: stay put for the click
+  if (now < microPauseUntil) return; // natural micro-pause during walk
 
   const notable = NOTABLE.has(lastState) || now < escortUntil;
   const watching = cursorAt >= 0 && now - cursorAt < WATCH_STILL_MS;
   const next: Rule = notable ? "report" : watching ? "watch" : "tour";
+
   if (next !== rule) {
     rule = next;
     legs = [];
+    currentVelocity = 0;
     idleUntil = 0;
     routedTo = null;
+    stationCursor = { x: -9999, y: -9999 };
+    stationShiftStart = 0;
     if (next === "tour") tourAt = now;
   }
-  if (rule === "watch" && now - lastPrankTime > PRANK_INTERVAL_MS * 1.4) {
-    maybeTriggerPrank(now);
+
+  // If in watch mode and stationed, allow occasional contextual observations
+  if (rule === "watch" && !legs.length && now >= idleUntil) {
+    if (now - lastObservationTime > OBSERVATION_INTERVAL_MS && Math.random() < 0.4) {
+      void triggerContextualObservation(now);
+    }
   }
+
+  // Micro adjustments while observing: subtle blink or gentle reaction
+  if (rule === "watch" && !legs.length && now - lastGazeAdjust > 8000) {
+    lastGazeAdjust = now;
+    if (Math.random() < 0.35) {
+      if (pal) pal.blink();
+      engine.blink();
+    }
+  }
+
   if (now < idleUntil) return;
 
-  // Where it should be standing now.
+  // Where it should be standing now
   let target: Pt | null = null;
   if (rule === "report") {
     target = postIsland();
     eyeTo = { x: screenInfo.x + screenInfo.width / 2, y: screenInfo.y + PANEL_H / 2 };
   } else if (rule === "watch") {
-    target = postWatch();
     eyeTo = cursorAt >= 0 ? cursorPos : null;
+    const distFromStation = Math.hypot(cursorPos.x - stationCursor.x, cursorPos.y - stationCursor.y);
+    if (stationCursor.x === -9999 || distFromStation > SHIFT_THRESHOLD) {
+      // Activity moved to a noticeably different screen area (>150px away)
+      if (stationShiftStart === 0) {
+        stationShiftStart = now;
+      } else if (now - stationShiftStart >= SHIFT_SUSTAIN_MS) {
+        // Sustained activity in new area: update station and route
+        stationCursor = { ...cursorPos };
+        stationShiftStart = 0;
+        target = postWatch();
+      }
+    } else {
+      // User is continuing work within the same regional station: stay comfortably still!
+      stationShiftStart = 0;
+    }
   } else {
     eyeTo = null;
     if (!legs.length && now >= tourAt) {
@@ -556,7 +581,7 @@ function step(dt: number, now: number) {
   }
 
   if (target) {
-    const follow = rule === "watch" ? WATCH_FOLLOW : ROUTE_EPS;
+    const follow = rule === "watch" ? 140 : ROUTE_EPS;
     const drift = routedTo
       ? Math.hypot(target.x - routedTo.x, target.y - routedTo.y)
       : Number.POSITIVE_INFINITY;
@@ -564,6 +589,8 @@ function step(dt: number, now: number) {
     if (drift > follow || needWalk) {
       legs = routeTo(target.x, target.y);
       routedTo = { ...target };
+      currentVelocity = 0;
+      distanceWalkedInLeg = 0;
     }
   }
   if (!legs.length) return;
@@ -576,19 +603,47 @@ function step(dt: number, now: number) {
   const dist = Math.hypot(dx, dy);
   if (dist > 0) {
     if (dx !== 0) faceDir = Math.sign(dx);
-    const stride = Math.min(dist, walkSpeed * dt);
+
+    // Smooth acceleration and deceleration curve
+    const maxSpeed = walkSpeed;
+    const targetVel = dist < 50 ? Math.max(16, maxSpeed * (dist / 50)) : maxSpeed;
+    if (currentVelocity < targetVel) {
+      currentVelocity = Math.min(targetVel, currentVelocity + ACCEL * dt);
+    } else {
+      currentVelocity = Math.max(targetVel, currentVelocity - ACCEL * dt);
+    }
+
+    const stride = Math.min(dist, currentVelocity * dt);
     x += (dx / dist) * stride;
     y += (dy / dist) * stride;
+
+    // Organic micro-pause during longer walks
+    distanceWalkedInLeg += stride;
+    if (distanceWalkedInLeg > 220 && dist > 70 && Math.random() < 0.2) {
+      distanceWalkedInLeg = 0;
+      microPauseUntil = now + 420;
+      currentVelocity = 0;
+      if (pal) pal.lookAt(0, 0);
+    }
   }
+
   if (Math.abs(t.x - x) <= SETTLE && Math.abs(t.y - y) <= SETTLE) {
     x = t.x;
     y = t.y;
     legs.shift();
-    if (!legs.length && rule === "tour") {
-      // The only randomness left: how long it lingers between the posts.
-      idleUntil = now + IDLE_MIN + Math.random() * (IDLE_MAX - IDLE_MIN);
-      tourAt = idleUntil;
-      maybeTriggerPrank(now);
+    currentVelocity = 0;
+    distanceWalkedInLeg = 0;
+    if (!legs.length) {
+      // Arrived at destination!
+      if (rule === "watch") {
+        // Stationed observing for 16-28 seconds
+        idleUntil = now + 16000 + Math.random() * 12000;
+        void triggerContextualObservation(now);
+      } else if (rule === "tour") {
+        // Quiet resting station for 28-50 seconds
+        idleUntil = now + IDLE_MIN + Math.random() * (IDLE_MAX - IDLE_MIN);
+        tourAt = idleUntil;
+      }
     }
   }
   if (x !== ox || y !== oy) send();
@@ -886,7 +941,7 @@ async function main() {
   window.addEventListener("keydown", (e) => {
     if (e.ctrlKey && (e.key === "8" || e.code === "Digit8")) {
       e.preventDefault();
-      void Bridge.setPalWander(false);
+      callPal("pause");
     }
   });
 
