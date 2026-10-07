@@ -274,91 +274,94 @@ const styles = `
     transition: transform 0.3s cubic-bezier(0.25, 0.8, 0.35, 1);
   }
 
-  /* WALK CYCLE: coordinated alternating legs, arms in anti-phase, bobbing body */
+  /* WALK CYCLE: 4-phase cartoon kinematic walk loop with knee flexion, squash & stretch */
   :host([pose="walk"]) .dp-leg-l {
-    animation: dp-walk-leg-l 0.55s ease-in-out infinite alternate;
+    animation: dp-walk-leg 0.64s cubic-bezier(0.45, 0.05, 0.55, 0.95) infinite;
     transform-origin: 50% 0%;
   }
   :host([pose="walk"]) .dp-leg-r {
-    animation: dp-walk-leg-r 0.55s ease-in-out infinite alternate;
+    animation: dp-walk-leg 0.64s cubic-bezier(0.45, 0.05, 0.55, 0.95) infinite;
+    animation-delay: -0.32s;
     transform-origin: 50% 0%;
   }
   :host([pose="walk"]) .dp-arm-l {
-    animation: dp-walk-arm-l 0.55s ease-in-out infinite alternate;
+    animation: dp-walk-arm 0.64s ease-in-out infinite;
     transform-origin: top center;
   }
   :host([pose="walk"]) .dp-arm-r {
-    animation: dp-walk-arm-r 0.55s ease-in-out infinite alternate;
+    animation: dp-walk-arm 0.64s ease-in-out infinite;
+    animation-delay: -0.32s;
     transform-origin: top center;
   }
   :host([pose="walk"]) .dp-pose {
-    animation: dp-walk-bob 0.275s ease-in-out infinite alternate;
+    animation: dp-walk-bob 0.32s cubic-bezier(0.35, 0, 0.65, 1) infinite;
   }
   :host([pose="walk"]) .dp-shadow {
-    animation: dp-walk-shadow 0.275s ease-in-out infinite alternate;
+    animation: dp-walk-shadow 0.32s cubic-bezier(0.35, 0, 0.65, 1) infinite;
     transform-origin: center;
   }
 
-  @keyframes dp-walk-leg-l {
-    0%   { transform: rotate(-18deg) translateY(-2px); }
-    100% { transform: rotate(18deg) translateY(0px); }
+  @keyframes dp-walk-leg {
+    0%   { transform: rotate(22deg) translateY(0px) scaleY(1); }
+    25%  { transform: rotate(4deg) translateY(1.5px) scaleY(0.97); }
+    50%  { transform: rotate(-18deg) translateY(0px) scaleY(1); }
+    75%  { transform: rotate(-2deg) translateY(-6px) scaleY(0.92); }
+    100% { transform: rotate(22deg) translateY(0px) scaleY(1); }
   }
-  @keyframes dp-walk-leg-r {
-    0%   { transform: rotate(18deg) translateY(0px); }
-    100% { transform: rotate(-18deg) translateY(-2px); }
-  }
-  @keyframes dp-walk-arm-l {
-    0%   { transform: rotate(16deg); }
-    100% { transform: rotate(-16deg); }
-  }
-  @keyframes dp-walk-arm-r {
-    0%   { transform: rotate(-16deg); }
-    100% { transform: rotate(16deg); }
+  @keyframes dp-walk-arm {
+    0%   { transform: rotate(-24deg) translateY(0px); }
+    50%  { transform: rotate(24deg) translateY(-2px); }
+    100% { transform: rotate(-24deg) translateY(0px); }
   }
   @keyframes dp-walk-bob {
-    0%   { transform: translateY(0) scale(1, 1); }
-    100% { transform: translateY(-3.5px) scale(0.98, 1.02); }
+    0%   { transform: translateY(1.5px) scale(1.02, 0.98); }
+    50%  { transform: translateY(-4px) scale(0.98, 1.02); }
+    100% { transform: translateY(1.5px) scale(1.02, 0.98); }
   }
   @keyframes dp-walk-shadow {
-    0%   { transform: scale(1, 1); opacity: 0.2; }
-    100% { transform: scale(0.86, 0.8); opacity: 0.14; }
+    0%   { transform: scale(1.06, 1.0); opacity: 0.22; }
+    50%  { transform: scale(0.86, 0.82); opacity: 0.14; }
+    100% { transform: scale(1.06, 1.0); opacity: 0.22; }
   }
 
-  /* RUN CYCLE: faster stride, forward lean */
+  /* RUN CYCLE: faster stride, dynamic lean, high bounce */
   :host([pose="run"]) .dp-leg-l {
-    animation: dp-walk-leg-l 0.32s ease-in-out infinite alternate;
+    animation: dp-walk-leg 0.42s cubic-bezier(0.45, 0.05, 0.55, 0.95) infinite;
     transform-origin: 50% 0%;
   }
   :host([pose="run"]) .dp-leg-r {
-    animation: dp-walk-leg-r 0.32s ease-in-out infinite alternate;
+    animation: dp-walk-leg 0.42s cubic-bezier(0.45, 0.05, 0.55, 0.95) infinite;
+    animation-delay: -0.21s;
     transform-origin: 50% 0%;
   }
   :host([pose="run"]) .dp-arm-l {
-    animation: dp-walk-arm-l 0.32s ease-in-out infinite alternate;
+    animation: dp-walk-arm 0.42s ease-in-out infinite;
     transform-origin: top center;
   }
   :host([pose="run"]) .dp-arm-r {
-    animation: dp-walk-arm-r 0.32s ease-in-out infinite alternate;
+    animation: dp-walk-arm 0.42s ease-in-out infinite;
+    animation-delay: -0.21s;
     transform-origin: top center;
   }
   :host([pose="run"]) .dp-pose {
-    animation: dp-run-bob 0.16s ease-in-out infinite alternate;
+    animation: dp-run-bob 0.21s cubic-bezier(0.35, 0, 0.65, 1) infinite;
   }
   @keyframes dp-run-bob {
-    0%   { transform: translateY(0) rotate(5deg); }
-    100% { transform: translateY(-5px) rotate(8deg); }
+    0%   { transform: translateY(2px) rotate(8deg) scale(1.04, 0.96); }
+    50%  { transform: translateY(-7px) rotate(11deg) scale(0.96, 1.04); }
+    100% { transform: translateY(2px) rotate(8deg) scale(1.04, 0.96); }
   }
 
-  /* SIT POSE: resting on a window ledge or surface */
+  /* SIT POSE: resting naturally on window edge or surface with folded legs */
+  :host([pose="sit"]) .dp-pose {
+    transform: translateY(8px);
+  }
   :host([pose="sit"]) .dp-leg-l,
   :host([pose="sit"]) .dp-leg-r {
-    transform: translateY(3px) scaleY(0.7) rotate(12deg);
-  }
-  :host([pose="sit"]) .dp-pose {
-    transform: translateY(5px);
+    transform: translateY(-2px) rotate(60deg) scaleY(0.82);
   }
   :host([pose="sit"]) .dp-shadow {
-    transform: translateY(4px) scale(1.15, 1.25);
+    transform: translateY(6px) scale(1.2, 1.25);
     opacity: 0.26;
   }
 
