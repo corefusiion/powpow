@@ -67,12 +67,10 @@ export function registerAllPageMascots() {
           <ellipse cx="100" cy="196" rx="46" ry="8" fill="#000000" opacity="0.14"/>
           <!-- Mascot Interactive 3x3 Sprite Layer: 100% transparent background, tracks mouse -->
           <g clip-path="url(#${id('mascot_clip')})">
-            <g class="dp-blink">
-              <image class="dp-mascot-img" href="/mascots/${mascot.id}-directions.webp"
-                x="${VIEW_X - CELL_SIZE}" y="${VIEW_Y - CELL_SIZE}"
-                width="${TOTAL_SIZE}" height="${TOTAL_SIZE}"
-                preserveAspectRatio="none"/>
-            </g>
+            <image class="dp-mascot-img" href="/mascots/${mascot.id}-directions.webp"
+              x="${VIEW_X - CELL_SIZE}" y="${VIEW_Y - CELL_SIZE}"
+              width="${TOTAL_SIZE}" height="${TOTAL_SIZE}"
+              preserveAspectRatio="none"/>
           </g>
         `,
         accessories: '',

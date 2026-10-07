@@ -15,6 +15,7 @@ import { State, type Settings } from "./core/state";
 import { t } from "./core/i18n";
 import { h } from "./views/dom";
 import { DotPal, registerCustom, type CustomPal } from "../../src/index.js";
+import { Sound } from "./core/sound";
 
 // Window geometry — mirrors tauri.conf.json's "pal" entry. The body keeps the
 // old 140x250 box at the window's left edge; the remaining width is the room
@@ -29,7 +30,7 @@ const BOT_OVERHANG = 40;
 const DP_SIZE = 106;
 
 // The stroll: a walk, not a dash, with pauses long enough to read as standing.
-const SPEED = 60;
+const SPEED = 110;
 let walkSpeed = SPEED;
 const IDLE_MIN = 900;
 const IDLE_MAX = 4200;
@@ -158,14 +159,165 @@ function throwSplatters() {
   }, 3600);
 }
 
+function generateContextComment(appName: string, title: string): string {
+  const context = `${appName} ${title}`.toLowerCase();
+
+  // Code / IDEs / Terminal
+  if (
+    context.includes("code") ||
+    context.includes("cursor") ||
+    context.includes("visual studio") ||
+    context.includes("sublime") ||
+    context.includes("terminal") ||
+    context.includes("powershell") ||
+    context.includes("cmd") ||
+    context.includes("git") ||
+    context.includes("bash") ||
+    context.includes("rust") ||
+    context.includes("python") ||
+    context.includes("nvim") ||
+    context.includes("vim") ||
+    context.includes("intellij") ||
+    context.includes("webstorm") ||
+    context.includes("pycharm")
+  ) {
+    const codeComments = [
+      "Uaal, que código elegante! 🚀",
+      "Digitando na velocidade da luz! ⚡",
+      "Nem pisca! Foco absurdo nessa função.",
+      "Uau, esse commit vai ficar uma obra de arte!",
+      "Refatoração de mestre! Tô impressionado. 💻",
+      "Compilando sem medo do amanhã! Mandou bem.",
+      "Olha essa lógica impecável! Parabéns pelo foco. ✨",
+      "Uaal, vi esse algoritmo nascendo da tela! Brilhante.",
+    ];
+    return codeComments[Math.floor(Math.random() * codeComments.length)];
+  }
+
+  // Web Browsers / Research
+  if (
+    context.includes("chrome") ||
+    context.includes("edge") ||
+    context.includes("firefox") ||
+    context.includes("brave") ||
+    context.includes("arc") ||
+    context.includes("opera") ||
+    context.includes("safari") ||
+    context.includes("github") ||
+    context.includes("stack overflow") ||
+    context.includes("google") ||
+    context.includes("chatgpt") ||
+    context.includes("claude")
+  ) {
+    const webComments = [
+      "Uaal, pesquisa de respeito! Ideia genial vindo aí. 💡",
+      "Uau, quanta aba aberta! Multitarefa nível pro. 🔥",
+      "Essa documentação é ouro puro! Tô anotando tudo.",
+      "Navegando firme rumo à solução perfeita!",
+      "Boa referência achada! Vai enriquecer muito o projeto.",
+      "Uaal, caçando conhecimento com maestria! 🧠",
+    ];
+    return webComments[Math.floor(Math.random() * webComments.length)];
+  }
+
+  // Design / Creativity
+  if (
+    context.includes("figma") ||
+    context.includes("photoshop") ||
+    context.includes("illustrator") ||
+    context.includes("blender") ||
+    context.includes("canva") ||
+    context.includes("paint") ||
+    context.includes("inkscape")
+  ) {
+    const artComments = [
+      "Uaal, que paleta de cores incrível! 🎨",
+      "Esse design tá ficando de outro planeta!",
+      "Pixel perfect total! Olho clínico apurado.",
+      "Adorei a composição! Tá com cara de projeto premiado. ✨",
+      "Traço firme e visão criativa! Mandando ver.",
+    ];
+    return artComments[Math.floor(Math.random() * artComments.length)];
+  }
+
+  // Communication & Productivity
+  if (
+    context.includes("slack") ||
+    context.includes("teams") ||
+    context.includes("discord") ||
+    context.includes("whatsapp") ||
+    context.includes("telegram") ||
+    context.includes("notion") ||
+    context.includes("excel") ||
+    context.includes("word") ||
+    context.includes("trello")
+  ) {
+    const commComments = [
+      "Uaal, comunicação alinhada resolve tudo! 💬",
+      "Produtividade a mil por hora! Nada passa batido.",
+      "Digitando no ritmo! Resposta certeira.",
+      "Organização nota 10! Dá gosto de acompanhar.",
+    ];
+    return commComments[Math.floor(Math.random() * commComments.length)];
+  }
+
+  // General positive / proactive comments
+  const generalComments = [
+    "Uaal, legal o que você está fazendo! 🤩",
+    "Tô de olho aqui e achando o máximo!",
+    "Ritmo excelente! Segue o jogo com tudo. 🚀",
+    "Foco total na missão! Tô torcendo por você.",
+    "Que concentração de respeito! Não para não! ⚡",
+    "Trabalho de qualidade é isso aí! Continue brilhando. ✨",
+    "Uau, gostei do que vi na tela agora!",
+  ];
+  return generalComments[Math.floor(Math.random() * generalComments.length)];
+}
+
+let lastCommentaryTime = 0;
+const COMMENTARY_INTERVAL_MS = 20000;
+
+async function autonomousScreenCommentary(force = false) {
+  const now = performance.now();
+  if (!force && now - lastCommentaryTime < COMMENTARY_INTERVAL_MS) return;
+  lastCommentaryTime = now;
+
+  let appName = "";
+  let title = "";
+
+  try {
+    const attached = await Bridge.attachActiveWindow();
+    if (attached) {
+      appName = attached.appName || "";
+      title = attached.title || "";
+    }
+  } catch {
+    // Graceful fallback to default screen commentary
+  }
+
+  const comment = generateContextComment(appName, title);
+  if (thoughtEl && thoughtTextEl) {
+    thoughtTextEl.textContent = comment;
+    thoughtEl.hidden = false;
+    Sound.play("peek");
+    engine.triggerEmote("happy");
+    if (pal) void pal.emote("star");
+    window.setTimeout(() => {
+      if (thoughtEl) thoughtEl.hidden = true;
+    }, 5200);
+  }
+}
+
 function maybeTriggerPrank(now: number) {
   if (now - lastPrankTime < PRANK_INTERVAL_MS) return;
   lastPrankTime = now;
 
-  const choice = Math.floor(Math.random() * 3);
-  if (choice === 0) {
+  const choice = Math.floor(Math.random() * 5);
+  if (choice === 0 || choice === 1) {
+    void autonomousScreenCommentary(true);
+  } else if (choice === 2) {
     showSarcasticThought();
-  } else if (choice === 1) {
+  } else if (choice === 3) {
     biteCloseButton();
   } else {
     throwSplatters();
@@ -341,6 +493,9 @@ function step(dt: number, now: number) {
     routedTo = null;
     if (next === "tour") tourAt = now;
   }
+  if (rule === "watch" && now - lastPrankTime > PRANK_INTERVAL_MS * 1.4) {
+    maybeTriggerPrank(now);
+  }
   if (now < idleUntil) return;
 
   // Where it should be standing now.
@@ -429,6 +584,12 @@ function drawMochi(dt: number) {
 
 function updatePalGaze() {
   if (!pal) return;
+  if (y <= screenRect().y0 + 16) {
+    // Pousado no topo da tela: olha para baixo acompanhando a tela e o que digitamos
+    const gx = Math.max(-0.6, Math.min(0.6, (cursorPos.x - (x + PAL_W / 2)) / 300));
+    pal.lookAt(gx, 0.85);
+    return;
+  }
   if (cursorAt >= 0) {
     const eyeX = x + PAL_W / 2;
     const eyeY = y + PAL_H / 2;
@@ -578,6 +739,18 @@ async function press(action: string) {
       idleUntil = 0;
       return;
     case "analyze":
+      setCard(false);
+      if (thoughtEl && thoughtTextEl) {
+        thoughtTextEl.textContent = "📸 Tirando print e analisando a tela...";
+        thoughtEl.hidden = false;
+        Sound.play("attach");
+        if (pal) void pal.emote("wide");
+        window.setTimeout(() => {
+          if (thoughtEl) thoughtEl.hidden = true;
+        }, 3200);
+      }
+      callPal(action);
+      return;
     case "pause":
     case "new-chat":
     case "settings":

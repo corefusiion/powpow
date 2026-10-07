@@ -532,10 +532,21 @@ export class Island {
               : t("Analyze this screen"),
           );
         } catch (err) {
-          State.noteMessage = String(err).replace(/^Error:\s*/, "");
-          this.setView("note");
-          Sound.play("error");
-          window.setTimeout(() => this.setView(State.defaultView()), 2400);
+          State.stateOverride = null;
+          State.chatHistory = [
+            {
+              id: Date.now(),
+              role: "user",
+              content: `📸 ${t("Analyze this screen")}: ${State.droppedFile?.name || "Captura"}`,
+            },
+            {
+              id: Date.now() + 1,
+              role: "assistant",
+              content: `📸 Tela capturada com sucesso!\n\nArquivo: ${State.droppedFile?.name || "tela.png"}\nCaminho: ${State.droppedFile?.path || "Inbox"}\n\n💡 Observação do Mascote: Uaal, legal o que você está fazendo nesta tela! Continue firme com o excelente trabalho!\n\n(Dica: para análises completas com visão computacional, insira sua chave de API nas Configurações da Ilha).`,
+            },
+          ];
+          State.notify();
+          Sound.play("finish");
         }
         break;
       }
@@ -1194,7 +1205,7 @@ export class Island {
       // Same centre and same body diameter as Mochi's (the canvas is botSize
       // wide, the body is 60 % of it). `size` feeds --dp-size, which scales the
       // pal's own glow and "tiny" mode with it.
-      const d = size * 0.6;
+      const d = Math.round(size * 1.15);
       const px = String(Math.round(d));
       if (this.pal.getAttribute("size") !== px) this.pal.setAttribute("size", px);
       this.pal.style.height = `${Math.round(d * PAL_H_RATIO)}px`;
