@@ -2,6 +2,7 @@
 
 mod claude;
 mod capture;
+mod codex_plan;
 mod droptarget;
 mod files;
 mod gemini;
@@ -376,6 +377,11 @@ fn hooks_apply(
 }
 
 #[tauri::command]
+fn codex_plan_usage() -> Option<serde_json::Value> {
+    codex_plan::read()
+}
+
+#[tauri::command]
 fn approval_decision(app: AppHandle, request_id: String, decision: String) {
     pipe::answer(&app, &request_id, &decision);
 }
@@ -626,6 +632,7 @@ pub fn run() {
             agy_hooks_status,
             agy_hooks_preview,
             agy_hooks_apply,
+            codex_plan_usage,
             approval_decision,
             approval_ack,
             approval_decline,

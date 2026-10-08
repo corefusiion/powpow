@@ -15,6 +15,8 @@ import { buildStory } from "./story";
 import { diffCardKey, renderDiffCard } from "./diff";
 import { buildChoose, buildUpload, buildUploading } from "./upload";
 import { renderIntegrationCard, type IntegrationCardHooks } from "./integrations";
+import { pillColor } from "../core/pill-colors";
+import { buildPlanPill, claudePillVisible, codexPillVisible, planCardOpen, PlanCard } from "./usage";
 
 export interface ViewActions {
   setView(v: IslandViewName): void;
@@ -95,6 +97,8 @@ export function buildHeader(actions: ViewActions): ViewHost {
 
   const gearBtn = h("button", { title: t("Settings…"), onclick: () => go("settings") }, svg(ICONS.gear, 14));
   const soundBtn = h("button", { title: t("Mute"), onclick: () => actions.toggleSound() }, svg(ICONS.speakerOn, 14));
+  const claudePill = buildPlanPill(false);
+  const codexPill = buildPlanPill(true);
   // "Running in Brazil" indicator: opens Settings where the language switches.
   const langBtn = h(
     "button",
@@ -115,7 +119,7 @@ export function buildHeader(actions: ViewActions): ViewHost {
     "div",
     { id: "header" },
     h("div", { class: "tabs" }, tabHome, tabStory, tabChat, tabDrop),
-    h("div", { class: "header-actions" }, langBtn, gearBtn, soundBtn),
+    h("div", { class: "header-actions" }, claudePill.el, codexPill.el, langBtn, gearBtn, soundBtn),
   );
 
   return {
@@ -131,6 +135,10 @@ export function buildHeader(actions: ViewActions): ViewHost {
       gearBtn.append(svg(v === "settings" ? ICONS.gearFill : ICONS.gear, 14));
       clear(soundBtn);
       soundBtn.append(svg(State.settings.soundEnabled ? ICONS.speakerOn : ICONS.speakerOff, 14));
+      claudePill.el.style.display = claudePillVisible() ? "" : "none";
+      if (claudePillVisible()) claudePill.sync();
+      codexPill.el.style.display = codexPillVisible() ? "" : "none";
+      if (codexPillVisible()) codexPill.sync();
       el.style.opacity = v === "confused" ? "0" : "1";
     },
   };
@@ -151,6 +159,7 @@ function buildOverview(actions: ViewActions): ViewHost {
   const left = card(null, leftBody, jump);
   const pills = h("div", { class: "pills" });
   const right = card(null, pills);
+  const plan = new PlanCard();
 
   const el = h("div", { class: "view overview" },
     h("div", { class: "left" }, left),
@@ -199,7 +208,15 @@ function buildOverview(actions: ViewActions): ViewHost {
       const sessionActive =
         task?.id === "integration_claude" && (task.state !== "idle" || task.steps.length > 0);
 
-      if (task && sessionActive) {
+      if (planCardOpen()) {
+        if (mode !== "card" || cardKey !== "plan") {
+          clear(leftBody);
+          leftBody.append(plan.el);
+          mode = "card";
+          cardKey = "plan";
+        }
+        plan.sync();
+      } else if (task && sessionActive) {
         // A fresh edit takes the card over: the file, a few lines around the
         // change and the newest line typing in (bridge/ui/notch-diff.js).
         const diff = latestDiff();
@@ -247,7 +264,7 @@ function buildOverview(actions: ViewActions): ViewHost {
         }
       }
 
-      jump.style.display = detailOpen ? "none" : "";
+      jump.style.display = (detailOpen || planCardOpen()) ? "none" : "";
 
       const others = State.otherTasks.slice(0, 4);
       const pillKey = others.map((t) => `${t.id}:${t.pillBadge ?? ""}`).join("|");
@@ -263,23 +280,24 @@ function buildOverview(actions: ViewActions): ViewHost {
 
 function buildPill(task: AgentTask, actions: ViewActions): HTMLElement {
   const label = task.id === "integration_claude" ? "VS Code" : task.name;
-  const canvas = createMiniBot(task, 24);
+  const color = pillColor(task.id, task.color, State.settings.pillColors);
+  const canvas = createMiniBot({ ...task, color }, 24);
   const pill = h(
     "div",
     { class: "pill", onclick: () => actions.setFocus(task.id) },
     canvas,
     h("span", { class: "lbl", text: label }),
   );
-  pill.style.borderColor = `${task.color}24`;
+  pill.style.borderColor = `${color}24`;
   pill.addEventListener("mouseenter", () => {
-    pill.style.background = `${task.color}2e`;
-    pill.style.borderColor = `${task.color}8c`;
-    pill.style.boxShadow = `0 2px 10px ${task.color}59`;
-    (pill.querySelector(".lbl") as HTMLElement).style.color = lighten(task.color, 0.3);
+    pill.style.background = `${color}2e`;
+    pill.style.borderColor = `${color}8c`;
+    pill.style.boxShadow = `0 2px 10px ${color}59`;
+    (pill.querySelector(".lbl") as HTMLElement).style.color = lighten(color, 0.3);
   });
   pill.addEventListener("mouseleave", () => {
     pill.style.background = "";
-    pill.style.borderColor = `${task.color}24`;
+    pill.style.borderColor = `${color}24`;
     pill.style.boxShadow = "";
     (pill.querySelector(".lbl") as HTMLElement).style.color = "";
   });

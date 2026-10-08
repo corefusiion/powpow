@@ -2,6 +2,7 @@
 
 import type { BotEmoteName, BotStateName, IslandMode, IslandViewName } from "./layout";
 import type { EyeShape } from "../mochi/engine";
+import type { CodexPlanUsage, PlanUsage } from "./plan";
 
 export type AgentSource =
   | "claudeCode" | "geminiCli" | "antigravity" | "opencode" | "genericCli"
@@ -124,6 +125,22 @@ export interface Settings {
   custom?: Record<string, unknown> | null;
   /** Story view wording: one plain sentence (simple) or the chapters (detailed). */
   storyView: "simple" | "detailed";
+  /** Open the island automatically when cursor hovers near top. */
+  openOnHover: boolean;
+  /** Custom colors per pill/mascot ("#RRGGBB"). */
+  pillColors: Record<string, string>;
+  /** The always-on workspace tool (default: "integration_claude"). */
+  mainPill: string;
+  /** Show the Claude plan pill in the island header. */
+  showPlanInNotch: boolean;
+  /** Coucou/powpow status line relay is installed in Claude settings. */
+  planRelayInstalled: boolean;
+  /** Show the Codex plan pill in the island header. */
+  showCodexPlanInNotch: boolean;
+  /** Model server addresses once connected; empty means not connected. */
+  ollamaUrl?: string;
+  lmstudioUrl?: string;
+  customUrl?: string;
 }
 
 export const DEFAULT_SETTINGS: Settings = {
@@ -148,6 +165,15 @@ export const DEFAULT_SETTINGS: Settings = {
   approvedTools: [],
   character: "mochi",
   storyView: "simple",
+  openOnHover: false,
+  pillColors: {},
+  mainPill: "integration_claude",
+  showPlanInNotch: false,
+  planRelayInstalled: false,
+  showCodexPlanInNotch: false,
+  ollamaUrl: "",
+  lmstudioUrl: "",
+  customUrl: "",
 };
 
 type Listener = () => void;
@@ -179,6 +205,12 @@ class AppState {
   searchResult: SearchResult | null = null;
   chatHistory: ChatMessage[] = [];
   pendingApproval: ApprovalInfo | null = null;
+
+  /** Plan usage numbers from Claude status line and Codex CLI. */
+  planUsage: PlanUsage | null = null;
+  codexPlanUsage: CodexPlanUsage | null = null;
+  showingPlanDetail = false;
+  planDetailIsCodex = false;
 
   integrations: Record<string, IntegrationInfo> = {};
 

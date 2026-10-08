@@ -106,6 +106,7 @@ export class Island {
   private botHoverTimer: number | null = null;
   private lastLoveTime = 0;
   private botHoverStart = { x: 0, y: 0 };
+  private hoverOpenTimer: number | null = null;
 
   // Mochi drag-out → window attach (macOS: drag Mochi onto any window).
   // Press is recorded on mousedown; the slap is deferred until release so a
@@ -1058,6 +1059,19 @@ export class Island {
       if (this.fsm.state === "powpow") this.greeting.hover();
       this.fsm.mouseEntered();
       this.homeCollapseAt = null;
+    }
+    if (inIsland && State.settings.openOnHover && State.mode !== "expanded") {
+      if (this.hoverOpenTimer == null) {
+        this.hoverOpenTimer = window.setTimeout(() => {
+          this.hoverOpenTimer = null;
+          if (this.wasInIsland && State.mode !== "expanded" && State.settings.openOnHover) {
+            this.fsm.click();
+          }
+        }, 280);
+      }
+    } else if (!inIsland && this.hoverOpenTimer != null) {
+      window.clearTimeout(this.hoverOpenTimer);
+      this.hoverOpenTimer = null;
     }
     if (!inIsland && this.wasInIsland) {
       this.fsm.mouseLeft();

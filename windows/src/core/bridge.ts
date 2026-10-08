@@ -83,6 +83,18 @@ export const Bridge = {
   agyHooksApply: (install: boolean, fingerprint: string) =>
     callOrThrow<string>("agy_hooks_apply", { install, fingerprint }),
 
+  agentHooksStatus: () => call<Record<string, boolean>>("agent_hooks_status"),
+  agentHooksList: () => call<AgentHookStatus[]>("agent_hooks_list"),
+  agentHooksPreview: (agent: string, install: boolean) =>
+    callOrThrow<AgentHookPlan>("agent_hooks_preview", { agent, install }),
+  agentHooksApply: (agent: string, install: boolean, fingerprint: string) =>
+    callOrThrow<string>("agent_hooks_apply", { agent, install, fingerprint }),
+
+  statusLinePreview: (install: boolean) => callOrThrow<HookPreview>("status_line_preview", { install }),
+  statusLineApply: (install: boolean, fingerprint: string) =>
+    callOrThrow<string>("status_line_apply", { install, fingerprint }),
+  codexPlanUsage: () => call<unknown>("codex_plan_usage"),
+
   approvalDecision: (requestId: string, decision: "allow" | "deny" | "always") =>
     call<void>("approval_decision", { requestId, decision }),
   /** "The card is up" — until this lands the relay only waits a moment. */
@@ -179,9 +191,27 @@ export interface DroppedFile {
 
 export interface HookStatus {
   installed: boolean;
+  planRelayInstalled?: boolean;
   settingsPath: string;
   hookPath: string;
   hookReady: boolean;
+}
+
+export interface AgentHookStatus {
+  id: string;
+  name: string;
+  installed: boolean;
+  path: string;
+  hookReady: boolean;
+  approvals: boolean;
+  note: string;
+}
+
+export interface AgentHookPlan {
+  diff: string;
+  backup: string;
+  path: string;
+  fingerprint: string;
 }
 
 export interface HookPreview {

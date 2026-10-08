@@ -111,7 +111,7 @@ fn answer(source: &str, decision: &Option<String>) -> i32 {
             let json = match word {
                 "allow" | "always" => r#"{"decision":"allow"}"#.to_string(),
                 "deny" => r#"{"decision":"deny","reason":"Denied from Powpow"}"#.to_string(),
-                _ => return 0,
+                _ => r#"{"decision":"ask"}"#.to_string(),
             };
             let mut out = std::io::stdout();
             let _ = writeln!(out, "{json}");

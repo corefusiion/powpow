@@ -14,6 +14,12 @@ import { Bridge, onEvent, type HookPreview, type HookStatus } from "../core/brid
 import { DEFAULT_SETTINGS, type Settings } from "../core/state";
 import { t } from "../core/i18n";
 import { h, clear } from "../views/dom";
+import { colorDot } from "./colors";
+import { agentsSection } from "./agents";
+import {
+  MAX_DECLARED, PILL_CATEGORIES, availablePills, chooseMainPill, isComingSoon, mainPillChoices,
+  sanitizeDeclared, toggleDeclared, type PillDefinition,
+} from "../core/pills";
 // Registers `dot-pal` so the character row can preview what it picks; the maker
 // builds a custom spec with the very helpers the island uses to draw it.
 import {
@@ -33,6 +39,11 @@ const root = document.getElementById("settings-root")!;
 
 async function save() {
   await Bridge.saveSettings(settings);
+}
+
+function pickColor(next: Record<string, string>) {
+  settings.pillColors = next;
+  void save();
 }
 
 // ── Reusable bits ─────────────────────────────────────────────────────────────
@@ -1114,6 +1125,83 @@ function characterRow(): HTMLElement {
   );
 }
 
+// ── Active pills section ──────────────────────────────────────────────────────
+
+function activePillsSection(connected: Record<string, boolean>): HTMLElement {
+  const slots = h("div", { class: "hint" });
+  const main = h("select", {}) as HTMLSelectElement;
+  for (const def of mainPillChoices()) main.append(h("option", { value: def.id, text: def.name }));
+  main.addEventListener("change", () => {
+    const next = chooseMainPill(settings, main.value);
+    if (!next) return;
+    settings.mainPill = next.mainPill;
+    settings.activeIntegrations = next.activeIntegrations;
+    void save();
+    draw();
+  });
+  const groups = h("div", { style: "display:flex;flex-direction:column;gap:12px" });
+
+  function hint(def: PillDefinition): string | null {
+    if (isComingSoon(def.id)) return t("Coming soon");
+    if (def.connect.kind === "hooks" && !connected[def.id]) return t("Hooks not installed");
+    if (def.connect.kind === "key" && !connected[def.id]) return t("Key not configured");
+    if (def.connect.kind === "server" && !settings[def.connect.field]) return t("Not connected");
+    return null;
+  }
+
+  function row(def: PillDefinition): HTMLElement {
+    const isMain = def.id === settings.mainPill;
+    const on = settings.activeIntegrations.includes(def.id);
+    const full = !isMain && !on && settings.activeIntegrations.length >= MAX_DECLARED;
+    const el = h("div", { class: full ? "pill-row full" : "pill-row" },
+      colorDot(def, "width:10px;height:10px", () => settings.pillColors, pickColor),
+      h("span", { class: "name", text: def.name }),
+    );
+    if (isMain) {
+      el.append(h("span", { class: "state", text: t("Principal") }));
+      return el;
+    }
+    const why = hint(def);
+    el.append(h("span", { class: "state", text: why ?? "" }));
+    const sw = h("button", { class: on ? "switch on" : "switch" }) as HTMLButtonElement;
+    sw.disabled = full;
+    sw.addEventListener("click", () => {
+      const next = toggleDeclared(settings, def.id);
+      if (!next) return;
+      settings.activeIntegrations = next;
+      void save();
+      draw();
+    });
+    el.append(sw);
+    return el;
+  }
+
+  function draw() {
+    const used = settings.activeIntegrations.length;
+    slots.textContent = t("{used}/{max} slots em uso — a ferramenta principal é fixa.", { used, max: MAX_DECLARED });
+    slots.classList.toggle("full", used >= MAX_DECLARED);
+    main.value = settings.mainPill;
+    clear(groups);
+    for (const cat of PILL_CATEGORIES) {
+      if (cat.id === "service") continue;
+      const pills = availablePills().filter((p) => p.category === cat.id);
+      if (pills.length === 0) continue;
+      groups.append(h("div", { class: "pill-group" }, h("h3", { text: t(cat.title) }), ...pills.map(row)));
+    }
+  }
+  draw();
+
+  return h(
+    "section",
+    {},
+    h("h2", {}, h("span", { text: t("Pílulas Ativas") })),
+    h("div", { class: "hint", text: t("Escolha as ferramentas e agentes que você usa. Clique no ponto colorido para personalizar a cor de cada um.") }),
+    slots,
+    h("div", { class: "row" }, h("label", { text: t("Ferramenta principal") }), main),
+    groups,
+  );
+}
+
 // ── General section ───────────────────────────────────────────────────────────
 
 function generalSection(): HTMLElement {
@@ -1268,6 +1356,21 @@ function generalSection(): HTMLElement {
       h("span", { class: "hint", text: t("the pal strolls across the screen") }),
     ),
     h("div", { class: "row" },
+      h("label", { text: t("Open on hover") }),
+      toggle(settings.openOnHover, (v) => { settings.openOnHover = v; void save(); }),
+      h("span", { class: "hint", text: t("the island expands when you hover near it") }),
+    ),
+    h("div", { class: "row" },
+      h("label", { text: t("Claude plan usage") }),
+      toggle(settings.showPlanInNotch, (v) => { settings.showPlanInNotch = v; void save(); }),
+      h("span", { class: "hint", text: t("shows 5-hour and 7-day limits in the island header") }),
+    ),
+    h("div", { class: "row" },
+      h("label", { text: t("Codex plan usage") }),
+      toggle(settings.showCodexPlanInNotch, (v) => { settings.showCodexPlanInNotch = v; void save(); }),
+      h("span", { class: "hint", text: t("shows Codex credits and rate limits in header") }),
+    ),
+    h("div", { class: "row" },
       h("label", { text: t("Launch at startup") }),
       toggle(settings.autostart, (v) => { settings.autostart = v; void save(); }),
     ),
@@ -1323,19 +1426,23 @@ async function main() {
   const present: Record<string, boolean> = {};
   for (const k of keys) present[k] = (await Bridge.secretPresent(k)) ?? false;
 
+  const agents = await Bridge.agentHooksList();
+  settings = { ...settings, ...sanitizeDeclared(settings) };
+  const connected: Record<string, boolean> = { ...((await Bridge.agentHooksStatus()) ?? {}) };
+  for (const def of availablePills()) {
+    if (def.connect.kind === "key") {
+      connected[def.id] = present[def.connect.key] ?? (await Bridge.secretPresent(def.connect.key)) ?? false;
+    }
+  }
+
   clear(root);
   root.append(
     h("h1", {}, h("span", { text: "Powpow" }), h("span", { class: "version", text: version })),
     claudeSection(status),
     geminiSection(geminiStatus),
     agySection(agyStatus),
-    h("section", {},
-      h("h2", {}, h("span", { text: "opencode" })),
-      h("div", {
-        class: "hint",
-        text: t("opencode has no settings.json hooks. Copy windows/opencode-plugin/powpow.ts to ~/.config/opencode/plugins/ (or .opencode/plugins/) — it forwards session/tool events to the same island pipe. Gemini + opencode appear as separate pills next to Claude."),
-      }),
-    ),
+    agentsSection(agents),
+    activePillsSection(connected),
     apiSection(hasKey, hasGeminiKey),
     gmailSection(present),
     outlookSection(present),

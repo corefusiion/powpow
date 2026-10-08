@@ -51,6 +51,24 @@ pub struct Settings {
     /// Story view wording: "simple" (one sentence) or "detailed" (the chapters).
     #[serde(default = "default_story_view")]
     pub story_view: String,
+    #[serde(default)]
+    pub open_on_hover: bool,
+    #[serde(default)]
+    pub pill_colors: std::collections::BTreeMap<String, String>,
+    #[serde(default = "default_main_pill")]
+    pub main_pill: String,
+    #[serde(default)]
+    pub show_plan_in_notch: bool,
+    #[serde(default)]
+    pub plan_relay_installed: bool,
+    #[serde(default)]
+    pub show_codex_plan_in_notch: bool,
+    #[serde(default)]
+    pub ollama_url: String,
+    #[serde(default)]
+    pub lmstudio_url: String,
+    #[serde(default)]
+    pub custom_url: String,
 }
 
 fn default_language() -> String {
@@ -89,6 +107,10 @@ fn default_story_view() -> String {
     "simple".to_string()
 }
 
+fn default_main_pill() -> String {
+    "integration_claude".to_string()
+}
+
 impl Default for Settings {
     fn default() -> Self {
         Self {
@@ -116,6 +138,15 @@ impl Default for Settings {
             character: default_character(),
             custom: None,
             story_view: default_story_view(),
+            open_on_hover: false,
+            pill_colors: std::collections::BTreeMap::new(),
+            main_pill: default_main_pill(),
+            show_plan_in_notch: false,
+            plan_relay_installed: false,
+            show_codex_plan_in_notch: false,
+            ollama_url: String::new(),
+            lmstudio_url: String::new(),
+            custom_url: String::new(),
         }
     }
 }

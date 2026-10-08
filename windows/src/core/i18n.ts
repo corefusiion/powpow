@@ -387,11 +387,52 @@ const PT: Record<string, string> = {
   "✓ Selecionado": "✓ Selecionado",
   "Buscar mascote por nome...": "Buscar mascote por nome...",
   "Ativo:": "Ativo:",
+
+  // Pills and Settings
+  "Active pills": "Pílulas ativas",
+  "Pílulas Ativas": "Pílulas Ativas",
+  "Open on hover": "Abrir ao passar o mouse",
+  "the island expands when you hover near it": "a ilha expande automaticamente ao aproximar o cursor do mouse",
+  "Claude plan": "Plano Claude",
+  "Codex plan": "Plano Codex",
+  "Claude plan usage": "Uso do plano Claude",
+  "Codex plan usage": "Uso do plano Codex",
+  "shows 5-hour and 7-day limits in the island header": "exibe limites de 5 horas e 7 dias no cabeçalho da ilha",
+  "shows Codex credits and rate limits in header": "exibe créditos e limites do Codex no cabeçalho",
+  "Waiting for a response from Claude Code": "Aguardando resposta do Claude Code",
+  "Asking Codex…": "Consultando Codex…",
+  "{n} min ago": "há {n} min",
+  "{n} h ago": "há {n} h",
+  "5 hours": "5 horas",
+  "Week": "Semana",
+  "Resets": "Renovações",
+  "Resetting…": "Renovando…",
+  "in {h} h {m}": "em {h} h {m}",
+  "in {m} min": "em {m} min",
+  "{n} available": "{n} disponíveis",
+  " · until {date}": " · até {date}",
+  "Main tool": "Ferramenta principal",
+  "Ferramenta principal": "Ferramenta principal",
+  "Principal": "Principal",
+  "Main": "Principal",
+  "Default": "Padrão",
+  "Coming soon": "Em breve",
+  "Not connected": "Não conectado",
+  "Where you code": "Onde você coda",
+  "Agents": "Agentes",
+  "Agentes": "Agentes",
+  "AI for the chat": "IA para o chat",
+  "Services": "Serviços",
 };
 
-export function t(key: string): string {
-  if (State.settings.language === "pt-BR") return PT[key] ?? key;
-  return key;
+export function t(key: string, vars?: Record<string, string | number>): string {
+  let str = (State.settings.language === "pt-BR" ? PT[key] ?? key : key);
+  if (vars) {
+    for (const [k, v] of Object.entries(vars)) {
+      str = str.replace(new RegExp(`\\{${k}\\}`, "g"), String(v));
+    }
+  }
+  return str;
 }
 
 /** Short badge for the island header: BR / EN. */
