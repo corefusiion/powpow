@@ -40,9 +40,9 @@ export const characters = {
     color: '#1e88ff',
     tap: 'jump',
     look: 6,
-    mouth: [102, 138],
+    mouth: [102, 94],
     cheek: 34,
-    eyes: { at: [[86, 120], [118, 120]], r: 10 },
+    eyes: { at: [[86, 74], [118, 74]], r: 10 },
     render: ({ id, body, fur }) => ({
       defs: `
         <radialGradient id="${id('beret')}" gradientUnits="userSpaceOnUse" cx="70" cy="50" r="110">
@@ -52,51 +52,51 @@ export const characters = {
         </radialGradient>`,
       body: `
         <!-- Soft floor contact shadow -->
-        <ellipse class="dp-shadow" cx="100" cy="188" rx="46" ry="6.5" fill="#000000" opacity="0.22"/>
+        <ellipse class="dp-shadow" cx="100" cy="189" rx="46" ry="6.5" fill="#000000" opacity="0.22"/>
         <!-- Articulated Left Leg: Volumetric thigh, knee, and stylish leather boot -->
-        <g class="dp-leg-l" style="transform-origin: 74px 144px">
+        <g class="dp-leg-l" style="transform-origin: 74px 122px">
           <!-- Thigh & Knee -->
-          <path d="M66 144 C62 148 64 158 66 164 C70 166 80 166 84 164 C86 158 84 148 82 144 Z" fill="${body}"/>
-          <circle cx="75" cy="164" r="3.2" fill="#5cb3ff" opacity="0.5"/>
+          <path d="M64 122 C60 132 62 144 66 152 C70 154 80 154 84 152 C88 144 86 132 82 122 Z" fill="${body}"/>
+          <circle cx="75" cy="152" r="3.2" fill="#5cb3ff" opacity="0.5"/>
           <!-- Boot cuff & leather artist boot matching beret -->
-          <rect x="63" y="167" width="22" height="5.5" rx="2.5" fill="#2d2d34"/>
-          <path class="dp-foot-l" d="M58 184 C56 176 64 172 74 172 C84 172 90 176 92 184 C92 186 58 186 58 184 Z" fill="url(#${id('beret')})"/>
+          <rect x="63" y="156" width="22" height="5.5" rx="2.5" fill="#2d2d34"/>
+          <path class="dp-foot-l" d="M58 184 C56 170 64 162 74 162 C84 162 90 170 92 184 C92 186 58 186 58 184 Z" fill="url(#${id('beret')})"/>
           <path d="M58 184 Q75 186.5 92 184" stroke="#000000" stroke-width="2.2" stroke-linecap="round"/>
-          <ellipse cx="75" cy="178" rx="7" ry="2.2" fill="#ffffff" opacity="0.25"/>
+          <ellipse cx="75" cy="176" rx="7" ry="2.2" fill="#ffffff" opacity="0.25"/>
         </g>
         <!-- Articulated Right Leg -->
-        <g class="dp-leg-r" style="transform-origin: 126px 144px">
+        <g class="dp-leg-r" style="transform-origin: 126px 122px">
           <!-- Thigh & Knee -->
-          <path d="M118 144 C116 148 114 158 116 164 C120 166 130 166 134 164 C138 158 136 148 134 144 Z" fill="${body}"/>
-          <circle cx="125" cy="164" r="3.2" fill="#5cb3ff" opacity="0.5"/>
+          <path d="M118 122 C114 132 116 144 120 152 C124 154 134 154 138 152 C142 144 140 132 136 122 Z" fill="${body}"/>
+          <circle cx="125" cy="152" r="3.2" fill="#5cb3ff" opacity="0.5"/>
           <!-- Boot cuff & leather boot -->
-          <rect x="115" y="167" width="22" height="5.5" rx="2.5" fill="#2d2d34"/>
-          <path class="dp-foot-r" d="M108 184 C106 176 114 172 124 172 C134 172 140 176 142 184 C142 186 108 186 108 184 Z" fill="url(#${id('beret')})"/>
+          <rect x="115" y="156" width="22" height="5.5" rx="2.5" fill="#2d2d34"/>
+          <path class="dp-foot-r" d="M108 184 C106 170 114 162 124 162 C134 162 140 170 142 184 C142 186 108 186 108 184 Z" fill="url(#${id('beret')})"/>
           <path d="M108 184 Q125 186.5 142 184" stroke="#000000" stroke-width="2.2" stroke-linecap="round"/>
-          <ellipse cx="125" cy="178" rx="7" ry="2.2" fill="#ffffff" opacity="0.25"/>
+          <ellipse cx="125" cy="176" rx="7" ry="2.2" fill="#ffffff" opacity="0.25"/>
         </g>
-        <!-- Torso with natural chibi waistline at y=144 -->
-        <path class="dp-torso" fill="${body}" d="M22 136 C16 116 28 98 56 94 C76 90 124 90 144 94 C172 98 184 116 178 136 C170 146 148 148 100 148 C52 148 30 146 22 136 Z"/>
+        <!-- Torso with natural chibi waistline and pelvis at y=122 -->
+        <path class="dp-torso" fill="${body}" d="M32 94 C24 74 36 56 64 52 C84 48 116 48 136 52 C164 56 176 74 168 94 C162 110 148 122 100 122 C52 122 38 110 32 94 Z"/>
         <!-- Fluffy Arms -->
-        <g class="dp-arm-l" style="transform-origin: 26px 132px">
-          <ellipse cx="24" cy="138" rx="8" ry="14" transform="rotate(18 24 138)" fill="${body}"/>
+        <g class="dp-arm-l" style="transform-origin: 32px 90px">
+          <ellipse cx="30" cy="98" rx="8" ry="14" transform="rotate(18 30 98)" fill="${body}"/>
         </g>
-        <g class="dp-arm-r" style="transform-origin: 176px 132px">
-          <ellipse cx="178" cy="138" rx="8" ry="14" transform="rotate(-18 178 138)" fill="${body}"/>
+        <g class="dp-arm-r" style="transform-origin: 168px 90px">
+          <ellipse cx="170" cy="98" rx="8" ry="14" transform="rotate(-18 170 98)" fill="${body}"/>
         </g>`,
       accessories: `
         <g filter="${fur}" fill="url(#${id('beret')})">
-          <ellipse cx="98" cy="98" rx="84" ry="26" transform="rotate(-6 98 98)"/>
-          <ellipse cx="94" cy="80" rx="70" ry="34" transform="rotate(-6 94 80)"/>
-          <path d="M80 50 L85 38 L91 49 Z"/>
-          <circle cx="85" cy="36" r="10.5"/>
+          <ellipse cx="98" cy="52" rx="84" ry="26" transform="rotate(-6 98 52)"/>
+          <ellipse cx="94" cy="38" rx="70" ry="34" transform="rotate(-6 94 38)"/>
+          <path d="M80 16 L85 6 L91 16 Z"/>
+          <circle cx="85" cy="6" r="10.5"/>
         </g>`,
       face: `
         <g class="dp-look">
           <g class="dp-blink">
-            <ellipse cx="86" cy="120" rx="7.5" ry="12" fill="#0b0b12"/>
-            <ellipse cx="118" cy="120" rx="7.5" ry="12" fill="#0b0b12"/>
-            ${eyeShine(84, 114, 2)}${eyeShine(116, 114, 2)}
+            <ellipse cx="86" cy="74" rx="7.5" ry="12" fill="#0b0b12"/>
+            <ellipse cx="118" cy="74" rx="7.5" ry="12" fill="#0b0b12"/>
+            ${eyeShine(84, 68, 2)}${eyeShine(116, 68, 2)}
           </g>
         </g>`,
     }),
@@ -107,9 +107,9 @@ export const characters = {
     color: '#8be22e',
     tap: 'jump',
     look: 8,
-    mouth: [100, 132],
+    mouth: [100, 88],
     cheek: 52,
-    eyes: { at: [[64, 94], [136, 94]], r: 17, own: ['wide'] },
+    eyes: { at: [[64, 56], [136, 56]], r: 17, own: ['wide'] },
     render: ({ id, body }) => ({
       defs: `
         <radialGradient id="${id('eyeball')}" cx=".4" cy=".35" r=".7">
@@ -123,16 +123,16 @@ export const characters = {
         </radialGradient>`,
       body: `
         <!-- Soft floor contact shadow -->
-        <ellipse class="dp-shadow" cx="100" cy="188" rx="54" ry="7" fill="#000000" opacity="0.2"/>
+        <ellipse class="dp-shadow" cx="100" cy="189" rx="54" ry="7" fill="#000000" opacity="0.2"/>
         <!-- Articulated Left Frog Leg: muscular flank thigh, springy knee, 3-toed webbed foot -->
-        <g class="dp-leg-l" style="transform-origin: 58px 142px">
+        <g class="dp-leg-l" style="transform-origin: 58px 120px">
           <!-- Muscular bent frog thigh -->
-          <path d="M58 142 C38 144 26 152 28 164 C30 172 42 172 50 168 C58 162 62 152 58 142 Z" fill="${body}"/>
-          <circle cx="42" cy="162" r="3.5" fill="#b6f74a" opacity="0.6"/>
+          <path d="M58 120 C36 124 24 136 28 150 C30 158 42 158 50 152 C58 144 62 132 58 120 Z" fill="${body}"/>
+          <circle cx="40" cy="148" r="3.5" fill="#b6f74a" opacity="0.6"/>
           <!-- Shin & Ankle -->
-          <path d="M46 166 C48 172 52 175 54 176" stroke="${body}" stroke-width="8" stroke-linecap="round"/>
+          <path d="M44 152 C46 160 50 166 54 172" stroke="${body}" stroke-width="8" stroke-linecap="round"/>
           <!-- Webbed foot with suction toe pads -->
-          <path class="dp-foot-l" d="M34 184 C34 176 44 174 54 174 C62 174 72 176 72 184 Z" fill="${body}"/>
+          <path class="dp-foot-l" d="M34 184 C34 172 44 168 54 168 C62 168 72 172 72 184 Z" fill="${body}"/>
           <circle cx="36" cy="184" r="4.5" fill="${body}"/>
           <circle cx="36" cy="184" r="2.2" fill="#b6f74a"/>
           <circle cx="53" cy="185.5" r="4.8" fill="${body}"/>
@@ -141,15 +141,15 @@ export const characters = {
           <circle cx="70" cy="184" r="2.2" fill="#b6f74a"/>
         </g>
         <!-- Articulated Right Frog Leg -->
-        <g class="dp-leg-r" style="transform-origin: 142px 142px">
+        <g class="dp-leg-r" style="transform-origin: 142px 120px">
           <!-- Muscular bent frog thigh -->
-          <path d="M142 142 C162 144 174 152 172 164 C170 172 158 172 150 168 C142 162 138 152 142 142 Z" fill="${body}"/>
-          <circle cx="158" cy="162" r="3.5" fill="#b6f74a" opacity="0.6"/>
+          <path d="M142 120 C164 124 176 136 172 150 C170 158 158 158 150 152 C142 144 138 132 142 120 Z" fill="${body}"/>
+          <circle cx="160" cy="148" r="3.5" fill="#b6f74a" opacity="0.6"/>
           <!-- Shin & Ankle -->
-          <path d="M154 166 C152 172 148 175 146 176" stroke="${body}" stroke-width="8" stroke-linecap="round"/>
+          <path d="M156 152 C154 160 150 166 146 172" stroke="${body}" stroke-width="8" stroke-linecap="round"/>
           <!-- Webbed foot with suction toe pads -->
-          <path class="dp-foot-r" d="M128 184 C128 176 138 174 146 174 C156 174 166 176 166 184 Z" fill="${body}"/>
-          <circle cx="130" cy="184" r="4.5" fill="${body}"/>
+          <path class="dp-foot-r" d="M128 184 C128 172 138 168 146 168 C156 168 166 172 166 184 Z" fill="${body}"/>
+          <circle cx="130" cy="184" r="4.5" fill="#body"/>
           <circle cx="130" cy="184" r="2.2" fill="#b6f74a"/>
           <circle cx="147" cy="185.5" r="4.8" fill="${body}"/>
           <circle cx="147" cy="185.5" r="2.4" fill="#b6f74a"/>
@@ -158,27 +158,27 @@ export const characters = {
         </g>
         <!-- Frog Torso & Head -->
         <g class="dp-torso" fill="${body}">
-          <path d="M24 136 C18 116 46 106 100 106 C154 106 182 116 176 136 C170 146 146 148 100 148 C54 148 30 146 24 136 Z"/>
-          <ellipse cx="100" cy="136" rx="34" ry="14" fill="url(#${id('belly')})"/>
-          <circle cx="64" cy="96" r="34"/>
-          <circle cx="136" cy="96" r="34"/>
+          <circle cx="64" cy="56" r="30"/>
+          <circle cx="136" cy="56" r="30"/>
+          <path d="M30 84 C18 64 36 42 70 42 L130 42 C164 42 182 64 170 84 C162 104 146 122 100 122 C54 122 38 104 30 84 Z"/>
+          <ellipse cx="100" cy="98" rx="42" ry="18" fill="url(#${id('belly')})"/>
         </g>
-        <!-- Cute frog arms -->
-        <g class="dp-arm-l" style="transform-origin: 32px 140px">
-          <path d="M30 138 C18 146 20 156 32 154" stroke="${body}" stroke-width="7" stroke-linecap="round" fill="none"/>
+        <!-- Little webbed hands -->
+        <g class="dp-arm-l" style="transform-origin: 34px 84px">
+          <path d="M30 88 C18 96 20 106 32 104" stroke="${body}" stroke-width="7" stroke-linecap="round" fill="none"/>
         </g>
-        <g class="dp-arm-r" style="transform-origin: 168px 140px">
-          <path d="M170 138 C182 146 180 156 168 154" stroke="${body}" stroke-width="7" stroke-linecap="round" fill="none"/>
+        <g class="dp-arm-r" style="transform-origin: 166px 84px">
+          <path d="M170 88 C182 96 180 106 168 104" stroke="${body}" stroke-width="7" stroke-linecap="round" fill="none"/>
         </g>`,
       accessories: '',
       face: [64, 136]
         .map(
           (cx) => `
         <g class="dp-blink">
-          <circle cx="${cx}" cy="94" r="22" fill="url(#${id('eyeball')})"/>
+          <circle cx="${cx}" cy="56" r="22" fill="url(#${id('eyeball')})"/>
           <g class="dp-look">
-            <circle cx="${cx}" cy="94" r="12" fill="#0b0b12"/>
-            ${eyeShine(cx - 4, 89, 3.2)}
+            <circle cx="${cx}" cy="56" r="12" fill="#0b0b12"/>
+            ${eyeShine(cx - 4, 51, 3.2)}
           </g>
         </g>`
         )
@@ -191,9 +191,9 @@ export const characters = {
     color: '#ffc21a',
     tap: 'wiggle',
     look: 4,
-    mouth: [100, 136],
+    mouth: [100, 92],
     cheek: 36,
-    eyes: { at: [[74, 118], [126, 118]], r: 12 },
+    eyes: { at: [[74, 72], [126, 72]], r: 12 },
     render: ({ id, body }) => ({
       defs: `
         <radialGradient id="${id('belly')}" cx=".5" cy=".5" r=".6">
@@ -202,53 +202,53 @@ export const characters = {
         </radialGradient>`,
       body: `
         <!-- Soft floor contact shadow -->
-        <ellipse class="dp-shadow" cx="100" cy="188" rx="48" ry="6.5" fill="#000000" opacity="0.2"/>
+        <ellipse class="dp-shadow" cx="100" cy="189" rx="48" ry="6.5" fill="#000000" opacity="0.2"/>
         <!-- Articulated Left Fox Leg: fluffy thigh, white fur sock, cute paw -->
-        <g class="dp-leg-l" style="transform-origin: 74px 142px">
+        <g class="dp-leg-l" style="transform-origin: 74px 120px">
           <!-- Golden Thigh -->
-          <path d="M66 142 C62 148 64 158 66 164 C70 166 80 166 84 164 C86 158 84 148 82 142 Z" fill="${body}"/>
+          <path d="M64 120 C60 130 62 142 66 150 C70 152 80 152 84 150 C88 142 86 130 82 120 Z" fill="${body}"/>
           <!-- White fur ankle sock -->
-          <rect x="67" y="164" width="14" height="10" rx="4" fill="#fff5cc"/>
+          <rect x="67" y="152" width="14" height="12" rx="4" fill="#fff5cc"/>
           <!-- Fox paw with rounded toes -->
-          <path class="dp-foot-l" d="M60 184 C58 176 66 174 74 174 C82 174 88 176 90 184 Z" fill="#f5aa00"/>
+          <path class="dp-foot-l" d="M60 184 C58 172 66 168 74 168 C82 168 88 172 90 184 Z" fill="#f5aa00"/>
           <circle cx="66" cy="184" r="2.8" fill="#ffc21a"/>
           <circle cx="74" cy="185" r="3" fill="#ffc21a"/>
           <circle cx="82" cy="184" r="2.8" fill="#ffc21a"/>
         </g>
         <!-- Articulated Right Fox Leg -->
-        <g class="dp-leg-r" style="transform-origin: 126px 142px">
+        <g class="dp-leg-r" style="transform-origin: 126px 120px">
           <!-- Golden Thigh -->
-          <path d="M118 142 C116 148 114 158 116 164 C120 166 130 166 134 164 C138 158 136 148 134 142 Z" fill="${body}"/>
+          <path d="M118 120 C114 130 116 142 120 150 C124 152 134 152 138 150 C142 142 140 130 136 120 Z" fill="${body}"/>
           <!-- White fur ankle sock -->
-          <rect x="119" y="164" width="14" height="10" rx="4" fill="#fff5cc"/>
+          <rect x="119" y="152" width="14" height="12" rx="4" fill="#fff5cc"/>
           <!-- Fox paw with rounded toes -->
-          <path class="dp-foot-r" d="M110 184 C108 176 116 174 124 174 C132 174 138 176 140 184 Z" fill="#f5aa00"/>
+          <path class="dp-foot-r" d="M110 184 C108 172 116 168 124 168 C132 168 138 172 140 184 Z" fill="#f5aa00"/>
           <circle cx="116" cy="184" r="2.8" fill="#ffc21a"/>
           <circle cx="124" cy="185" r="3" fill="#ffc21a"/>
           <circle cx="132" cy="184" r="2.8" fill="#ffc21a"/>
         </g>
         <!-- Fluffy Fox Tail on the side -->
-        <g class="dp-tail" style="transform-origin: 164px 144px">
-          <path d="M164 144 C194 134 204 108 190 96 C178 86 166 100 170 120 Z" fill="${body}"/>
-          <path d="M190 96 C184 90 176 96 178 106 C184 104 188 100 190 96 Z" fill="#fff5cc"/>
+        <g class="dp-tail" style="transform-origin: 164px 118px">
+          <path d="M164 118 C194 108 204 82 190 70 C178 60 166 74 170 94 Z" fill="${body}"/>
+          <path d="M190 70 C184 64 176 70 178 80 C184 78 188 74 190 70 Z" fill="#fff5cc"/>
         </g>
-        <!-- Main Body with cream tummy -->
-        <path class="dp-torso" fill="${body}" d="M24 136 C22 96 58 36 100 34 C142 36 178 96 176 136 C170 144 144 146 100 146 C56 146 30 144 24 136 Z"/>
-        <ellipse cx="100" cy="136" rx="26" ry="12" fill="url(#${id('belly')})"/>
+        <!-- Main Body with cream tummy down to y=120 -->
+        <path class="dp-torso" fill="${body}" d="M30 94 C26 70 54 28 100 26 C146 28 174 70 170 94 C164 110 144 122 100 122 C56 122 36 110 30 94 Z"/>
+        <ellipse cx="100" cy="104" rx="28" ry="14" fill="url(#${id('belly')})"/>
         <!-- Little arms -->
-        <g class="dp-arm-l" style="transform-origin: 32px 132px">
-          <ellipse cx="30" cy="138" rx="7" ry="13" transform="rotate(20 30 138)" fill="${body}"/>
+        <g class="dp-arm-l" style="transform-origin: 32px 88px">
+          <ellipse cx="30" cy="94" rx="7" ry="13" transform="rotate(20 30 94)" fill="${body}"/>
         </g>
-        <g class="dp-arm-r" style="transform-origin: 168px 132px">
-          <ellipse cx="170" cy="138" rx="7" ry="13" transform="rotate(-20 170 138)" fill="${body}"/>
+        <g class="dp-arm-r" style="transform-origin: 168px 88px">
+          <ellipse cx="170" cy="94" rx="7" ry="13" transform="rotate(-20 170 94)" fill="${body}"/>
         </g>`,
       accessories: '',
       face: `
         <g class="dp-look" fill="none" stroke="#0b0b12" stroke-linecap="round">
-          <path class="dp-eyes" stroke-width="4.5" d="M63 119 Q74 129 85 119 M115 119 Q126 129 137 119"/>
-          <circle cx="74" cy="117" r="20" stroke-width="5" fill="#fff" fill-opacity=".08"/>
-          <circle cx="126" cy="117" r="20" stroke-width="5" fill="#fff" fill-opacity=".08"/>
-          <path stroke-width="4.5" d="M97 115 Q100 109 103 115 M51 115 L26 110 M149 115 L174 110"/>
+          <path class="dp-eyes" stroke-width="4.5" d="M63 73 Q74 83 85 73 M115 73 Q126 83 137 73"/>
+          <circle cx="74" cy="71" r="20" stroke-width="5" fill="#fff" fill-opacity=".08"/>
+          <circle cx="126" cy="71" r="20" stroke-width="5" fill="#fff" fill-opacity=".08"/>
+          <path stroke-width="4.5" d="M97 69 Q100 63 103 69 M51 69 L26 64 M149 69 L174 64"/>
         </g>`,
     }),
   },
@@ -258,9 +258,9 @@ export const characters = {
     color: '#ff2fc4',
     tap: 'love',
     look: 5,
-    mouth: [100, 138],
+    mouth: [100, 92],
     cheek: 38,
-    eyes: { at: [[76, 116], [124, 116]], r: 11, ink: '#fff' },
+    eyes: { at: [[76, 70], [124, 70]], r: 11, ink: '#fff' },
     render: ({ id, body }) => ({
       defs: `
         <radialGradient id="${id('lens')}" cx=".35" cy=".3" r=".8">
@@ -270,49 +270,49 @@ export const characters = {
         </radialGradient>`,
       body: `
         <!-- Soft floor contact shadow -->
-        <ellipse class="dp-shadow" cx="100" cy="188" rx="42" ry="6" fill="#000000" opacity="0.2"/>
+        <ellipse class="dp-shadow" cx="100" cy="189" rx="44" ry="6" fill="#000000" opacity="0.2"/>
         <!-- Articulated Left Leg: slender stylish thigh, chic obsidian ankle boot -->
-        <g class="dp-leg-l" style="transform-origin: 78px 146px">
+        <g class="dp-leg-l" style="transform-origin: 78px 120px">
           <!-- Magenta Thigh & Calf -->
-          <rect x="73" y="146" width="11" height="20" rx="5" fill="#d81b99"/>
-          <rect x="74" y="162" width="9" height="12" rx="4" fill="#d81b99"/>
+          <rect x="73" y="120" width="11" height="24" rx="5" fill="#d81b99"/>
+          <rect x="74" y="142" width="9" height="14" rx="4" fill="#d81b99"/>
           <!-- Designer ankle boot with patent shine -->
-          <rect x="71" y="172" width="15" height="4.5" rx="2" fill="#2d2d3a"/>
-          <path class="dp-foot-l" d="M64 184 C62 176 70 174 78 174 C86 174 90 178 92 184 Z" fill="#16161f"/>
+          <rect x="71" y="154" width="15" height="4.5" rx="2" fill="#2d2d3a"/>
+          <path class="dp-foot-l" d="M64 184 C62 170 70 166 78 166 C86 166 90 170 92 184 Z" fill="#16161f"/>
           <rect x="64" y="184" width="7" height="2" fill="#111116"/>
           <line x1="64" y1="185.5" x2="92" y2="185.5" stroke="#111116" stroke-width="1.5"/>
-          <ellipse cx="78" cy="179" rx="6" ry="2" fill="#ffffff" opacity="0.32"/>
+          <ellipse cx="78" cy="176" rx="6" ry="2" fill="#ffffff" opacity="0.32"/>
         </g>
         <!-- Articulated Right Leg -->
-        <g class="dp-leg-r" style="transform-origin: 122px 146px">
+        <g class="dp-leg-r" style="transform-origin: 122px 120px">
           <!-- Magenta Thigh & Calf -->
-          <rect x="116" y="146" width="11" height="20" rx="5" fill="#d81b99"/>
-          <rect x="117" y="162" width="9" height="12" rx="4" fill="#d81b99"/>
+          <rect x="116" y="120" width="11" height="24" rx="5" fill="#d81b99"/>
+          <rect x="117" y="142" width="9" height="14" rx="4" fill="#d81b99"/>
           <!-- Designer ankle boot with patent shine -->
-          <rect x="114" y="172" width="15" height="4.5" rx="2" fill="#2d2d3a"/>
-          <path class="dp-foot-r" d="M108 184 C106 176 114 174 122 174 C130 174 134 178 136 184 Z" fill="#16161f"/>
+          <rect x="114" y="154" width="15" height="4.5" rx="2" fill="#2d2d3a"/>
+          <path class="dp-foot-r" d="M108 184 C106 170 114 166 122 166 C130 166 134 170 136 184 Z" fill="#16161f"/>
           <rect x="108" y="184" width="7" height="2" fill="#111116"/>
           <line x1="108" y1="185.5" x2="136" y2="185.5" stroke="#111116" stroke-width="1.5"/>
-          <ellipse cx="122" cy="179" rx="6" ry="2" fill="#ffffff" opacity="0.32"/>
+          <ellipse cx="122" cy="176" rx="6" ry="2" fill="#ffffff" opacity="0.32"/>
         </g>
-        <!-- Heart body completed to waist tip at y=146 -->
-        <path class="dp-torso" fill="${body}" d="M100 146 C64 138 18 124 18 90 C18 56 42 42 72 42 C88 42 96 50 100 62 C104 50 112 42 128 42 C158 42 182 56 182 90 C182 124 136 138 100 146 Z"/>
+        <!-- Heart body completed to waist tip at y=120 -->
+        <path class="dp-torso" fill="${body}" d="M100 120 C64 112 22 98 22 68 C22 40 44 26 72 26 C88 26 96 34 100 46 C104 34 112 26 128 26 C156 26 178 40 178 68 C178 98 136 112 100 120 Z"/>
         <!-- Arms -->
-        <g class="dp-arm-l" style="transform-origin: 28px 120px">
-          <ellipse cx="26" cy="126" rx="6" ry="12" transform="rotate(16 26 126)" fill="${body}"/>
+        <g class="dp-arm-l" style="transform-origin: 30px 88px">
+          <ellipse cx="28" cy="94" rx="6" ry="12" transform="rotate(16 28 94)" fill="${body}"/>
         </g>
-        <g class="dp-arm-r" style="transform-origin: 172px 120px">
-          <ellipse cx="174" cy="126" rx="6" ry="12" transform="rotate(-16 174 126)" fill="${body}"/>
+        <g class="dp-arm-r" style="transform-origin: 170px 88px">
+          <ellipse cx="172" cy="94" rx="6" ry="12" transform="rotate(-16 172 94)" fill="${body}"/>
         </g>`,
       accessories: '',
       face: `
         <g class="dp-look">
           <g stroke="#0b0b12" stroke-width="4.5" stroke-linecap="round" fill="none">
-            <path d="M95 112 Q100 106 105 112 M58 110 L18 104 M142 110 L182 104"/>
+            <path d="M95 66 Q100 60 105 66 M58 64 L18 58 M142 64 L182 58"/>
           </g>
-          <circle cx="76" cy="116" r="19" fill="url(#${id('lens')})"/>
-          <circle cx="124" cy="116" r="19" fill="url(#${id('lens')})"/>
-          <g class="dp-eyes">${eyeShine(69, 109, 3)}${eyeShine(117, 109, 3)}</g>
+          <circle cx="76" cy="70" r="19" fill="url(#${id('lens')})"/>
+          <circle cx="124" cy="70" r="19" fill="url(#${id('lens')})"/>
+          <g class="dp-eyes">${eyeShine(69, 63, 3)}${eyeShine(117, 63, 3)}</g>
         </g>`,
     }),
   },
@@ -324,62 +324,62 @@ export const characters = {
     color: '#9d6bff',
     tap: 'spin',
     look: 6,
-    mouth: [100, 140],
+    mouth: [100, 94],
     cheek: 36,
-    eyes: { at: [[80, 122], [120, 122]], r: 11 },
+    eyes: { at: [[80, 74], [120, 74]], r: 11 },
     render: ({ id, body }) => ({
       defs: '',
       body: `
         <!-- Soft floor contact shadow -->
-        <ellipse class="dp-shadow" cx="100" cy="188" rx="46" ry="6.5" fill="#000000" opacity="0.2"/>
+        <ellipse class="dp-shadow" cx="100" cy="189" rx="46" ry="6.5" fill="#000000" opacity="0.2"/>
         <!-- Articulated Left Leg: lavender thigh, royal violet fantasy boot with gold buckle -->
-        <g class="dp-leg-l" style="transform-origin: 76px 144px">
+        <g class="dp-leg-l" style="transform-origin: 76px 120px">
           <!-- Thigh & Knee -->
-          <rect x="70" y="144" width="14" height="20" rx="5" fill="${body}"/>
-          <circle cx="77" cy="164" r="3" fill="#c3a2ff" opacity="0.6"/>
+          <rect x="70" y="120" width="14" height="24" rx="5" fill="${body}"/>
+          <circle cx="77" cy="144" r="3" fill="#c3a2ff" opacity="0.6"/>
           <!-- Boot cuff & gold star buckle -->
-          <rect x="67" y="168" width="19" height="5.5" rx="2.5" fill="#5c2cb8"/>
-          <circle cx="76" cy="170.5" r="2.5" fill="#fff3a6"/>
+          <rect x="67" y="152" width="19" height="5.5" rx="2.5" fill="#5c2cb8"/>
+          <circle cx="76" cy="154.5" r="2.5" fill="#fff3a6"/>
           <!-- Curled fantasy boot -->
-          <path class="dp-foot-l" d="M60 184 C58 176 66 174 76 174 C86 174 92 178 94 184 Z" fill="#753cd8"/>
+          <path class="dp-foot-l" d="M60 184 C58 170 66 164 76 164 C86 164 92 170 94 184 Z" fill="#753cd8"/>
           <path d="M60 184 Q77 186.5 94 184" stroke="#481e96" stroke-width="2"/>
-          <circle cx="86" cy="180" r="1.5" fill="#fff3a6" opacity="0.9"/>
+          <circle cx="86" cy="178" r="1.5" fill="#fff3a6" opacity="0.9"/>
         </g>
         <!-- Articulated Right Leg -->
-        <g class="dp-leg-r" style="transform-origin: 124px 144px">
+        <g class="dp-leg-r" style="transform-origin: 124px 120px">
           <!-- Thigh & Knee -->
-          <rect x="116" y="144" width="14" height="20" rx="5" fill="${body}"/>
-          <circle cx="123" cy="164" r="3" fill="#c3a2ff" opacity="0.6"/>
+          <rect x="116" y="120" width="14" height="24" rx="5" fill="${body}"/>
+          <circle cx="123" cy="144" r="3" fill="#c3a2ff" opacity="0.6"/>
           <!-- Boot cuff & gold buckle -->
-          <rect x="114" y="168" width="19" height="5.5" rx="2.5" fill="#5c2cb8"/>
-          <circle cx="124" cy="170.5" r="2.5" fill="#fff3a6"/>
+          <rect x="114" y="152" width="19" height="5.5" rx="2.5" fill="#5c2cb8"/>
+          <circle cx="124" cy="154.5" r="2.5" fill="#fff3a6"/>
           <!-- Curled fantasy boot -->
-          <path class="dp-foot-r" d="M106 184 C104 176 114 174 124 174 C134 174 140 178 142 184 Z" fill="#753cd8"/>
+          <path class="dp-foot-r" d="M106 184 C104 170 114 164 124 164 C134 164 140 170 142 184 Z" fill="#753cd8"/>
           <path d="M106 184 Q123 186.5 142 184" stroke="#481e96" stroke-width="2"/>
-          <circle cx="134" cy="180" r="1.5" fill="#fff3a6" opacity="0.9"/>
+          <circle cx="134" cy="178" r="1.5" fill="#fff3a6" opacity="0.9"/>
         </g>
-        <!-- Torso with celestial curve and waist hem at y=144 -->
-        <path class="dp-torso" fill="${body}" d="M24 136 C20 106 58 78 94 62 C88 46 100 30 118 34 C106 40 106 54 120 58 C162 78 180 106 176 136 C170 144 144 146 100 146 C56 146 30 144 24 136 Z"/>
-        <path d="M46 140 Q100 148 154 140" stroke="#753cd8" stroke-width="4" stroke-linecap="round" fill="none"/>
+        <!-- Torso with celestial curve down to y=120 -->
+        <path class="dp-torso" fill="${body}" d="M30 94 C26 70 54 48 94 36 C88 24 100 12 118 16 C106 22 106 34 120 38 C158 48 174 70 170 94 C164 110 144 122 100 122 C56 122 36 110 30 94 Z"/>
+        <path d="M46 116 Q100 124 154 116" stroke="#753cd8" stroke-width="4" stroke-linecap="round" fill="none"/>
         <!-- Celestial arms -->
-        <g class="dp-arm-l" style="transform-origin: 24px 132px">
-          <ellipse cx="22" cy="138" rx="7" ry="14" transform="rotate(18 22 138)" fill="${body}"/>
+        <g class="dp-arm-l" style="transform-origin: 28px 88px">
+          <ellipse cx="26" cy="94" rx="7" ry="14" transform="rotate(18 26 94)" fill="${body}"/>
         </g>
-        <g class="dp-arm-r" style="transform-origin: 176px 132px">
-          <ellipse cx="178" cy="138" rx="7" ry="14" transform="rotate(-18 178 138)" fill="${body}"/>
+        <g class="dp-arm-r" style="transform-origin: 172px 88px">
+          <ellipse cx="174" cy="94" rx="7" ry="14" transform="rotate(-18 174 94)" fill="${body}"/>
         </g>`,
       accessories: `
-        <path class="dp-sparkle" fill="#fff3a6" d="M156 30 Q159 44 172 47 Q159 50 156 64 Q153 50 140 47 Q153 44 156 30 Z"/>
-        <path fill="#fff3a6" opacity=".8" d="M40 70 Q41.5 76 48 77.5 Q41.5 79 40 85 Q38.5 79 32 77.5 Q38.5 76 40 70 Z"/>`,
+        <path class="dp-sparkle" fill="#fff3a6" d="M156 16 Q159 30 172 33 Q159 36 156 50 Q153 36 140 33 Q153 30 156 16 Z"/>
+        <path fill="#fff3a6" opacity=".8" d="M40 44 Q41.5 50 48 51.5 Q41.5 53 40 59 Q38.5 53 32 51.5 Q38.5 50 40 44 Z"/>`,
       face: `
         <g class="dp-look">
           ${[80, 120]
             .map(
               (cx, i) => `
             <g class="dp-blink">
-              <ellipse cx="${cx}" cy="122" rx="8.5" ry="12" fill="#0b0b12"/>
-              <path d="M${cx + (i ? 7 : -7)} 116 l${i ? 6 : -6} -5" stroke="#0b0b12" stroke-width="3.5" stroke-linecap="round"/>
-              ${eyeShine(cx - 2.5, 116, 2.6)}
+              <ellipse cx="${cx}" cy="74" rx="8.5" ry="12" fill="#0b0b12"/>
+              <path d="M${cx + (i ? 7 : -7)} 68 l${i ? 6 : -6} -5" stroke="#0b0b12" stroke-width="3.5" stroke-linecap="round"/>
+              ${eyeShine(cx - 2.5, 68, 2.6)}
             </g>`
             )
             .join('')}
@@ -392,9 +392,9 @@ export const characters = {
     color: '#4c5566',
     tap: 'nod',
     look: 10,
-    mouth: [100, 136],
+    mouth: [100, 94],
     cheek: 46,
-    eyes: { at: [[76.5, 112], [123.5, 112]], r: 12, ink: '#dff4ff', glow: true },
+    eyes: { at: [[76.5, 72], [123.5, 72]], r: 12, ink: '#dff4ff', glow: true },
     render: ({ id, body }) => ({
       defs: `
         <filter id="${id('glow')}" x="-80%" y="-80%" width="260%" height="260%">
@@ -403,59 +403,59 @@ export const characters = {
         </filter>`,
       body: `
         <!-- Soft floor contact shadow -->
-        <ellipse class="dp-shadow" cx="100" cy="188" rx="50" ry="7" fill="#000000" opacity="0.25"/>
+        <ellipse class="dp-shadow" cx="100" cy="189" rx="50" ry="7" fill="#000000" opacity="0.25"/>
         <!-- Articulated Left Robotic Leg: ball-joint hip, armored thigh, knee servo, magnetic glowing boot -->
-        <g class="dp-leg-l" style="transform-origin: 72px 144px">
+        <g class="dp-leg-l" style="transform-origin: 72px 120px">
           <!-- Ball joint socket -->
-          <circle cx="72" cy="144" r="7" fill="#181c24" stroke="#00d4ff" stroke-width="1.5"/>
+          <circle cx="72" cy="120" r="7" fill="#181c24" stroke="#00d4ff" stroke-width="1.5"/>
           <!-- Armored thigh & power conduit -->
-          <rect x="64" y="146" width="16" height="16" rx="3" fill="#2d3340" stroke="#1d222b" stroke-width="1.5"/>
-          <line x1="72" y1="148" x2="72" y2="160" stroke="#00d4ff" stroke-width="2" opacity="0.8"/>
+          <rect x="64" y="122" width="16" height="24" rx="3" fill="#2d3340" stroke="#1d222b" stroke-width="1.5"/>
+          <line x1="72" y1="124" x2="72" y2="142" stroke="#00d4ff" stroke-width="2" opacity="0.8"/>
           <!-- Articulated knee servo -->
-          <rect x="66" y="162" width="12" height="6" rx="2" fill="#181c24" stroke="#00d4ff" stroke-width="1.2"/>
+          <rect x="66" y="146" width="12" height="6" rx="2" fill="#181c24" stroke="#00d4ff" stroke-width="1.2"/>
           <!-- Shin guard -->
-          <path d="M64 168 L80 168 L78 178 L66 178 Z" fill="#2d3340" stroke="#1d222b" stroke-width="1.5"/>
+          <path d="M64 154 L80 154 L78 170 L66 170 Z" fill="#2d3340" stroke="#1d222b" stroke-width="1.5"/>
           <!-- Magnetized boot with glowing tread -->
-          <path class="dp-foot-l" d="M56 184 L64 176 L82 176 L88 184 L88 186 L56 186 Z" fill="#181c24" stroke="#2d3340" stroke-width="1.5"/>
+          <path class="dp-foot-l" d="M56 184 L64 170 L82 170 L88 184 L88 186 L56 186 Z" fill="#181c24" stroke="#2d3340" stroke-width="1.5"/>
           <rect x="58" y="184" width="28" height="2.5" rx="1" fill="#00d4ff" filter="url(#${id('glow')})"/>
         </g>
         <!-- Articulated Right Robotic Leg -->
-        <g class="dp-leg-r" style="transform-origin: 128px 144px">
+        <g class="dp-leg-r" style="transform-origin: 128px 120px">
           <!-- Ball joint socket -->
-          <circle cx="128" cy="144" r="7" fill="#181c24" stroke="#00d4ff" stroke-width="1.5"/>
+          <circle cx="128" cy="120" r="7" fill="#181c24" stroke="#00d4ff" stroke-width="1.5"/>
           <!-- Armored thigh & power conduit -->
-          <rect x="120" y="146" width="16" height="16" rx="3" fill="#2d3340" stroke="#1d222b" stroke-width="1.5"/>
-          <line x1="128" y1="148" x2="128" y2="160" stroke="#00d4ff" stroke-width="2" opacity="0.8"/>
+          <rect x="120" y="122" width="16" height="24" rx="3" fill="#2d3340" stroke="#1d222b" stroke-width="1.5"/>
+          <line x1="128" y1="124" x2="128" y2="142" stroke="#00d4ff" stroke-width="2" opacity="0.8"/>
           <!-- Knee servo -->
-          <rect x="122" y="162" width="12" height="6" rx="2" fill="#181c24" stroke="#00d4ff" stroke-width="1.2"/>
+          <rect x="122" y="146" width="12" height="6" rx="2" fill="#181c24" stroke="#00d4ff" stroke-width="1.2"/>
           <!-- Shin guard -->
-          <path d="M120 168 L136 168 L134 178 L122 178 Z" fill="#2d3340" stroke="#1d222b" stroke-width="1.5"/>
+          <path d="M120 154 L136 154 L134 170 L122 170 Z" fill="#2d3340" stroke="#1d222b" stroke-width="1.5"/>
           <!-- Magnetized boot with glowing tread -->
-          <path class="dp-foot-r" d="M112 184 L120 176 L138 176 L144 184 L144 186 L112 186 Z" fill="#181c24" stroke="#2d3340" stroke-width="1.5"/>
+          <path class="dp-foot-r" d="M112 184 L120 170 L138 170 L144 184 L144 186 L112 186 Z" fill="#181c24" stroke="#2d3340" stroke-width="1.5"/>
           <rect x="114" y="184" width="28" height="2.5" rx="1" fill="#00d4ff" filter="url(#${id('glow')})"/>
         </g>
         <!-- Robotic chassis body with utility belt -->
         <g class="dp-torso">
-          <path fill="${body}" d="M24 96 C24 64 42 44 72 44 L128 44 C158 44 176 64 176 96 L176 140 L24 140 Z"/>
-          <rect x="36" y="136" width="128" height="10" rx="3" fill="#1b202a" stroke="#2d3442" stroke-width="1.5"/>
-          <rect x="92" y="134" width="16" height="14" rx="2" fill="#00d4ff" opacity="0.85"/>
+          <path fill="${body}" d="M30 68 C30 46 46 32 72 32 L128 32 C154 32 170 46 170 68 L170 118 L30 118 Z"/>
+          <rect x="36" y="112" width="128" height="10" rx="3" fill="#1b202a" stroke="#2d3442" stroke-width="1.5"/>
+          <rect x="92" y="110" width="16" height="14" rx="2" fill="#00d4ff" opacity="0.85"/>
         </g>
         <!-- Robotic clamp arms -->
-        <g class="dp-arm-l" style="transform-origin: 18px 114px">
-          <rect x="12" y="112" width="10" height="30" rx="5" fill="#2d3340"/>
-          <circle cx="17" cy="144" r="5" fill="#00d4ff" opacity="0.8"/>
+        <g class="dp-arm-l" style="transform-origin: 22px 82px">
+          <rect x="16" y="80" width="10" height="30" rx="5" fill="#2d3340"/>
+          <circle cx="21" cy="112" r="5" fill="#00d4ff" opacity="0.8"/>
         </g>
-        <g class="dp-arm-r" style="transform-origin: 182px 114px">
-          <rect x="178" y="112" width="10" height="30" rx="5" fill="#2d3340"/>
-          <circle cx="183" cy="144" r="5" fill="#00d4ff" opacity="0.8"/>
+        <g class="dp-arm-r" style="transform-origin: 178px 82px">
+          <rect x="174" y="80" width="10" height="30" rx="5" fill="#2d3340"/>
+          <circle cx="179" cy="112" r="5" fill="#00d4ff" opacity="0.8"/>
         </g>`,
       accessories: `
-        <rect x="32" y="90" width="136" height="44" rx="22" fill="#0d1117" stroke="#252c38" stroke-width="3"/>
-        <path d="M140 50 L118 84" stroke="#fff" stroke-opacity=".35" stroke-width="5" stroke-linecap="round"/>`,
+        <rect x="32" y="56" width="136" height="44" rx="22" fill="#0d1117" stroke="#252c38" stroke-width="3"/>
+        <path d="M140 26 L118 50" stroke="#fff" stroke-opacity=".35" stroke-width="5" stroke-linecap="round"/>`,
       face: `
         <g class="dp-look" filter="url(#${id('glow')})" fill="#dff4ff">
-          <g class="dp-blink"><rect x="68" y="99" width="17" height="26" rx="8.5"/></g>
-          <g class="dp-blink"><rect x="115" y="99" width="17" height="26" rx="8.5"/></g>
+          <g class="dp-blink"><rect x="68" y="65" width="17" height="26" rx="8.5"/></g>
+          <g class="dp-blink"><rect x="115" y="65" width="17" height="26" rx="8.5"/></g>
         </g>`,
     }),
   },
@@ -465,9 +465,9 @@ export const characters = {
     color: '#ff7a2f',
     tap: 'jump',
     look: 7,
-    mouth: [100, 138],
+    mouth: [100, 94],
     cheek: 40,
-    eyes: { at: [[78, 120], [122, 120]], r: 11 },
+    eyes: { at: [[78, 74], [122, 74]], r: 11 },
     render: ({ id, body }) => ({
       defs: `
         <radialGradient id="${id('bulb')}" cx=".4" cy=".35" r=".7">
@@ -477,46 +477,46 @@ export const characters = {
         </radialGradient>`,
       body: `
         <!-- Soft floor contact shadow -->
-        <ellipse class="dp-shadow" cx="100" cy="188" rx="46" ry="6.5" fill="#000000" opacity="0.2"/>
+        <ellipse class="dp-shadow" cx="100" cy="189" rx="46" ry="6.5" fill="#000000" opacity="0.2"/>
         <!-- Articulated Left Leg: sporty pants, articulated knee, stylish high-top sneaker -->
-        <g class="dp-leg-l" style="transform-origin: 74px 144px">
+        <g class="dp-leg-l" style="transform-origin: 74px 120px">
           <!-- Athletic pants thigh & calf -->
-          <rect x="66" y="144" width="16" height="20" rx="5" fill="#c44300"/>
-          <rect x="68" y="162" width="13" height="12" rx="4" fill="#c44300"/>
+          <rect x="66" y="120" width="16" height="26" rx="5" fill="#c44300"/>
+          <rect x="68" y="144" width="13" height="16" rx="4" fill="#c44300"/>
           <!-- High-top sneaker with racing stripe and rubber toe -->
-          <path class="dp-foot-l" d="M58 184 C56 176 64 172 74 172 C84 172 90 176 92 184 Z" fill="#ffffff" stroke="#c44300" stroke-width="1.8"/>
-          <path d="M64 180 Q74 176 84 180" stroke="#ff7a2f" stroke-width="2.5" fill="none"/>
-          <path d="M86 180 C89 181 92 183 92 184 L86 184 Z" fill="#eeeeee"/>
+          <path class="dp-foot-l" d="M58 184 C56 170 64 164 74 164 C84 164 90 170 92 184 Z" fill="#ffffff" stroke="#c44300" stroke-width="1.8"/>
+          <path d="M64 176 Q74 170 84 176" stroke="#ff7a2f" stroke-width="2.5" fill="none"/>
+          <path d="M86 176 C89 178 92 181 92 184 L86 184 Z" fill="#eeeeee"/>
           <rect x="57" y="183.5" width="36" height="3" rx="1.5" fill="#dddddd" stroke="#999999" stroke-width="0.8"/>
         </g>
         <!-- Articulated Right Leg -->
-        <g class="dp-leg-r" style="transform-origin: 126px 144px">
+        <g class="dp-leg-r" style="transform-origin: 126px 120px">
           <!-- Athletic pants thigh & calf -->
-          <rect x="118" y="144" width="16" height="20" rx="5" fill="#c44300"/>
-          <rect x="119" y="162" width="13" height="12" rx="4" fill="#c44300"/>
+          <rect x="118" y="120" width="16" height="26" rx="5" fill="#c44300"/>
+          <rect x="119" y="144" width="13" height="16" rx="4" fill="#c44300"/>
           <!-- High-top sneaker -->
-          <path class="dp-foot-r" d="M108 184 C106 176 114 172 124 172 C134 172 140 176 142 184 Z" fill="#ffffff" stroke="#c44300" stroke-width="1.8"/>
-          <path d="M114 180 Q124 176 134 180" stroke="#ff7a2f" stroke-width="2.5" fill="none"/>
-          <path d="M136 180 C139 181 142 183 142 184 L136 184 Z" fill="#eeeeee"/>
+          <path class="dp-foot-r" d="M108 184 C106 170 114 164 124 164 C134 164 140 170 142 184 Z" fill="#ffffff" stroke="#c44300" stroke-width="1.8"/>
+          <path d="M114 176 Q124 170 134 176" stroke="#ff7a2f" stroke-width="2.5" fill="none"/>
+          <path d="M136 176 C139 178 142 181 142 184 L136 184 Z" fill="#eeeeee"/>
           <rect x="107" y="183.5" width="36" height="3" rx="1.5" fill="#dddddd" stroke="#999999" stroke-width="0.8"/>
         </g>
-        <!-- Torso with hoodie waistband at y=144 -->
-        <path class="dp-torso" fill="${body}" d="M24 136 C20 92 56 64 100 64 C144 64 180 92 176 136 C170 144 146 146 100 146 C54 146 30 144 24 136 Z"/>
-        <rect x="44" y="138" width="112" height="7" rx="3.5" fill="#e05a10"/>
+        <!-- Torso with hoodie waistband at y=120 -->
+        <path class="dp-torso" fill="${body}" d="M30 94 C26 68 56 46 100 46 C144 46 174 68 170 94 C164 110 144 122 100 122 C56 122 36 110 30 94 Z"/>
+        <rect x="44" y="116" width="112" height="7" rx="3.5" fill="#e05a10"/>
         <!-- Cute arms -->
-        <g class="dp-arm-l" style="transform-origin: 22px 130px">
-          <ellipse cx="20" cy="136" rx="8" ry="14" transform="rotate(18 20 136)" fill="${body}"/>
+        <g class="dp-arm-l" style="transform-origin: 26px 88px">
+          <ellipse cx="24" cy="94" rx="8" ry="14" transform="rotate(18 24 94)" fill="${body}"/>
         </g>
-        <g class="dp-arm-r" style="transform-origin: 178px 130px">
-          <ellipse cx="180" cy="136" rx="8" ry="14" transform="rotate(-18 180 136)" fill="${body}"/>
+        <g class="dp-arm-r" style="transform-origin: 174px 88px">
+          <ellipse cx="176" cy="94" rx="8" ry="14" transform="rotate(-18 176 94)" fill="${body}"/>
         </g>`,
       accessories: `
-        <path d="M100 68 C100 52 104 42 100 32" stroke="#2a2a33" stroke-width="5" stroke-linecap="round" fill="none"/>
-        <circle class="dp-bulb" cx="100" cy="26" r="10" fill="url(#${id('bulb')})"/>`,
+        <path d="M100 50 C100 38 104 28 100 18" stroke="#2a2a33" stroke-width="5" stroke-linecap="round" fill="none"/>
+        <circle class="dp-bulb" cx="100" cy="14" r="10" fill="url(#${id('bulb')})"/>`,
       face: `
         <g class="dp-look">
-          <g class="dp-blink"><circle cx="78" cy="120" r="10.5" fill="#0b0b12"/>${eyeShine(75, 116, 3)}</g>
-          <g class="dp-blink"><circle cx="122" cy="120" r="10.5" fill="#0b0b12"/>${eyeShine(119, 116, 3)}</g>
+          <g class="dp-blink"><circle cx="78" cy="74" r="10.5" fill="#0b0b12"/>${eyeShine(75, 70, 3)}</g>
+          <g class="dp-blink"><circle cx="122" cy="74" r="10.5" fill="#0b0b12"/>${eyeShine(119, 70, 3)}</g>
         </g>`,
     }),
   },
@@ -527,9 +527,9 @@ export const characters = {
     fur: false,
     tap: 'jump',
     look: 8,
-    mouth: [100, 136],
-    cheek: 42,
-    eyes: { at: [[76, 108], [124, 108]], r: 15, own: ['wide'] },
+    mouth: [100, 94],
+    cheek: 40,
+    eyes: { at: [[76, 68], [124, 68]], r: 15, own: ['wide'] },
     render: ({ id }) => ({
       defs: `
         <radialGradient id="${id('drop_body')}" cx="36%" cy="28%" r="72%">
@@ -562,107 +562,122 @@ export const characters = {
       `,
       body: `
         <!-- Soft grounding shadow -->
-        <ellipse class="dp-shadow" cx="100" cy="188" rx="48" ry="6.5" fill="#000000" opacity="0.22"/>
-        <!-- Articulated Left Water Leg: 3D droplet thigh, specular glints, water sneaker -->
-        <g class="dp-leg-l" style="transform-origin: 74px 144px">
-          <!-- 3D Water Thigh -->
-          <path d="M62 144 C60 152 64 160 68 164 C74 166 82 166 86 162 C88 156 86 148 84 144 Z" fill="url(#${id('drop_body')})" stroke="#022e6b" stroke-width="1.2"/>
-          <ellipse cx="73" cy="154" rx="3.5" ry="7" transform="rotate(-10 73 154)" fill="#ffffff" opacity="0.45"/>
-          <circle cx="75" cy="164" r="3.2" fill="#8ae0ff" opacity="0.7"/>
-          <!-- Droplet Shoe with water sole and specular shine -->
-          <path class="dp-foot-l" d="M56 184 C54 176 62 170 74 170 C84 170 91 175 92 184 C92 186 56 186 56 184 Z" fill="url(#${id('foot_grad')})" stroke="#022e6b" stroke-width="1.2"/>
-          <path d="M56 184 Q74 186.5 92 184" stroke="#012b6b" stroke-width="2.2" stroke-linecap="round"/>
-          <ellipse cx="75" cy="176" rx="10" ry="3.5" fill="#99e8ff" opacity="0.85"/>
-          <circle cx="68" cy="175" r="2" fill="#ffffff"/>
+        <ellipse class="dp-shadow" cx="100" cy="189" rx="48" ry="6.5" fill="#000000" opacity="0.22"/>
+        <!-- Articulated Left Water Leg: Volumetric 3D thigh, distinct knee, calf and water sneaker -->
+        <g class="dp-leg-l" style="transform-origin: 74px 124px">
+          <!-- 3D Liquid Thigh -->
+          <path d="M62 124 C58 134 60 146 66 154 C72 156 82 156 86 154 C90 146 88 134 84 124 Z" fill="url(#${id('drop_body')})" stroke="#022e6b" stroke-width="1.2"/>
+          <ellipse cx="73" cy="138" rx="3" ry="8" transform="rotate(-8 73 138)" fill="#ffffff" opacity="0.45"/>
+          <!-- Articulated Knee Joint -->
+          <circle cx="75" cy="154" r="4.2" fill="#34c2fb" stroke="#022e6b" stroke-width="1.1"/>
+          <circle cx="74" cy="153" r="1.6" fill="#ffffff" opacity="0.9"/>
+          <!-- Calf & Shin -->
+          <path d="M66 154 C65 160 67 166 69 170 L81 170 C83 166 84 160 83 154 Z" fill="url(#${id('limb_grad')})" stroke="#022e6b" stroke-width="1.1"/>
+          <!-- Sneaker Ankle Cuff -->
+          <rect x="66" y="167" width="17" height="4.5" rx="2" fill="#ffffff" stroke="#022e6b" stroke-width="1"/>
+          <!-- 3D Water Droplet Sneaker -->
+          <path class="dp-foot-l" d="M54 184 C52 174 62 168 75 168 C86 168 93 173 94 184 Z" fill="url(#${id('foot_grad')})" stroke="#022e6b" stroke-width="1.2"/>
+          <path d="M86 174 C90 176 93 180 94 184 L86 184 Z" fill="#ffffff"/>
+          <rect x="52" y="183.5" width="44" height="4" rx="2" fill="#ffffff" stroke="#012b6b" stroke-width="1.2"/>
+          <line x1="56" y1="187.5" x2="92" y2="187.5" stroke="#38bdf8" stroke-width="1.2"/>
+          <ellipse cx="73" cy="176" rx="8" ry="3" fill="#ffffff" opacity="0.55"/>
+          <circle cx="76" cy="173" r="1.2" fill="#ffffff"/>
         </g>
         <!-- Articulated Right Water Leg -->
-        <g class="dp-leg-r" style="transform-origin: 126px 144px">
-          <!-- 3D Water Thigh -->
-          <path d="M116 144 C114 148 112 156 114 162 C118 166 126 166 132 164 C136 160 140 152 138 144 Z" fill="url(#${id('drop_body')})" stroke="#022e6b" stroke-width="1.2"/>
-          <ellipse cx="127" cy="154" rx="3.5" ry="7" transform="rotate(10 127 154)" fill="#ffffff" opacity="0.45"/>
-          <circle cx="125" cy="164" r="3.2" fill="#8ae0ff" opacity="0.7"/>
-          <!-- Droplet Shoe -->
-          <path class="dp-foot-r" d="M108 184 C106 176 114 170 126 170 C136 170 143 175 144 184 C144 186 108 186 108 184 Z" fill="url(#${id('foot_grad')})" stroke="#022e6b" stroke-width="1.2"/>
-          <path d="M108 184 Q126 186.5 144 184" stroke="#012b6b" stroke-width="2.2" stroke-linecap="round"/>
-          <ellipse cx="125" cy="176" rx="10" ry="3.5" fill="#99e8ff" opacity="0.85"/>
-          <circle cx="132" cy="175" r="2" fill="#ffffff"/>
+        <g class="dp-leg-r" style="transform-origin: 126px 124px">
+          <!-- 3D Liquid Thigh -->
+          <path d="M116 124 C112 134 114 146 118 154 C124 156 134 156 138 154 C142 146 144 134 138 124 Z" fill="url(#${id('drop_body')})" stroke="#022e6b" stroke-width="1.2"/>
+          <ellipse cx="127" cy="138" rx="3" ry="8" transform="rotate(8 127 138)" fill="#ffffff" opacity="0.45"/>
+          <!-- Articulated Knee Joint -->
+          <circle cx="125" cy="154" r="4.2" fill="#34c2fb" stroke="#022e6b" stroke-width="1.1"/>
+          <circle cx="126" cy="153" r="1.6" fill="#ffffff" opacity="0.9"/>
+          <!-- Calf & Shin -->
+          <path d="M117 154 C116 160 118 166 120 170 L132 170 C134 166 135 160 134 154 Z" fill="url(#${id('limb_grad')})" stroke="#022e6b" stroke-width="1.1"/>
+          <!-- Sneaker Ankle Cuff -->
+          <rect x="117" y="167" width="17" height="4.5" rx="2" fill="#ffffff" stroke="#022e6b" stroke-width="1"/>
+          <!-- 3D Water Droplet Sneaker -->
+          <path class="dp-foot-r" d="M106 184 C104 174 114 168 127 168 C138 168 145 173 146 184 Z" fill="url(#${id('foot_grad')})" stroke="#022e6b" stroke-width="1.2"/>
+          <path d="M138 174 C142 176 145 180 146 184 L138 184 Z" fill="#ffffff"/>
+          <rect x="104" y="183.5" width="44" height="4" rx="2" fill="#ffffff" stroke="#012b6b" stroke-width="1.2"/>
+          <line x1="108" y1="187.5" x2="144" y2="187.5" stroke="#38bdf8" stroke-width="1.2"/>
+          <ellipse cx="127" cy="176" rx="8" ry="3" fill="#ffffff" opacity="0.55"/>
+          <circle cx="124" cy="173" r="1.2" fill="#ffffff"/>
         </g>
         <!-- Fluid Ribbon back pass -->
-        <path fill="none" stroke="url(#${id('ribbon_grad')})" stroke-width="10" stroke-linecap="round" opacity="0.75"
-          d="M36 136 C18 146 24 154 50 156 C80 158 120 158 150 154 C174 148 178 142 164 134"/>
-        <!-- Main 3D Water Droplet Body tapering to waist at y=144 -->
+        <path fill="none" stroke="url(#${id('ribbon_grad')})" stroke-width="9" stroke-linecap="round" opacity="0.7"
+          d="M38 108 C20 116 26 124 48 126 C76 128 124 128 152 124 C174 120 178 114 162 106"/>
+        <!-- Main 3D Water Droplet Body tapering to waist at y=112 and pelvis at y=122 -->
         <g class="dp-torso">
-          <path fill="url(#${id('drop_body')})" stroke="#022e6b" stroke-width="1.2"
-            d="M100 20 C94 48 40 92 36 126 C34 138 52 144 100 144 C148 144 166 138 164 126 C160 92 106 48 100 20 Z"/>
-          <!-- 3D Specular Highlight Crescent (Glossy Water Droplet) -->
+          <path fill="url(#${id('drop_body')})" stroke="#022e6b" stroke-width="1.3"
+            d="M100 14 C94 36 48 64 44 88 C40 102 48 112 64 116 C76 119 124 119 136 116 C152 112 160 102 156 88 C152 64 106 36 100 14 Z"/>
+          <!-- Specular 3D Glossy Light Reflection -->
           <path fill="#ffffff" opacity="0.45"
-            d="M100 26 C96 48 46 92 44 122 C42 138 54 142 66 142 C50 138 46 126 50 114 C56 84 94 36 100 26 Z"/>
-          <ellipse cx="84" cy="62" rx="7" ry="16" transform="rotate(-30 84 62)" fill="#ffffff" opacity="0.65"/>
-          <circle cx="83" cy="58" r="3.2" fill="#ffffff" opacity="0.95"/>
-          <!-- Soft inner reflection bottom right -->
-          <path fill="#38bdf8" opacity="0.35" d="M142 110 C154 124 152 138 136 142 C146 136 148 124 142 110 Z"/>
+            d="M100 18 C96 36 54 64 50 86 C48 96 56 106 66 108 C54 104 50 94 52 84 C56 62 94 30 100 18 Z"/>
+          <ellipse cx="80" cy="46" rx="6" ry="14" transform="rotate(-30 80 46)" fill="#ffffff" opacity="0.65"/>
+          <circle cx="79" cy="42" r="2.8" fill="#ffffff" opacity="0.95"/>
+          <!-- Lower right bounce light reflection -->
+          <path fill="#38bdf8" opacity="0.32" d="M136 88 C144 98 142 108 132 112 C138 108 142 98 136 88 Z"/>
+          <!-- Pelvic base connecting naturally to legs -->
+          <path fill="url(#${id('drop_body')})" stroke="#022e6b" stroke-width="1.2"
+            d="M64 116 C62 124 68 128 78 130 C90 132 110 132 122 130 C132 128 138 124 136 116 Z"/>
         </g>
-        <!-- Left Arm (Active pose) -->
-        <g class="dp-arm-l" style="transform-origin: 36px 136px" fill="url(#${id('limb_grad')})">
-          <path d="M42 126 C28 130 18 144 22 156 C24 162 32 162 38 154 C44 146 48 136 48 126 Z"/>
-          <circle cx="24" cy="154" r="7"/>
-          <circle cx="22" cy="150" r="3.5" fill="#8ae0ff"/>
+        <!-- Left Arm -->
+        <g class="dp-arm-l" style="transform-origin: 42px 92px" fill="url(#${id('limb_grad')})">
+          <path d="M44 88 C28 92 18 104 22 116 C24 122 32 122 38 114 C44 106 48 98 48 88 Z"/>
+          <circle cx="24" cy="114" r="6"/>
+          <circle cx="22" cy="110" r="3" fill="#8ae0ff"/>
         </g>
-        <!-- Right Arm (Friendly waving / gesturing greeting) -->
-        <g class="dp-arm-r" style="transform-origin: 164px 136px" fill="url(#${id('limb_grad')})">
-          <path d="M158 126 C172 120 184 108 186 96 C186 90 176 90 172 98 C166 108 160 118 152 126 Z"/>
-          <circle cx="184" cy="94" r="7"/>
-          <circle cx="188" cy="88" r="3.8"/>
-          <circle cx="182" cy="92" r="3.2" fill="#8ae0ff"/>
+        <!-- Right Arm (Friendly waving greeting) -->
+        <g class="dp-arm-r" style="transform-origin: 158px 92px" fill="url(#${id('limb_grad')})">
+          <path d="M156 88 C170 82 182 72 184 60 C184 54 174 54 170 62 C164 72 158 82 150 88 Z"/>
+          <circle cx="182" cy="58" r="6"/>
+          <circle cx="186" cy="52" r="3.2"/>
+          <circle cx="180" cy="56" r="2.8" fill="#8ae0ff"/>
         </g>
       `,
       accessories: `
         <!-- Signature Embasa Fluid Ribbon (front swirl around waist) -->
-        <path fill="none" stroke="url(#${id('ribbon_grad')})" stroke-width="12" stroke-linecap="round"
-          d="M34 136 C64 148 136 148 166 136"/>
-        <path fill="none" stroke="#6dc152" stroke-width="3" stroke-linecap="round" opacity="0.92"
-          d="M40 140 C66 150 134 150 160 140"/>
+        <path fill="none" stroke="url(#${id('ribbon_grad')})" stroke-width="11" stroke-linecap="round"
+          d="M36 106 C64 118 136 118 164 106"/>
+        <path fill="none" stroke="#6dc152" stroke-width="2.6" stroke-linecap="round" opacity="0.92"
+          d="M42 110 C66 120 134 120 158 110"/>
         <!-- Ambient Water Droplets & Splashes -->
-        <circle cx="34" cy="64" r="4.5" fill="#38bdf8" opacity="0.85"/>
-        <circle cx="33" cy="62" r="1.8" fill="#ffffff" opacity="0.95"/>
-        <circle cx="166" cy="68" r="5" fill="#38bdf8" opacity="0.85"/>
-        <circle cx="164.5" cy="66" r="2" fill="#ffffff" opacity="0.95"/>
-        <circle cx="174" cy="132" r="3.5" fill="#6dc152" opacity="0.75"/>
-        <circle cx="28" cy="116" r="3.2" fill="#1fbcf0" opacity="0.75"/>
+        <circle cx="34" cy="48" r="4.2" fill="#38bdf8" opacity="0.85"/>
+        <circle cx="33" cy="46" r="1.6" fill="#ffffff" opacity="0.95"/>
+        <circle cx="166" cy="52" r="4.5" fill="#38bdf8" opacity="0.85"/>
+        <circle cx="164.5" cy="50" r="1.8" fill="#ffffff" opacity="0.95"/>
+        <circle cx="174" cy="108" r="3.2" fill="#6dc152" opacity="0.75"/>
+        <circle cx="28" cy="98" r="3" fill="#1fbcf0" opacity="0.75"/>
       `,
       face: `
         <!-- Cheerful Eyebrows -->
         <g fill="none" stroke="#0454b0" stroke-width="3.5" stroke-linecap="round">
-          <path d="M64 88 Q76 81 88 88"/>
-          <path d="M112 88 Q124 81 136 88"/>
+          <path d="M64 48 Q76 41 88 48"/>
+          <path d="M112 48 Q124 41 136 48"/>
         </g>
         <!-- Big Expressive Pixar Eyes (Follows cursor smoothly!) -->
         <g class="dp-blink">
           <!-- Left Eye Sclera (White) -->
-          <ellipse cx="76" cy="108" rx="14" ry="17" fill="url(#${id('drop_sclera')})" stroke="#02285a" stroke-width="1.3"/>
+          <ellipse cx="76" cy="68" rx="14" ry="17" fill="url(#${id('drop_sclera')})" stroke="#02285a" stroke-width="1.3"/>
           <!-- Left Eye Pupil & Iris (Tracks Mouse Cursor) -->
           <g class="dp-look">
-            <ellipse cx="76.5" cy="108" rx="9.5" ry="12.5" fill="#021432"/>
-            <!-- Vibrant blue iris reflection crescent -->
-            <path d="M69 111 A8.5 9.5 0 0 0 84 111 A7.5 8.5 0 0 1 71 109 Z" fill="#0495f4"/>
-            <ellipse cx="77.5" cy="112" rx="5" ry="3.5" fill="#38bdf8" opacity="0.85"/>
-            <!-- Dual Specular Glints -->
-            ${eyeShine(72.5, 102.5, 3.8)}
-            ${eyeShine(80.5, 113.5, 1.8)}
+            <ellipse cx="76.5" cy="68" rx="9.5" ry="12.5" fill="#021432"/>
+            <path d="M69 71 A8.5 9.5 0 0 0 84 71 A7.5 8.5 0 0 1 71 69 Z" fill="#0495f4"/>
+            <ellipse cx="77.5" cy="72" rx="5" ry="3.5" fill="#38bdf8" opacity="0.85"/>
+            ${eyeShine(72.5, 62.5, 3.8)}
+            ${eyeShine(80.5, 73.5, 1.8)}
           </g>
         </g>
         <g class="dp-blink">
           <!-- Right Eye Sclera (White) -->
-          <ellipse cx="124" cy="108" rx="14" ry="17" fill="url(#${id('drop_sclera')})" stroke="#02285a" stroke-width="1.3"/>
+          <ellipse cx="124" cy="68" rx="14" ry="17" fill="url(#${id('drop_sclera')})" stroke="#02285a" stroke-width="1.3"/>
           <!-- Right Eye Pupil & Iris (Tracks Mouse Cursor) -->
           <g class="dp-look">
-            <ellipse cx="123.5" cy="108" rx="9.5" ry="12.5" fill="#021432"/>
-            <!-- Vibrant blue iris reflection crescent -->
-            <path d="M116 111 A8.5 9.5 0 0 0 131 111 A7.5 8.5 0 0 1 118 109 Z" fill="#0495f4"/>
-            <ellipse cx="122.5" cy="112" rx="5" ry="3.5" fill="#38bdf8" opacity="0.85"/>
-            <!-- Dual Specular Glints -->
-            ${eyeShine(119.5, 102.5, 3.8)}
-            ${eyeShine(127.5, 113.5, 1.8)}
+            <ellipse cx="123.5" cy="68" rx="9.5" ry="12.5" fill="#021432"/>
+            <path d="M116 71 A8.5 9.5 0 0 0 131 71 A7.5 8.5 0 0 1 118 69 Z" fill="#0495f4"/>
+            <ellipse cx="122.5" cy="72" rx="5" ry="3.5" fill="#38bdf8" opacity="0.85"/>
+            ${eyeShine(119.5, 62.5, 3.8)}
+            ${eyeShine(127.5, 73.5, 1.8)}
           </g>
         </g>
       `,
@@ -674,64 +689,64 @@ export const characters = {
     color: '#16c6ae',
     tap: 'wiggle',
     look: 7,
-    mouth: [100, 138],
+    mouth: [100, 94],
     cheek: 42,
-    eyes: { at: [[75, 120], [125, 120]], r: 11 },
+    eyes: { at: [[75, 72], [125, 72]], r: 11 },
     render: ({ body }) => ({
       defs: '',
       body: `
         <!-- Soft floor contact shadow -->
-        <ellipse class="dp-shadow" cx="100" cy="188" rx="46" ry="6.5" fill="#000000" opacity="0.2"/>
+        <ellipse class="dp-shadow" cx="100" cy="189" rx="46" ry="6.5" fill="#000000" opacity="0.2"/>
         <!-- Articulated Left Cyber Cat Leg: sleek mint thigh, paw with neon pads -->
-        <g class="dp-leg-l" style="transform-origin: 74px 144px">
+        <g class="dp-leg-l" style="transform-origin: 74px 120px">
           <!-- Mint feline thigh -->
-          <rect x="66" y="144" width="16" height="20" rx="5" fill="${body}"/>
-          <circle cx="74" cy="164" r="3" fill="#5effeb" opacity="0.6"/>
+          <rect x="66" y="120" width="16" height="26" rx="5" fill="${body}"/>
+          <circle cx="74" cy="144" r="3" fill="#5effeb" opacity="0.6"/>
           <!-- Robotic kitten paw -->
-          <path class="dp-foot-l" d="M60 184 C58 176 66 174 74 174 C82 174 88 176 90 184 Z" fill="#0b7e6f"/>
+          <path class="dp-foot-l" d="M60 184 C58 170 66 166 74 166 C82 166 88 170 90 184 Z" fill="#0b7e6f"/>
           <circle cx="66" cy="184" r="2.8" fill="#5effeb"/>
           <circle cx="74" cy="185" r="3" fill="#5effeb"/>
           <circle cx="82" cy="184" r="2.8" fill="#5effeb"/>
         </g>
         <!-- Articulated Right Cyber Cat Leg -->
-        <g class="dp-leg-r" style="transform-origin: 126px 144px">
+        <g class="dp-leg-r" style="transform-origin: 126px 120px">
           <!-- Mint feline thigh -->
-          <rect x="118" y="144" width="16" height="20" rx="5" fill="${body}"/>
-          <circle cx="126" cy="164" r="3" fill="#5effeb" opacity="0.6"/>
+          <rect x="118" y="120" width="16" height="26" rx="5" fill="${body}"/>
+          <circle cx="126" cy="144" r="3" fill="#5effeb" opacity="0.6"/>
           <!-- Robotic kitten paw -->
-          <path class="dp-foot-r" d="M110 184 C108 176 116 174 124 174 C132 174 138 176 140 184 Z" fill="#0b7e6f"/>
+          <path class="dp-foot-r" d="M110 184 C108 170 116 166 124 166 C132 166 138 170 140 184 Z" fill="#0b7e6f"/>
           <circle cx="116" cy="184" r="2.8" fill="#5effeb"/>
           <circle cx="124" cy="185" r="3" fill="#5effeb"/>
           <circle cx="132" cy="184" r="2.8" fill="#5effeb"/>
         </g>
         <!-- Cyber cat tail on side -->
-        <g class="dp-tail" style="transform-origin: 164px 144px">
-          <path d="M166 144 C188 136 196 114 186 102 C178 94 170 106 174 122 Z" fill="${body}"/>
-          <circle cx="186" cy="102" r="4.5" fill="#5effeb"/>
+        <g class="dp-tail" style="transform-origin: 164px 118px">
+          <path d="M166 118 C188 110 196 88 186 76 C178 68 170 80 174 96 Z" fill="${body}"/>
+          <circle cx="186" cy="76" r="4.5" fill="#5effeb"/>
         </g>
-        <!-- Chassis torso & cat ears with tech waistband -->
+        <!-- Chassis torso & cat ears with tech waistband down to y=120 -->
         <g class="dp-torso" fill="${body}">
-          <path d="M24 136 L24 116 C24 88 44 70 72 70 L128 70 C156 70 176 88 176 116 L176 136 C170 144 144 146 100 146 C56 146 30 144 24 136 Z"/>
-          <path d="M40 84 L34 50 L66 74 Z M160 84 L166 50 L134 74 Z"/>
-          <rect x="52" y="138" width="96" height="7" rx="3.5" fill="#0b7e6f"/>
+          <path d="M30 94 L30 74 C30 46 50 28 78 28 L122 28 C150 28 170 46 170 74 L170 94 C164 110 144 122 100 122 C56 122 36 110 30 94 Z"/>
+          <path d="M46 42 L40 8 L72 32 Z M154 42 L160 8 L128 32 Z"/>
+          <rect x="52" y="116" width="96" height="7" rx="3.5" fill="#0b7e6f"/>
           <!-- Tech chest screen -->
-          <rect x="64" y="122" width="72" height="15" rx="3.5" fill="#0b1b1a" opacity="0.6"/>
-          <circle cx="76" cy="129.5" r="2.2" fill="#5effeb"/>
-          <circle cx="86" cy="129.5" r="2.2" fill="#5effeb" opacity="0.6"/>
-          <circle cx="96" cy="129.5" r="2.2" fill="#5effeb" opacity="0.3"/>
+          <rect x="64" y="100" width="72" height="15" rx="3.5" fill="#0b1b1a" opacity="0.6"/>
+          <circle cx="76" cy="107.5" r="2.2" fill="#5effeb"/>
+          <circle cx="86" cy="107.5" r="2.2" fill="#5effeb" opacity="0.6"/>
+          <circle cx="96" cy="107.5" r="2.2" fill="#5effeb" opacity="0.3"/>
         </g>
         <!-- Little arms -->
-        <g class="dp-arm-l" style="transform-origin: 26px 130px">
-          <ellipse cx="24" cy="136" rx="7" ry="13" transform="rotate(18 24 136)" fill="${body}"/>
+        <g class="dp-arm-l" style="transform-origin: 26px 88px">
+          <ellipse cx="24" cy="94" rx="7" ry="13" transform="rotate(18 24 94)" fill="${body}"/>
         </g>
-        <g class="dp-arm-r" style="transform-origin: 174px 130px">
-          <ellipse cx="176" cy="136" rx="7" ry="13" transform="rotate(-18 176 136)" fill="${body}"/>
+        <g class="dp-arm-r" style="transform-origin: 174px 88px">
+          <ellipse cx="176" cy="94" rx="7" ry="13" transform="rotate(-18 176 94)" fill="${body}"/>
         </g>`,
       accessories: '',
       face: `
         <g class="dp-look">
-          <g class="dp-blink"><rect x="66" y="117" width="18" height="18" rx="3" fill="#0b0b12"/><rect x="69" y="120" width="5" height="5" fill="#fff"/></g>
-          <g class="dp-blink"><rect x="116" y="117" width="18" height="18" rx="3" fill="#0b0b12"/><rect x="119" y="120" width="5" height="5" fill="#fff"/></g>
+          <g class="dp-blink"><rect x="66" y="69" width="18" height="18" rx="3" fill="#0b0b12"/><rect x="69" y="72" width="5" height="5" fill="#fff"/></g>
+          <g class="dp-blink"><rect x="116" y="69" width="18" height="18" rx="3" fill="#0b0b12"/><rect x="119" y="72" width="5" height="5" fill="#fff"/></g>
         </g>`,
     }),
   },

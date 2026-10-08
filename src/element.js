@@ -218,20 +218,15 @@ const styles = `
     width: var(--dp-size);
     height: var(--dp-size);
     vertical-align: bottom;
-    /* Clip only the bottom edge, so pals "peek" over a ledge and can jump. */
-    clip-path: inset(-100vh -100vw 0 -100vw);
+    clip-path: none;
     -webkit-tap-highlight-color: transparent;
     user-select: none;
   }
-  :host([full-body]),
-  :host([roaming]),
-  :host([pose]) {
-    clip-path: none;
+  :host([clip-ledge]) {
+    clip-path: inset(-100vh -100vw 0 -100vw);
   }
-  :host([full-body]) .dp-ledge,
-  :host([roaming]) .dp-ledge,
-  :host([pose]) .dp-ledge {
-    overflow-y: visible;
+  :host([clip-ledge]) .dp-ledge {
+    overflow-y: clip;
   }
   :host([hidden]) { display: none; }
   :host(:not([static])) { cursor: pointer; }
@@ -249,9 +244,6 @@ const styles = `
     transform: scaleX(var(--face-dir, 1));
     transition: transform 0.22s ease-out;
   }
-  /* Everything below the bottom edge (the ledge) is cut off, and doesn't count as
-     overflow either, so rising up from below never adds scrollbars to the page.
-     The box reaches far up so jumps and the bubble stay visible. */
   .dp-ledge {
     position: absolute;
     left: 0;
@@ -259,7 +251,7 @@ const styles = `
     bottom: 0;
     height: 500%;
     overflow-x: visible;
-    overflow-y: clip;
+    overflow-y: visible;
     pointer-events: none;
   }
   .dp-idle { position: absolute; left: 0; bottom: 0; width: 100%; height: 20%; pointer-events: auto; }
@@ -269,87 +261,90 @@ const styles = `
   svg { display: block; width: 100%; height: 100%; overflow: visible; transition: filter .4s; }
 
   /* -- Poses & Articulated Kinematics ------------------------------------ */
-  .dp-leg-l, .dp-leg-r, .dp-arm-l, .dp-arm-r, .dp-torso, .dp-shadow {
+  .dp-leg-l, .dp-leg-r, .dp-arm-l, .dp-arm-r, .dp-foot-l, .dp-foot-r, .dp-torso, .dp-shadow, .dp-tail {
     transform-box: fill-box;
+    transform-origin: top center;
     transition: transform 0.3s cubic-bezier(0.25, 0.8, 0.35, 1);
   }
 
-  /* WALK CYCLE: 4-phase cartoon kinematic walk loop with knee flexion, squash & stretch */
+  /* Any active pose disables ambient idle jumping/bouncing */
+  :host([pose]) .dp-idle {
+    animation: none !important;
+  }
+
+  /* SMOOTH STROLL WALK CYCLE: natural, fluid leg stride, subtle arm sway, ZERO jumping */
   :host([pose="walk"]) .dp-leg-l {
-    animation: dp-walk-leg 0.64s cubic-bezier(0.45, 0.05, 0.55, 0.95) infinite;
-    transform-origin: 50% 0%;
+    animation: dp-walk-leg 0.85s cubic-bezier(0.42, 0, 0.58, 1) infinite;
+    transform-origin: top center;
   }
   :host([pose="walk"]) .dp-leg-r {
-    animation: dp-walk-leg 0.64s cubic-bezier(0.45, 0.05, 0.55, 0.95) infinite;
-    animation-delay: -0.32s;
-    transform-origin: 50% 0%;
+    animation: dp-walk-leg 0.85s cubic-bezier(0.42, 0, 0.58, 1) infinite;
+    animation-delay: -0.425s;
+    transform-origin: top center;
   }
   :host([pose="walk"]) .dp-arm-l {
-    animation: dp-walk-arm 0.64s ease-in-out infinite;
+    animation: dp-walk-arm 0.85s ease-in-out infinite;
     transform-origin: top center;
   }
   :host([pose="walk"]) .dp-arm-r {
-    animation: dp-walk-arm 0.64s ease-in-out infinite;
-    animation-delay: -0.32s;
+    animation: dp-walk-arm 0.85s ease-in-out infinite;
+    animation-delay: -0.425s;
     transform-origin: top center;
   }
   :host([pose="walk"]) .dp-pose {
-    animation: dp-walk-bob 0.32s cubic-bezier(0.35, 0, 0.65, 1) infinite;
+    animation: dp-walk-bob 0.425s ease-in-out infinite;
   }
   :host([pose="walk"]) .dp-shadow {
-    animation: dp-walk-shadow 0.32s cubic-bezier(0.35, 0, 0.65, 1) infinite;
+    animation: dp-walk-shadow 0.425s ease-in-out infinite;
     transform-origin: center;
   }
 
   @keyframes dp-walk-leg {
-    0%   { transform: rotate(22deg) translateY(0px) scaleY(1); }
-    25%  { transform: rotate(4deg) translateY(1.5px) scaleY(0.97); }
-    50%  { transform: rotate(-18deg) translateY(0px) scaleY(1); }
-    75%  { transform: rotate(-2deg) translateY(-6px) scaleY(0.92); }
-    100% { transform: rotate(22deg) translateY(0px) scaleY(1); }
+    0%   { transform: rotate(14deg); }
+    25%  { transform: rotate(3deg); }
+    50%  { transform: rotate(-12deg); }
+    75%  { transform: rotate(-2deg) translateY(-1.5px); }
+    100% { transform: rotate(14deg); }
   }
   @keyframes dp-walk-arm {
-    0%   { transform: rotate(-24deg) translateY(0px); }
-    50%  { transform: rotate(24deg) translateY(-2px); }
-    100% { transform: rotate(-24deg) translateY(0px); }
+    0%   { transform: rotate(-12deg); }
+    50%  { transform: rotate(12deg); }
+    100% { transform: rotate(-12deg); }
   }
   @keyframes dp-walk-bob {
-    0%   { transform: translateY(1.5px) scale(1.02, 0.98); }
-    50%  { transform: translateY(-4px) scale(0.98, 1.02); }
-    100% { transform: translateY(1.5px) scale(1.02, 0.98); }
+    0%, 100% { transform: translateY(0); }
+    50%      { transform: translateY(-0.6px); }
   }
   @keyframes dp-walk-shadow {
-    0%   { transform: scale(1.06, 1.0); opacity: 0.22; }
-    50%  { transform: scale(0.86, 0.82); opacity: 0.14; }
-    100% { transform: scale(1.06, 1.0); opacity: 0.22; }
+    0%, 100% { transform: scale(1); opacity: 0.22; }
+    50%      { transform: scale(0.97); opacity: 0.19; }
   }
 
-  /* RUN CYCLE: faster stride, dynamic lean, high bounce */
+  /* RUN CYCLE: gentle stride, NO high bounce */
   :host([pose="run"]) .dp-leg-l {
-    animation: dp-walk-leg 0.42s cubic-bezier(0.45, 0.05, 0.55, 0.95) infinite;
-    transform-origin: 50% 0%;
+    animation: dp-walk-leg 0.55s cubic-bezier(0.42, 0, 0.58, 1) infinite;
+    transform-origin: top center;
   }
   :host([pose="run"]) .dp-leg-r {
-    animation: dp-walk-leg 0.42s cubic-bezier(0.45, 0.05, 0.55, 0.95) infinite;
-    animation-delay: -0.21s;
-    transform-origin: 50% 0%;
+    animation: dp-walk-leg 0.55s cubic-bezier(0.42, 0, 0.58, 1) infinite;
+    animation-delay: -0.275s;
+    transform-origin: top center;
   }
   :host([pose="run"]) .dp-arm-l {
-    animation: dp-walk-arm 0.42s ease-in-out infinite;
+    animation: dp-walk-arm 0.55s ease-in-out infinite;
     transform-origin: top center;
   }
   :host([pose="run"]) .dp-arm-r {
-    animation: dp-walk-arm 0.42s ease-in-out infinite;
-    animation-delay: -0.21s;
+    animation: dp-walk-arm 0.55s ease-in-out infinite;
+    animation-delay: -0.275s;
     transform-origin: top center;
   }
   :host([pose="run"]) .dp-pose {
-    animation: dp-run-bob 0.21s cubic-bezier(0.35, 0, 0.65, 1) infinite;
+    animation: dp-run-bob 0.275s ease-in-out infinite;
   }
   @keyframes dp-run-bob {
-    0%   { transform: translateY(2px) rotate(8deg) scale(1.04, 0.96); }
-    50%  { transform: translateY(-7px) rotate(11deg) scale(0.96, 1.04); }
-    100% { transform: translateY(2px) rotate(8deg) scale(1.04, 0.96); }
+    0%, 100% { transform: translateY(0) rotate(2deg); }
+    50%      { transform: translateY(-1px) rotate(3deg); }
   }
 
   /* SIT POSE: resting naturally on window edge or surface with folded legs */
@@ -541,9 +536,9 @@ const styles = `
     50%      { transform: scale(calc(1 - .015 * var(--dp-breath, 1)), calc(1 + .035 * var(--dp-breath, 1))); }
   }
   @keyframes dp-bounce {
-    0%, 100% { transform: translateY(0) scale(1.05, .95); animation-timing-function: cubic-bezier(.2, .7, .4, 1); }
+    0%, 100% { transform: translateY(0) scale(1.02, .98); animation-timing-function: cubic-bezier(.2, .7, .4, 1); }
     12%      { transform: translateY(0) scale(1, 1); animation-timing-function: cubic-bezier(.2, .7, .4, 1); }
-    50%      { transform: translateY(-9%) scale(.97, 1.03); animation-timing-function: cubic-bezier(.6, 0, .8, .3); }
+    50%      { transform: translateY(-2%) scale(.99, 1.01); animation-timing-function: cubic-bezier(.6, 0, .8, .3); }
     88%      { transform: translateY(0) scale(1, 1); }
   }
   @keyframes dp-float {

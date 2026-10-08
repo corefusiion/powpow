@@ -161,25 +161,26 @@ document.getElementById('btn-mini-walk')?.addEventListener('click', () => {
   if (isWalking) {
     btn.textContent = '⏹ Parar Caminhada';
     btn.classList.add('active');
-    miniPal.idle = 'bounce';
+    miniPal.setPose('walk');
+    miniPal.setDirection(walkDir);
     walkInterval = window.setInterval(() => {
       const max = miniWalkContainer.clientWidth - 110;
-      walkPos += walkDir * 4;
+      walkPos += walkDir * 2.5;
       if (walkPos > max) {
         walkDir = -1;
-        miniPal.style.transform = 'scaleX(-1)';
+        miniPal.setDirection(walkDir);
       } else if (walkPos < 10) {
         walkDir = 1;
-        miniPal.style.transform = 'scaleX(1)';
+        miniPal.setDirection(walkDir);
       }
       miniPal.style.left = `${walkPos}px`;
-    }, 50);
+    }, 40);
   } else {
     btn.textContent = '🚶 Andar pela Tela';
     btn.classList.remove('active');
     if (walkInterval) clearInterval(walkInterval);
-    miniPal.idle = 'float';
-    miniPal.style.transform = 'scaleX(1)';
+    miniPal.setPose('idle');
+    miniPal.setDirection(1);
   }
 });
 

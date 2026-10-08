@@ -353,7 +353,7 @@
     transform: translateY(0);
   }
   100% {
-    transform: translateY(-10px) scale(1.02);
+    transform: translateY(-2px) scale(1.01);
   }
 }
 

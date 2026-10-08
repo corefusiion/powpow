@@ -691,8 +691,8 @@ function step(dt: number, now: number) {
       faceDir = Math.sign(dx);
       if (pal) pal.setDirection(faceDir);
     }
-    if (pal && currentVelocity > 3) {
-      pal.setPose(dist > 350 ? "run" : "walk");
+    if (pal && currentVelocity > 2) {
+      pal.setPose("walk");
     }
 
     // Smooth sinusoidal deceleration curve as we near target
