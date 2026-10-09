@@ -8,6 +8,7 @@ import { t } from "../core/i18n";
 import { Sound } from "../core/sound";
 import { State, type ChatMessage } from "../core/state";
 import type { ViewActions, ViewHost } from "./views";
+import { renderDocCreatedCard, renderLocatedFilesCard, renderOrganizeCard } from "./systemCards";
 
 let nextId = 1;
 
@@ -19,7 +20,14 @@ function bubble(message: ChatMessage): HTMLElement {
       h("div", { class: "bubble", text: message.content }),
     );
   }
-  return h("div", { class: "chat-row" }, h("div", { class: "reply", text: message.content }));
+  const replyEl = h("div", { class: "reply" });
+  if (message.content) {
+    replyEl.append(h("span", { text: message.content }));
+  }
+  if (message.card) {
+    replyEl.append(message.card);
+  }
+  return h("div", { class: "chat-row" }, replyEl);
 }
 
 function typingDots(): HTMLElement {
@@ -92,6 +100,98 @@ export function buildPrompt(actions: ViewActions, onHeightChange: () => void): V
       State.chatHistory.length === 1 && file ? { kind: "file", name: file.name, path: file.path } : null;
 
     try {
+      const qLower = query.toLowerCase().trim();
+
+      // ── System Agent: Desktop Butler ──────────────────────────────
+      if (
+        /^(organizar|organize|arrumar)\s*(o\s*)?(desktop|área de trabalho|downloads)?$/i.test(qLower) ||
+        qLower.includes("organizar desktop") ||
+        qLower.includes("organizar área de trabalho") ||
+        qLower.includes("organizar downloads")
+      ) {
+        const isDownloads = qLower.includes("download");
+        const preview = await Bridge.desktopOrganizePreview(isDownloads ? "downloads" : "desktop");
+        if (preview && preview.items.length > 0) {
+          const card = renderOrganizeCard(preview, () => onHeightChange());
+          State.chatHistory.push({
+            id: nextId++,
+            role: "assistant",
+            content: `🗂️ Analisei sua pasta ${preview.folderName} e encontrei ${preview.totalFiles} arquivos para organizar:`,
+            card,
+          });
+          State.stateOverride = null;
+          Sound.play("finish");
+          return;
+        } else {
+          State.chatHistory.push({
+            id: nextId++,
+            role: "assistant",
+            content: `✨ Sua pasta ${isDownloads ? "Downloads" : "Área de Trabalho"} já está 100% limpa e organizada! Nenhum arquivo solto encontrado.`,
+          });
+          State.stateOverride = null;
+          Sound.play("finish");
+          return;
+        }
+      }
+
+      // ── System Agent: Instant Document Creator ───────────────────
+      if (/^(cria(r|e)?|gere|gerar)\s+(um[a]?\s+)?(planilha|documento|doc|arquivo|tabela|relat[oó]rio)/i.test(qLower)) {
+        const isSheet = /planilha|excel|csv|tabela/i.test(qLower);
+        let title = "Documento";
+        let content = "# Documento Gerado pelo Powpow\n\nCriado em " + new Date().toLocaleDateString();
+        let docType = "document";
+
+        if (isSheet) {
+          docType = "spreadsheet";
+          title = "Controle";
+          if (/despesa|gasto|financeir/i.test(qLower)) {
+            title = "Controle Financeiro";
+            content = "Data,Categoria,Descricao,Valor,Status\n2026-10-09,Mercado,Compras semanais,250.00,Pago\n2026-10-09,Transporte,Combustivel,180.00,Pago\n2026-10-10,Utilidades,Luz e Agua,210.00,Pendente\n2026-10-15,Servicos,Internet Fibra,129.90,Pendente";
+          } else {
+            content = "Item,Categoria,Quantidade,Valor Unitario,Total\nItem A,Geral,10,25.00,250.00\nItem B,Geral,5,40.00,200.00\nItem C,Geral,2,100.00,200.00";
+          }
+        } else if (/ata|reuni[aã]o/i.test(qLower)) {
+          title = "Ata de Reuniao";
+          docType = "markdown";
+          content = "# Ata de Reunião\n\n**Data:** " + new Date().toLocaleDateString() + "\n**Participantes:** Equipe\n\n## Pauta\n1. Alinhamento de metas\n2. Status dos projetos\n\n## Decisões\n- Projeto avançando conforme cronograma.\n\n## Próximos Passos\n- [ ] Concluir entregas da sprint\n- [ ] Validar com o cliente";
+        }
+
+        const res = await Bridge.createSystemDoc(docType, title, content);
+        if (res) {
+          const card = renderDocCreatedCard(res);
+          State.chatHistory.push({
+            id: nextId++,
+            role: "assistant",
+            content: `📄 Criei seu arquivo e já abri no aplicativo padrão do Windows!`,
+            card,
+          });
+          State.stateOverride = null;
+          Sound.play("finish");
+          return;
+        }
+      }
+
+      // ── System Agent: File Locator ───────────────────────────────
+      const findMatch = qLower.match(/^(onde est[aá]|localizar|busca(r)?|encontra(r)?|achar)\s+(o\s+|a\s+|os\s+|as\s+)?(arquivo|pdf|doc|documento|planilha)?\s*(.+)$/i);
+      if (findMatch && findMatch[4]) {
+        const term = findMatch[4].trim();
+        if (term.length > 1) {
+          const results = await Bridge.locateSystemFiles(term, 10);
+          if (results) {
+            const card = renderLocatedFilesCard(term, results);
+            State.chatHistory.push({
+              id: nextId++,
+              role: "assistant",
+              content: `🔎 Busquei arquivos correspondentes a "${term}" nas suas pastas:`,
+              card,
+            });
+            State.stateOverride = null;
+            Sound.play("finish");
+            return;
+          }
+        }
+      }
+
       // Backend has its own 90s HTTP timeout, but a hung invoke must never
       // leave the typing dots forever: race it against a 60s fuse.
       const reply = await Promise.race([

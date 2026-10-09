@@ -20,6 +20,7 @@ mod secrets;
 mod settings;
 mod tray;
 mod win_user;
+mod system_agent;
 
 use std::os::windows::process::CommandExt;
 use std::process::Command;
@@ -531,6 +532,48 @@ fn log_line(message: String) {
     log::line(format!("ui  {message}"));
 }
 
+// ── System Agent (Desktop Butler, Doc Creator, File Locator) ──────────────────
+
+#[tauri::command]
+fn desktop_organize_preview(folder_kind: Option<String>) -> Result<system_agent::OrganizePreview, String> {
+    system_agent::desktop_organize_preview(folder_kind)
+}
+
+#[tauri::command]
+fn desktop_organize_apply(items: Vec<system_agent::OrganizeItem>) -> Result<system_agent::OrganizeResult, String> {
+    system_agent::desktop_organize_apply(items)
+}
+
+#[tauri::command]
+fn desktop_organize_undo() -> Result<usize, String> {
+    system_agent::desktop_organize_undo()
+}
+
+#[tauri::command]
+fn create_system_doc(
+    doc_type: String,
+    title: String,
+    content: String,
+    dest_folder: Option<String>,
+) -> Result<system_agent::CreatedDocInfo, String> {
+    system_agent::create_system_doc(doc_type, title, content, dest_folder)
+}
+
+#[tauri::command]
+fn locate_system_files(query: String, max_results: Option<usize>) -> Result<Vec<system_agent::LocatedFile>, String> {
+    system_agent::locate_system_files(query, max_results)
+}
+
+#[tauri::command]
+fn open_system_path(path: String) -> Result<(), String> {
+    system_agent::open_system_path(path)
+}
+
+#[tauri::command]
+fn reveal_in_explorer(path: String) -> Result<(), String> {
+    system_agent::reveal_in_explorer(path)
+}
+
 // ── Settings window ───────────────────────────────────────────────────────────
 
 /// WebView2 allows exactly one browser environment per app, and its options are
@@ -665,6 +708,13 @@ pub fn run() {
             pal_action,
             set_pal_rect,
             set_pal_focus,
+            desktop_organize_preview,
+            desktop_organize_apply,
+            desktop_organize_undo,
+            create_system_doc,
+            locate_system_files,
+            open_system_path,
+            reveal_in_explorer,
         ])
         .setup(move |app| {
             let handle = app.handle().clone();

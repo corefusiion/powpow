@@ -949,6 +949,21 @@ async function press(action: string) {
       }
       callPal(action);
       return;
+    case "organize-desktop":
+      setCard(false);
+      showThought("🗂️ Analisando sua Área de Trabalho...", "star");
+      callPal(action);
+      return;
+    case "create-doc":
+      setCard(false);
+      showThought("📄 Criando novo documento no sistema...", "happy");
+      callPal(action);
+      return;
+    case "find-files":
+      setCard(false);
+      showThought("🔎 O que você gostaria de encontrar?", "star");
+      callPal(action);
+      return;
     case "pause":
     case "new-chat":
     case "settings":

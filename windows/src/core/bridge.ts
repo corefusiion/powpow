@@ -161,6 +161,22 @@ export const Bridge = {
     call<void>("set_pal_rect", { x, y, w, h }),
   /** Typing in the card: let the window take focus, then give it back. */
   setPalFocus: (focused: boolean) => call<void>("set_pal_focus", { focused }),
+
+  // ── System Agent (Desktop Butler, Doc Creator, File Locator) ───────────────
+  desktopOrganizePreview: (folderKind?: string) =>
+    call<OrganizePreview>("desktop_organize_preview", { folderKind }),
+  desktopOrganizeApply: (items: OrganizeItem[]) =>
+    call<OrganizeResult>("desktop_organize_apply", { items }),
+  desktopOrganizeUndo: () =>
+    call<number>("desktop_organize_undo"),
+  createSystemDoc: (docType: string, title: string, content: string, destFolder?: string) =>
+    call<CreatedDocInfo>("create_system_doc", { docType, title, content, destFolder }),
+  locateSystemFiles: (query: string, maxResults?: number) =>
+    call<LocatedFile[]>("locate_system_files", { query, maxResults }),
+  openSystemPath: (path: string) =>
+    call<void>("open_system_path", { path }),
+  revealInExplorer: (path: string) =>
+    call<void>("reveal_in_explorer", { path }),
 };
 
 export interface ActiveWindowBounds {
@@ -259,4 +275,46 @@ export async function onDragDrop(handler: (e: DragDropPayload) => void) {
 export async function onEvent<T>(name: string, handler: (payload: T) => void) {
   if (!IS_TAURI) return () => {};
   return listen<T>(name, (e) => handler(e.payload));
+}
+
+// ── System Agent Types ────────────────────────────────────────────────────────
+
+export interface OrganizeItem {
+  originalPath: string;
+  fileName: string;
+  category: string;
+  targetFolder: string;
+  targetPath: string;
+  size: number;
+}
+
+export interface OrganizePreview {
+  basePath: string;
+  folderName: string;
+  totalFiles: number;
+  categories: Record<string, number>;
+  items: OrganizeItem[];
+}
+
+export interface OrganizeResult {
+  movedCount: number;
+  basePath: string;
+  targetFolders: string[];
+}
+
+export interface CreatedDocInfo {
+  fileName: string;
+  path: string;
+  size: number;
+  docType: string;
+  opened: boolean;
+}
+
+export interface LocatedFile {
+  name: string;
+  path: string;
+  folder: string;
+  size: number;
+  modifiedSecsAgo: number;
+  extension: string;
 }

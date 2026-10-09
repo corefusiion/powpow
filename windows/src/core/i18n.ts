@@ -429,6 +429,10 @@ const PT: Record<string, string> = {
   "Agentes": "Agentes",
   "AI for the chat": "IA para o chat",
   "Services": "Serviços",
+  "Organize desktop": "🗂️ Organizar Desktop",
+  "Create document": "📄 Criar Documento",
+  "Find files": "🔎 Localizar Arquivos",
+  "Desktop Butler": "Desktop Butler",
 };
 
 export function t(key: string, vars?: Record<string, string | number>): string {

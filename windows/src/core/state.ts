@@ -40,6 +40,7 @@ export interface ChatMessage {
   id: number;
   role: "user" | "assistant";
   content: string;
+  card?: HTMLElement;
 }
 
 export type PromptContext =

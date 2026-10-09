@@ -556,6 +556,21 @@ export class Island {
         if (q) await this.sendPrompt(q);
         break;
       }
+      case "organize-desktop": {
+        this.alert("prompt");
+        await this.sendPrompt("organizar desktop");
+        break;
+      }
+      case "create-doc": {
+        this.alert("prompt");
+        await this.sendPrompt("criar planilha de despesas");
+        break;
+      }
+      case "find-files": {
+        this.alert("prompt");
+        await this.sendPrompt("localizar arquivo boleto");
+        break;
+      }
       case "pause":
         State.settings.wander = false;
         void Bridge.saveSettings(State.settings);
