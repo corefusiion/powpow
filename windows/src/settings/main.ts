@@ -517,10 +517,6 @@ const INTEGRATIONS: IntegrationDef[] = [
     fields: [{ key: "notion-api-key", label: "Integration token", placeholder: "ntn_…", secret: true }] },
   { id: "integration_calcom", name: "Cal.com", color: "#C9956A",
     fields: [{ key: "calcom-api-key", label: "API key", placeholder: "cal_…", secret: true }] },
-  { id: "integration_spotify", name: "Spotify", color: "#1DB954",
-    fields: [] }, // no key — reads the desktop app's window title
-  { id: "integration_whatsapp", name: "WhatsApp", color: "#25D366",
-    fields: [] }, // no key — reads the Web tab's title unread count
 ];
 
 // ── Outlook section (OAuth device flow + IMAP fallback fields) ───────────────
