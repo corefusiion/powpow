@@ -107,7 +107,7 @@ export const PILL_CATALOG: readonly PillDefinition[] = [
 ];
 
 export const DEFAULT_MAIN_PILL = "integration_claude";
-export const MAX_DECLARED = 4;
+export const MAX_DECLARED = 8;
 
 export const HOST_OS: HostOs = "windows";
 

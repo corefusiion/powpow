@@ -1165,13 +1165,33 @@ function activePillsSection(connected: Record<string, boolean>): HTMLElement {
     el.append(h("span", { class: "state", text: why ?? "" }));
     const sw = h("button", { class: on ? "switch on" : "switch" }) as HTMLButtonElement;
     sw.disabled = full;
-    sw.addEventListener("click", () => {
+
+    const togglePill = () => {
+      if (isMain) return;
       const next = toggleDeclared(settings, def.id);
-      if (!next) return;
+      if (!next) {
+        if (!on && settings.activeIntegrations.length >= MAX_DECLARED) {
+          slots.textContent = t("Limite de {max} pílulas atingido! Desative uma antes de ativar outra.", { max: MAX_DECLARED });
+          slots.classList.add("full");
+        }
+        return;
+      }
       settings.activeIntegrations = next;
       void save();
       draw();
+    };
+
+    sw.addEventListener("click", (e) => {
+      e.stopPropagation();
+      togglePill();
     });
+
+    el.style.cursor = isMain ? "default" : "pointer";
+    el.addEventListener("click", (e) => {
+      if ((e.target as HTMLElement).closest(".color-dot") || (e.target as HTMLElement).closest(".palette")) return;
+      togglePill();
+    });
+
     el.append(sw);
     return el;
   }
@@ -1183,7 +1203,6 @@ function activePillsSection(connected: Record<string, boolean>): HTMLElement {
     main.value = settings.mainPill;
     clear(groups);
     for (const cat of PILL_CATEGORIES) {
-      if (cat.id === "service") continue;
       const pills = availablePills().filter((p) => p.category === cat.id);
       if (pills.length === 0) continue;
       groups.append(h("div", { class: "pill-group" }, h("h3", { text: t(cat.title) }), ...pills.map(row)));
@@ -1195,7 +1214,7 @@ function activePillsSection(connected: Record<string, boolean>): HTMLElement {
     "section",
     {},
     h("h2", {}, h("span", { text: t("Pílulas Ativas") })),
-    h("div", { class: "hint", text: t("Escolha as ferramentas e agentes que você usa. Clique no ponto colorido para personalizar a cor de cada um.") }),
+    h("div", { class: "hint", text: t("Escolha as ferramentas e agentes que você usa. Clique na opção para ativar/desativar ou no ponto colorido para personalizar a cor.") }),
     slots,
     h("div", { class: "row" }, h("label", { text: t("Ferramenta principal") }), main),
     groups,

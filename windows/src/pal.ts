@@ -9,7 +9,7 @@
 import "./pal.css";
 import { Bridge, IS_TAURI, onEvent, type BootInfo } from "./core/bridge";
 import { PANEL_H, PANEL_W, type BotStateName, type BotEmoteName } from "./core/layout";
-import { PAL_EMOTE, PAL_H_RATIO, PAL_STATE } from "./island/palState";
+import { PAL_EMOTE, PAL_STATE } from "./island/palState";
 import { BotEngine } from "./mochi/engine";
 import { State, type Settings } from "./core/state";
 import { t } from "./core/i18n";
@@ -86,53 +86,6 @@ let isAiInspectBusy = false;
 
 type CompanionEmote = "happy" | "star" | "wink" | "love" | "surprised";
 
-interface ContextObservation {
-  text: string;
-  emote?: CompanionEmote;
-}
-
-const CONTEXT_OBSERVATIONS: Record<string, ContextObservation[]> = {
-  editor: [
-    { text: "Esse texto ficou bem organizado.", emote: "star" },
-    { text: "Acho que encontrei uma palavra digitada incorretamente.", emote: "surprised" },
-    { text: "Estrutura de código bem definida.", emote: "happy" },
-    { text: "Acompanhando com atenção essas linhas.", emote: "star" },
-    { text: "Código limpo e bem modularizado.", emote: "happy" },
-  ],
-  terminal: [
-    { text: "Esse comando parece ter terminado.", emote: "happy" },
-    { text: "Tem bastante coisa acontecendo nesse terminal.", emote: "star" },
-    { text: "Acho que esse processo está demorando um pouco.", emote: "surprised" },
-    { text: "Parece que essa tarefa terminou.", emote: "happy" },
-    { text: "Acompanhando a saída dos comandos...", emote: "wink" },
-  ],
-  explorer: [
-    { text: "Essa pasta poderia ficar mais organizada.", emote: "wink" },
-    { text: "Navegando pela estrutura de arquivos...", emote: "happy" },
-    { text: "Mapeando os diretórios do projeto.", emote: "star" },
-  ],
-  browser: [
-    { text: "Pesquisa focada para resolver a questão.", emote: "happy" },
-    { text: "Bastante documentação relevante por aqui.", emote: "star" },
-    { text: "Navegando em busca de boas referências.", emote: "wink" },
-  ],
-  error: [
-    { text: "Tem um erro aparecendo aqui.", emote: "surprised" },
-    { text: "Acho que algo retornou um erro nessa execução.", emote: "surprised" },
-    { text: "Vale a pena dar uma olhada nesse aviso.", emote: "wink" },
-  ],
-  waiting: [
-    { text: "Acho que esse processo está demorando um pouco.", emote: "surprised" },
-    { text: "Aguardando a conclusão da tarefa...", emote: "wink" },
-    { text: "Parece que essa tarefa terminou.", emote: "happy" },
-  ],
-  general: [
-    { text: "Acompanhando o fluxo de trabalho.", emote: "happy" },
-    { text: "Foco total na atividade!", emote: "star" },
-    { text: "Tudo fluindo tranquilamente por aqui.", emote: "happy" },
-  ],
-};
-
 function triggerEmote(emote: CompanionEmote) {
   const engineEmote: BotEmoteName = emote === "star" ? "happy" : emote;
   const palEmote: Emote =
@@ -158,79 +111,125 @@ function showThought(text: string, emote: CompanionEmote = "happy") {
   }, 4800);
 }
 
-function classifyContext(appName: string, title: string): string {
-  const s = `${appName} ${title}`.toLowerCase();
-  if (
-    s.includes("error") ||
-    s.includes("falha") ||
-    s.includes("exception") ||
-    s.includes("failed") ||
-    s.includes("warning") ||
-    s.includes("erro ") ||
-    s.includes("panic")
-  ) {
-    return "error";
+function generateRealWindowThought(appName: string, rawTitle: string): { text: string; emote: CompanionEmote } {
+  const app = (appName || "").toLowerCase();
+  const title = (rawTitle || "").trim();
+
+  if (!app && !title) {
+    return { text: "Acompanhando seu trabalho com atenção! 👀", emote: "happy" };
   }
+
+  const lower = `${app} ${title}`.toLowerCase();
   if (
-    s.includes("terminal") ||
-    s.includes("powershell") ||
-    s.includes("cmd") ||
-    s.includes("bash") ||
-    s.includes("zsh") ||
-    s.includes("git") ||
-    s.includes("console")
+    lower.includes("error") ||
+    lower.includes("falha") ||
+    lower.includes("failed") ||
+    lower.includes("exception") ||
+    lower.includes("warning") ||
+    lower.includes("panic")
+  ) {
+    return { text: `Alerta detectado em ${appName || "uma janela"}! ⚠️`, emote: "surprised" };
+  }
+
+  // Code editor (VS Code, Cursor, IntelliJ, etc.)
+  if (
+    app.includes("code") ||
+    app.includes("cursor") ||
+    app.includes("studio") ||
+    app.includes("sublime") ||
+    app.includes("idea") ||
+    app.includes("pycharm") ||
+    app.includes("webstorm") ||
+    app.includes("vim") ||
+    app.includes("antigravity")
+  ) {
+    const parts = title.split(" - ");
+    let file = parts[0]?.replace(/^[●*]\s*/, "").trim();
+    if (file && file !== appName && file.length < 35 && file.includes(".")) {
+      const phrases = [
+        `De olho na edição de ${file}! 💻`,
+        `Acompanhando o código em ${file}...`,
+        `Linhas de código avançando em ${file}! ✨`,
+      ];
+      return { text: phrases[Math.floor(Math.random() * phrases.length)], emote: "star" };
+    }
+    return { text: "Estrutura de código bem focada por aqui! 💻", emote: "happy" };
+  }
+
+  // Terminal (PowerShell, Cmd, Git Bash, Terminal)
+  if (
+    app.includes("powershell") ||
+    app.includes("terminal") ||
+    app.includes("cmd") ||
+    app.includes("bash") ||
+    app.includes("zsh") ||
+    app.includes("wsl")
   ) {
     if (
-      s.includes("wait") ||
-      s.includes("sleep") ||
-      s.includes("running") ||
-      s.includes("build") ||
-      s.includes("install") ||
-      s.includes("compil")
+      title.includes("npm") ||
+      title.includes("cargo") ||
+      title.includes("git") ||
+      title.includes("yarn") ||
+      title.includes("pnpm") ||
+      title.includes("vite")
     ) {
-      return "waiting";
+      const match = title.match(/(npm|cargo|git|yarn|pnpm|vite|python|node)\s+[\w:-]+/i);
+      const cmd = match ? match[0] : "comando";
+      return { text: `Acompanhando '${cmd}' no terminal... ⚡`, emote: "star" };
     }
-    return "terminal";
+    const phrases = [
+      "Terminal ativo, acompanhando a execução! 💻",
+      "Processos rodando perfeitamente no terminal.",
+      "De olho nos comandos do terminal! ⚡",
+    ];
+    return { text: phrases[Math.floor(Math.random() * phrases.length)], emote: "happy" };
   }
+
+  // Browser (Chrome, Edge, Firefox, Brave)
   if (
-    s.includes("code") ||
-    s.includes("cursor") ||
-    s.includes("visual studio") ||
-    s.includes("sublime") ||
-    s.includes("intellij") ||
-    s.includes("pycharm") ||
-    s.includes("webstorm") ||
-    s.includes("nvim") ||
-    s.includes("vim") ||
-    s.includes("notepad") ||
-    s.includes("rust") ||
-    s.includes("python") ||
-    s.includes("editor")
+    app.includes("chrome") ||
+    app.includes("edge") ||
+    app.includes("firefox") ||
+    app.includes("brave") ||
+    app.includes("arc")
   ) {
-    return "editor";
+    const parts = title.split(" - ");
+    const tabTitle = parts[0]?.trim();
+    if (tabTitle && tabTitle.length < 35) {
+      return { text: `Lendo: ${tabTitle} 🌐`, emote: "star" };
+    }
+    return { text: "Pesquisa e referências na web em andamento! 🌐", emote: "happy" };
   }
-  if (
-    s.includes("explorer") ||
-    s.includes("arquivos") ||
-    s.includes("files") ||
-    s.includes("pasta") ||
-    s.includes("folder") ||
-    s.includes("diretório")
-  ) {
-    return "explorer";
+
+  // File Explorer
+  if (app.includes("explorer") || app.includes("arquivos") || app.includes("files")) {
+    const folder = title.split(" - ")[0]?.trim();
+    if (folder && folder.length < 30) {
+      return { text: `Organizando a pasta '${folder}' 📁`, emote: "wink" };
+    }
+    return { text: "Navegando pela estrutura de arquivos 📁", emote: "happy" };
   }
-  if (
-    s.includes("chrome") ||
-    s.includes("edge") ||
-    s.includes("firefox") ||
-    s.includes("brave") ||
-    s.includes("arc") ||
-    s.includes("github") ||
-    s.includes("stackoverflow")
-  ) {
-    return "browser";
+
+  // Spotify / Media
+  if (app.includes("spotify") || app.includes("music")) {
+    const track = title.split(" - ")[0]?.trim();
+    if (track && track !== "Spotify") {
+      return { text: `Curtindo o som: ${track} 🎵`, emote: "happy" };
+    }
+    return { text: "Boa música para manter o ritmo! 🎵", emote: "happy" };
   }
-  return "general";
+
+  // General application with title
+  const cleanApp = appName.replace(/\.exe$/i, "");
+  if (cleanApp && title) {
+    const firstPart = title.split(" - ")[0]?.trim();
+    if (firstPart && firstPart !== cleanApp && firstPart.length < 30) {
+      return { text: `Acompanhando '${firstPart}' no ${cleanApp}! 👀`, emote: "happy" };
+    }
+    return { text: `Foco total no ${cleanApp}! 🚀`, emote: "happy" };
+  }
+
+  return { text: "Acompanhando seu trabalho com atenção! 👀", emote: "happy" };
 }
 
 async function tryAiAutonomousObservation(): Promise<boolean> {
@@ -268,7 +267,7 @@ async function tryAiAutonomousObservation(): Promise<boolean> {
     lastInspectedTitle = title;
 
     const prompt =
-      "Você é um mascote assistente atento que acompanha o trabalho do usuário. Observe a tela anexada e retorne apenas UMA frase curta e natural (máximo 8 a 10 palavras em português, sem aspas, sem introdução) observando o que está acontecendo (ex: 'Esse texto ficou bem organizado.', 'Esse comando parece ter terminado.', 'Tem bastante coisa acontecendo nesse terminal.', 'Essa pasta poderia ficar mais organizada.', etc.).";
+      "Você é o mascote assistente pessoal do usuário na área de trabalho. Analise a imagem anexada da janela/tela atual e faça UM comentário perspicaz, descontraído e útil em português (máximo de 8 a 10 palavras, sem introdução, sem aspas) sobre o que você realmente vê na tela (o arquivo sendo codado, o comando no terminal, a pasta ou a página aberta). Seja amigável e prestativo.";
 
     const reply = await Bridge.chatSend(prompt, {
       kind: "file",
@@ -305,7 +304,7 @@ async function triggerContextualObservation(now: number, force = false) {
   const aiHandled = await tryAiAutonomousObservation();
   if (aiHandled) return;
 
-  // 2. Fallback to realistic contextual thoughts
+  // 2. Realistic dynamic window observation based on live attached window
   let appName = "";
   let title = "";
   try {
@@ -318,10 +317,8 @@ async function triggerContextualObservation(now: number, force = false) {
     // Ignore error
   }
 
-  const category = classifyContext(appName, title);
-  const pool = CONTEXT_OBSERVATIONS[category] ?? CONTEXT_OBSERVATIONS.general;
-  const item = pool[Math.floor(Math.random() * pool.length)];
-  showThought(item.text, item.emote ?? "happy");
+  const thought = generateRealWindowThought(appName, title);
+  showThought(thought.text, thought.emote);
 }
 
 function onPalSummoned() {
@@ -869,11 +866,11 @@ function syncCharacter() {
     root.append(el);
     canvas = el;
   } else {
-    // bubble="none": the roaming pal carries no speech; the island has it.
-    const el = h("dot-pal", { id: "pal-overlay", bubble: "none", size: String(DP_SIZE), "full-body": "" });
-    el.style.height = `${Math.round(DP_SIZE * PAL_H_RATIO)}px`;
+    const el = h("dot-pal", { id: "pal-overlay", bubble: "none", size: String(DP_SIZE) });
+    el.style.width = `${DP_SIZE}px`;
+    el.style.height = `${DP_SIZE}px`;
     el.style.left = `${Math.round((PAL_W - DP_SIZE) / 2)}px`;
-    el.style.top = `${Math.round(PAL_H / 2 - DP_SIZE * 0.65)}px`;
+    el.style.top = `${Math.round(PAL_H / 2 - DP_SIZE * 0.45)}px`;
     el.character = want;
     root.append(el);
     pal = el;

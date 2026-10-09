@@ -1267,19 +1267,18 @@ export class Island {
       if (this.pal.getAttribute("bubble") !== targetBubble) {
         this.pal.setAttribute("bubble", targetBubble);
       }
-      const d = isCompact ? Math.min(22, Math.max(18, Math.round(size * 1.0))) : Math.round(size * 1.05);
+      // targetD is the actual diameter (20px compact, ~58px expanded).
+      // Scale dot-pal to sit harmoniously: 20-22px in notch, 62-66px in expanded card.
+      const targetD = size * 0.6;
+      const d = isCompact
+        ? Math.min(22, Math.max(18, Math.round(targetD * 1.05)))
+        : Math.min(68, Math.max(54, Math.round(targetD * 1.1)));
       const px = String(d);
       if (this.pal.getAttribute("size") !== px) this.pal.setAttribute("size", px);
       this.pal.style.width = `${d}px`;
-      if (isCompact) {
-        this.pal.style.height = `${d}px`;
-        this.pal.style.left = `${Math.round(this.botCx.value - d / 2)}px`;
-        this.pal.style.top = `${Math.round(this.botCy.value - d / 2)}px`;
-      } else {
-        this.pal.style.height = `${d}px`;
-        this.pal.style.left = `${Math.round(this.botCx.value - d / 2)}px`;
-        this.pal.style.top = `${Math.round(this.botCy.value - d / 2)}px`;
-      }
+      this.pal.style.height = `${d}px`;
+      this.pal.style.left = `${Math.round(this.botCx.value - d / 2)}px`;
+      this.pal.style.top = `${Math.round(this.botCy.value - d / 2)}px`;
     }
     const w = Math.max(1, Math.round(size));
     const hCss = w + BOT_OVERHANG;
