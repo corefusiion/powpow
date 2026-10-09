@@ -32,6 +32,9 @@ pub const WINDOW_LABEL: &str = "island";
 /// Wider than the macOS 6 pt because a click must never be swallowed.
 const HIT_MARGIN: f64 = 14.0;
 
+/// Screen-wide drag-out follower active state
+pub static DRAG_FOLLOWER_ACTIVE: AtomicBool = AtomicBool::new(false);
+
 #[derive(Serialize, Clone)]
 pub struct CursorPayload {
     pub x: f64,
@@ -325,11 +328,31 @@ pub fn spawn_cursor_poll(app: AppHandle, gate: Arc<PollGate>) {
                 };
 
                 let down = left_button_down();
+
+                // Screen-wide drag-out follower: smoothly tracks cursor across any monitor
+                if DRAG_FOLLOWER_ACTIVE.load(Ordering::Relaxed) {
+                    if let Some(pal) = app.get_webview_window("pal") {
+                        if !pal.is_visible().unwrap_or(false) {
+                            let _ = pal.show();
+                        }
+                        let _ = pal.set_always_on_top(true);
+                        let _ = pal.set_ignore_cursor_events(true);
+                        let pscale = pal.scale_factor().unwrap_or(scale);
+                        let ox = (cx - 70.0 * pscale).round() as i32;
+                        let oy = (cy - 100.0 * pscale).round() as i32;
+                        let _ = pal.set_position(PhysicalPosition::new(ox, oy));
+                    }
+                }
+
                 // Button released anywhere (usually outside our window, at the
                 // end of a Mochi drag-out): the page never sees a DOM mouseup
                 // out there, so the release is delivered as an event even when
                 // the cursor itself did not move.
                 if was_down && !down {
+                    let was_follower = DRAG_FOLLOWER_ACTIVE.swap(false, Ordering::Relaxed);
+                    if was_follower {
+                        let _ = app.emit("drag-follower-stop", ());
+                    }
                     let _ = win.emit("mouse-up", CursorPayload { x, y, down });
                 }
 

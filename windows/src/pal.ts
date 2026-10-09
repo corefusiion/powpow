@@ -353,6 +353,7 @@ let tourIndex = -1;
 let tourAt = 0;
 let escortUntil = 0;
 let hovered = false;
+let isDragFollower = false;
 
 // The card.
 let cardOpen = false;
@@ -592,6 +593,7 @@ function send() {
 }
 
 function step(dt: number, now: number) {
+  if (isDragFollower) return;
   if (hovered) return; // pointer on the pal: stay put for the click
   if (now < microPauseUntil) return; // natural micro-pause during walk
 
@@ -1020,6 +1022,25 @@ async function main() {
 
   await onEvent<boolean>("pal-wander", (on) => setWander(on === true));
   await onEvent<string>("pal-state", (s) => applyState(s as BotStateName));
+  await onEvent<null>("drag-follower-start", () => {
+    isDragFollower = true;
+    setCard(false);
+    if (thoughtEl) thoughtEl.hidden = true;
+    root.classList.add("is-dragging");
+    triggerEmote("surprised");
+    if (pal) {
+      pal.setPose("walk");
+      void pal.emote("wide");
+    }
+  });
+  await onEvent<null>("drag-follower-stop", () => {
+    isDragFollower = false;
+    root.classList.remove("is-dragging");
+    if (pal) pal.setPose("idle");
+    if (!running) {
+      void Bridge.setPalWander(false);
+    }
+  });
   // Global summon hotkey: jumps to cursor, gives friendly greeting and opens quick command card!
   await onEvent<null>("pal-summon", () => {
     legs = [];

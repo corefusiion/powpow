@@ -3,6 +3,7 @@
 
 import { BotEngine, hexToRGB } from "./engine";
 import type { AgentTask } from "../core/state";
+import { SERVICE_ICONS } from "../views/icons";
 
 interface MiniBot {
   canvas: HTMLCanvasElement;
@@ -14,15 +15,65 @@ interface MiniBot {
 const live = new Map<HTMLCanvasElement, MiniBot>();
 
 /**
- * Creates a mini Mochi whose **body** is `bodySize` CSS pixels across.
- *
- * The engine draws the body at 60 % of its canvas, so the canvas is
- * `bodySize / 0.6` and is centred in a `bodySize` slot, overflowing it — the
- * same thing SwiftUI does with a `.frame(width: 22/0.6)` inside a
- * `.frame(width: 22)`. Sizing the canvas itself to `bodySize` would shrink the
- * whole drawing to 60 %, which is what used to happen.
+ * Standardized distinctive service avatar badge for integration services.
+ * Features brand-tailored SVG emblems, luminous ambient glow, and micro-animations.
+ */
+export function createServiceAvatar(task: AgentTask, size: number): HTMLElement {
+  const slot = document.createElement("span");
+  slot.className = `service-avatar service-avatar-${task.id}`;
+  slot.dataset.taskId = task.id;
+  slot.style.width = `${size}px`;
+  slot.style.height = `${size}px`;
+  slot.style.minWidth = `${size}px`;
+  slot.style.minHeight = `${size}px`;
+  slot.style.borderRadius = "36%";
+  slot.style.display = "inline-flex";
+  slot.style.alignItems = "center";
+  slot.style.justifyContent = "center";
+  slot.style.position = "relative";
+  slot.style.boxSizing = "border-box";
+  slot.style.flexShrink = "0";
+  slot.style.overflow = "hidden";
+
+  const color = task.color || "#6366F1";
+  slot.style.background = `radial-gradient(circle at 35% 25%, ${color}45 0%, ${color}1e 65%, rgba(10, 12, 18, 0.96) 100%)`;
+  slot.style.border = `1px solid ${color}55`;
+  slot.style.boxShadow = `0 2px 7px ${color}33, inset 0 1px 1px rgba(255, 255, 255, 0.25)`;
+
+  const iconPath = SERVICE_ICONS[task.id] || SERVICE_ICONS.default_agent;
+  const iconSize = Math.max(8, Math.round(size * 0.62));
+
+  const iconSvg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+  iconSvg.setAttribute("viewBox", "0 0 24 24");
+  iconSvg.setAttribute("width", String(iconSize));
+  iconSvg.setAttribute("height", String(iconSize));
+  iconSvg.style.display = "block";
+  iconSvg.style.fill = color === "#F5F6F8" || color === "#ffffff" ? "#E2E8F0" : color;
+  iconSvg.style.filter = `drop-shadow(0 1px 3px ${color}66)`;
+
+  const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+  path.setAttribute("d", iconPath);
+  iconSvg.append(path);
+  slot.append(iconSvg);
+
+  if (task.state === "working") {
+    slot.classList.add("working");
+    slot.style.boxShadow = `0 0 10px ${color}bb, inset 0 1px 2px rgba(255, 255, 255, 0.45)`;
+  }
+
+  return slot;
+}
+
+/**
+ * Creates a mini service avatar or mini Mochi canvas.
+ * If the task is an integration or has a service icon, it renders the modern
+ * service avatar standard with crisp vector glyphs and brand aesthetics.
  */
 export function createMiniBot(task: AgentTask, bodySize: number): HTMLElement {
+  if (task.isIntegration || SERVICE_ICONS[task.id]) {
+    return createServiceAvatar(task, bodySize);
+  }
+
   const slot = document.createElement("span");
   slot.className = "mini";
   slot.style.width = `${bodySize}px`;
@@ -69,6 +120,22 @@ export function syncMiniBotStates(tasks: AgentTask[]) {
     if (!task) continue;
     mb.engine.setState(task.state);
     mb.engine.bodyColor = hexToRGB(task.color);
+  }
+
+  // Also sync live states for modern service avatar badges
+  for (const el of document.querySelectorAll<HTMLElement>(".service-avatar")) {
+    const taskId = el.dataset.taskId;
+    if (!taskId) continue;
+    const task = tasks.find((t) => t.id === taskId);
+    if (!task) continue;
+    const isWorking = task.state === "working";
+    el.classList.toggle("working", isWorking);
+    const color = task.color || "#6366F1";
+    if (isWorking) {
+      el.style.boxShadow = `0 0 10px ${color}bb, inset 0 1px 2px rgba(255, 255, 255, 0.45)`;
+    } else {
+      el.style.boxShadow = `0 2px 7px ${color}33, inset 0 1px 1px rgba(255, 255, 255, 0.25)`;
+    }
   }
 }
 

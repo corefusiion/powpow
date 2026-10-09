@@ -314,6 +314,20 @@ export class Island {
    * underneath but is hidden until the drop, so no engine coupling is needed.
    */
   private buildGhost(): HTMLElement {
+    const want = State.settings.character || "mochi";
+    if (want !== "mochi") {
+      if (want === "custom" && State.settings.custom) {
+        registerCustom(State.settings.custom as CustomPal);
+      }
+      const el = h("dot-pal", {
+        id: "bot-ghost",
+        bubble: "none",
+        size: "54",
+        style: "position:absolute;display:none;width:54px;height:54px;z-index:60;pointer-events:none;filter:drop-shadow(0 8px 24px rgba(0,0,0,.5));",
+      }) as DotPal;
+      el.character = want;
+      return el;
+    }
     const eye = (left: string) => h("div", {
       style: `position:absolute;top:20px;left:${left};width:9px;height:11px;border-radius:50%;background:#1A1412`,
     });
@@ -334,8 +348,10 @@ export class Island {
     this.engine.triggerEmote("surprised");
     Sound.play("pop");
     this.botCanvas.style.opacity = "0";
+    if (this.pal) this.pal.style.opacity = "0";
     this.moveGhost(x, y);
     this.ghostEl.style.display = "block";
+    void Bridge.startDragFollower();
     void Bridge.log("attach drag started");
   }
 
@@ -347,6 +363,9 @@ export class Island {
   private endGhostHidden() {
     this.draggingGhost = false;
     this.ghostEl.style.display = "none";
+    this.botCanvas.style.opacity = !this.pal ? "1" : "0";
+    if (this.pal) this.pal.style.opacity = "1";
+    void Bridge.stopDragFollower();
     this.ensureRunning();
   }
 
@@ -1531,6 +1550,9 @@ export class Island {
       this.palStateText = "";
       this.syncPal(State.effectiveState);
     }
+    const oldGhost = this.ghostEl;
+    this.ghostEl = this.buildGhost();
+    oldGhost.replaceWith(this.ghostEl);
     this.dirty = true;
     this.ensureRunning();
   }

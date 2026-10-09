@@ -28,6 +28,20 @@ dot-pal {
   transition: filter 0.3s ease;
 }
 
+#pal-root.is-dragging #pal-card,
+#pal-root.is-dragging #pal-thought,
+#pal-root.is-dragging #pal-close-bite,
+#pal-root.is-dragging #pal-splatters {
+  display: none !important;
+}
+
+#pal-root.is-dragging #pal-bot,
+#pal-root.is-dragging dot-pal {
+  filter: drop-shadow(0 14px 32px rgba(0, 0, 0, 0.65)) !important;
+  transform: scale(0.92);
+  transition: transform 0.12s ease;
+}
+
 /* The card: to the right of the character, in the window's spare width. */
 #pal-card {
   position: absolute;

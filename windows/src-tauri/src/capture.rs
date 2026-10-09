@@ -149,11 +149,14 @@ pub fn attach(app: &AppHandle) -> Result<AttachedWindow, String> {
         GetCursorPos(&mut point).map_err(|_| "cannot read cursor position".to_string())?;
     }
     let target = unsafe { WindowFromPoint(point) };
-    if target.0.is_null() {
-        return Err("no window under the cursor".into());
+    let our_windows = ours(app);
+    if target.0.is_null() || our_windows.contains(&target) {
+        return attach_active(app);
     }
-    check_target(app, target, "drop Mochi on another app's window, not on the island")?;
-    save(target)
+    if check_target(app, target, "").is_err() {
+        return attach_active(app);
+    }
+    save(target).or_else(|_| attach_active(app))
 }
 
 pub fn capture_screen() -> Result<AttachedWindow, String> {

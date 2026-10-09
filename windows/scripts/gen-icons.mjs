@@ -1,115 +1,253 @@
-// Draws Mochi into the PNG/ICO set Tauri needs. No dependencies: the icons are
-// rasterised here and encoded with node:zlib, so the app icon stays "drawn in
-// code" like the character itself.
-//
-//   node scripts/gen-icons.mjs
-
 import { deflateSync } from "node:zlib";
 import { mkdirSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
-const OUT = join(dirname(fileURLToPath(import.meta.url)), "..", "src-tauri", "icons");
+const OUT = join(process.cwd(), "src-tauri", "icons");
 
-// ── Mochi ─────────────────────────────────────────────────────────────────────
+const SS = 4; // 4x supersampling for ultra crisp anti-aliasing
 
-const BASE_TOP = [255, 250, 245]; // #FFFAF5
-const BASE_BOTTOM = [221, 204, 191]; // #DDCCBF
-const INK = [26, 20, 18]; // #1A1412
-const RIM = [0, 0, 0];
+// Colors
+const BODY_TOP = [129, 140, 248];    // #818CF8 - bright electric periwinkle
+const BODY_MID = [99, 102, 241];     // #6366F1 - vibrant indigo
+const BODY_BOT = [67, 56, 202];      // #4338CA - deep royal indigo
+const RIM_DARK = [24, 21, 56];       // #181538 - high contrast dark rim
+const EAR_INNER = [251, 113, 133];   // #FB7185 - cute warm pink inner ear
+const EYE_DARK = [15, 23, 42];       // #0F172A - deep obsidian eye
+const EYE_LIGHT = [255, 255, 255];   // #FFFFFF - sparkle catchlight
+const BLUSH = [244, 63, 94];         // #F43F5E - soft blush cheeks
+const SPARKLE = [254, 240, 138];     // #FEF08A - golden intelligence star
 
-const SS = 4; // supersampling factor
-
-/** Superellipse (exponent 2.7) test in body-local coordinates. */
 function insideBody(x, y, rx, ry) {
   const n = 2.7;
   return Math.pow(Math.abs(x / rx), n) + Math.pow(Math.abs(y / ry), n) <= 1;
 }
 
-function insidePill(x, y, w, h) {
-  const hw = w / 2;
-  const hh = h / 2;
-  const r = Math.min(hw, hh);
-  const cx = Math.max(-hw + r, Math.min(hw - r, x));
-  const cy = Math.max(-hh + r, Math.min(hh - r, y));
+function insideCircle(x, y, cx, cy, r) {
   return (x - cx) ** 2 + (y - cy) ** 2 <= r * r;
 }
 
-function renderMochi(size) {
-  const px = new Uint8Array(size * size * 4);
-  const R = size * 0.34;
-  const rx = R * 1.14;
-  const ry = R * 0.88;
-  const cx = size / 2;
-  const cy = size / 2 + R * 0.06;
-  const rim = R * 0.055; // dark outline so the tray icon reads on light themes
+function insideRotatedPill(x, y, cx, cy, w, h, angleRad) {
+  const cos = Math.cos(-angleRad);
+  const sin = Math.sin(-angleRad);
+  const dx = x - cx;
+  const dy = y - cy;
+  const rx = dx * cos - dy * sin;
+  const ry = dx * sin + dy * cos;
+  const hw = w / 2;
+  const hh = h / 2;
+  const r = Math.min(hw, hh);
+  const px = Math.max(-hw + r, Math.min(hw - r, rx));
+  const py = Math.max(-hh + r, Math.min(hh - r, ry));
+  return (rx - px) ** 2 + (ry - py) ** 2 <= r * r;
+}
 
-  // Eyes — same geometry as BotEngine (yaw ±0.37, pitch −0.12)
-  const eyeYaw = 0.37;
-  const eyePitch = -0.12;
-  const cp = Math.cos(eyePitch);
-  const ex = Math.sin(eyeYaw) * cp * rx;
-  const ey = -Math.sin(eyePitch) * ry;
-  const fx = Math.max(0.18, Math.cos(eyeYaw));
-  const fy = Math.max(0.18, cp);
-  const ew = R * 0.25 * fx;
-  const eh = R * 0.27 * fy;
+function renderPowpow(size) {
+  const px = new Uint8Array(size * size * 4);
+  const cx = size / 2;
+  const cy = size / 2 + size * 0.05;
+  const R = size * 0.35;
+  const rx = R * 1.12;
+  const ry = R * 0.90;
+  const rim = Math.max(1.0, R * 0.07);
+
+  // Ears
+  const earW = R * 0.50;
+  const earH = R * 0.70;
+  const earInnerW = earW * 0.60;
+  const earInnerH = earH * 0.60;
+  const earDistX = rx * 0.72;
+  const earDistY = ry * 0.88;
+  const earAngle = 0.38; // ~22 degrees outward tilt
+
+  // Eyes
+  const eyeR = R * 0.22;
+  const eyeX = rx * 0.44;
+  const eyeY = ry * 0.08;
+  const shineR1 = eyeR * 0.38;
+  const shineR2 = eyeR * 0.20;
+
+  // Blush
+  const blushW = R * 0.32;
+  const blushH = R * 0.16;
+  const blushX = rx * 0.66;
+  const blushY = ry * 0.38;
+
+  // Forehead Sparkle Star
+  const starY = -ry * 0.58;
+  const starR = R * 0.20;
 
   for (let y = 0; y < size; y++) {
     for (let x = 0; x < size; x++) {
       let bodyHits = 0;
-      let rimHits = 0;
+      let bodyRimHits = 0;
+      let earHits = 0;
+      let earRimHits = 0;
+      let earInnerHits = 0;
       let eyeHits = 0;
+      let shine1Hits = 0;
+      let shine2Hits = 0;
+      let blushHits = 0;
+      let starHits = 0;
+      let smileHits = 0;
+
       for (let sy = 0; sy < SS; sy++) {
         for (let sx = 0; sx < SS; sx++) {
           const px0 = x + (sx + 0.5) / SS - cx;
           const py0 = y + (sy + 0.5) / SS - cy;
-          if (!insideBody(px0, py0, rx + rim, ry + rim)) continue;
-          rimHits++;
-          if (!insideBody(px0, py0, rx, ry)) continue;
-          bodyHits++;
-          if (
-            insidePill(px0 + ex, py0 - ey, ew, eh) ||
-            insidePill(px0 - ex, py0 - ey, ew, eh)
-          ) {
-            eyeHits++;
+
+          // Ears
+          const inLeftEarRim = insideRotatedPill(px0, py0, -earDistX, -earDistY, earW + rim * 2, earH + rim * 2, -earAngle);
+          const inRightEarRim = insideRotatedPill(px0, py0, earDistX, -earDistY, earW + rim * 2, earH + rim * 2, earAngle);
+          if (inLeftEarRim || inRightEarRim) {
+            earRimHits++;
+            const inLeftEar = insideRotatedPill(px0, py0, -earDistX, -earDistY, earW, earH, -earAngle);
+            const inRightEar = insideRotatedPill(px0, py0, earDistX, -earDistY, earW, earH, earAngle);
+            if (inLeftEar || inRightEar) {
+              earHits++;
+              if (insideRotatedPill(px0, py0, -earDistX, -earDistY + earH * 0.1, earInnerW, earInnerH, -earAngle) ||
+                  insideRotatedPill(px0, py0, earDistX, -earDistY + earH * 0.1, earInnerW, earInnerH, earAngle)) {
+                earInnerHits++;
+              }
+            }
+          }
+
+          // Body
+          if (insideBody(px0, py0, rx + rim, ry + rim)) {
+            bodyRimHits++;
+            if (insideBody(px0, py0, rx, ry)) {
+              bodyHits++;
+
+              // Eyes
+              const leftEye = insideCircle(px0, py0, -eyeX, eyeY, eyeR);
+              const rightEye = insideCircle(px0, py0, eyeX, eyeY, eyeR);
+              if (leftEye || rightEye) {
+                eyeHits++;
+                // Catchlights
+                const targetEyeX = px0 < 0 ? -eyeX : eyeX;
+                if (insideCircle(px0, py0, targetEyeX - eyeR * 0.32, eyeY - eyeR * 0.32, shineR1)) {
+                  shine1Hits++;
+                } else if (insideCircle(px0, py0, targetEyeX + eyeR * 0.35, eyeY + eyeR * 0.35, shineR2)) {
+                  shine2Hits++;
+                }
+              }
+
+              // Cheeks Blush
+              if (!leftEye && !rightEye) {
+                if (insideRotatedPill(px0, py0, -blushX, blushY, blushW, blushH, 0) ||
+                    insideRotatedPill(px0, py0, blushX, blushY, blushW, blushH, 0)) {
+                  blushHits++;
+                }
+              }
+
+              // Cheerful Happy Smile Arc (mouth edges curl upwards happily)
+              if (Math.abs(px0) <= R * 0.24 && py0 >= eyeY + eyeR * 0.7 && py0 <= eyeY + eyeR * 1.5) {
+                const smileArc = -((px0 / (R * 0.24)) ** 2) * (R * 0.14);
+                const smileTargetY = eyeY + eyeR * 1.25 + smileArc;
+                if (Math.abs(py0 - smileTargetY) <= Math.max(1.2, R * 0.055)) {
+                  smileHits++;
+                }
+              }
+
+              // Forehead Sparkle Star
+              const dxStar = Math.abs(px0);
+              const dyStar = Math.abs(py0 - starY);
+              if (dxStar + dyStar <= starR) {
+                starHits++;
+              }
+            }
           }
         }
       }
-      if (rimHits === 0) continue;
 
       const total = SS * SS;
-      const rimA = rimHits / total;
-      const bodyA = bodyHits / total;
-      const eyeA = eyeHits / total;
+      const anyHit = bodyRimHits || earRimHits;
+      if (anyHit === 0) continue;
 
-      // Body gradient: top-right → bottom-left, like the Canvas gradient.
-      const t = Math.min(1, Math.max(0, ((x - cx) * -0.6 + (y - cy) * 0.8) / (2 * ry) + 0.5));
-      const body = [0, 1, 2].map((i) => BASE_TOP[i] + (BASE_BOTTOM[i] - BASE_TOP[i]) * t);
+      let r = RIM_DARK[0], g = RIM_DARK[1], b = RIM_DARK[2], a = Math.max(bodyRimHits, earRimHits) / total;
 
-      // rim under body, body over rim, eyes over body
-      let col = RIM.slice();
-      let alpha = rimA;
-      if (bodyA > 0) {
-        col = col.map((c, i) => c * (1 - bodyA / rimA) + body[i] * (bodyA / rimA));
-        alpha = rimA;
+      // Base ear color
+      if (earHits > 0) {
+        const earAlpha = earHits / total;
+        r = r * (1 - earAlpha) + BODY_TOP[0] * earAlpha;
+        g = g * (1 - earAlpha) + BODY_TOP[1] * earAlpha;
+        b = b * (1 - earAlpha) + BODY_TOP[2] * earAlpha;
       }
-      if (eyeA > 0) {
-        col = col.map((c, i) => c * (1 - eyeA) + INK[i] * eyeA);
+      if (earInnerHits > 0) {
+        const innerAlpha = (earInnerHits / total) * 0.85;
+        r = r * (1 - innerAlpha) + EAR_INNER[0] * innerAlpha;
+        g = g * (1 - innerAlpha) + EAR_INNER[1] * innerAlpha;
+        b = b * (1 - innerAlpha) + EAR_INNER[2] * innerAlpha;
+      }
+
+      // Base body color with smooth vertical gradient
+      if (bodyHits > 0) {
+        const bodyAlpha = bodyHits / total;
+        const gradT = Math.min(1, Math.max(0, (y - (cy - ry)) / (2 * ry)));
+        const bodyR = gradT < 0.5
+          ? BODY_TOP[0] + (BODY_MID[0] - BODY_TOP[0]) * (gradT * 2)
+          : BODY_MID[0] + (BODY_BOT[0] - BODY_MID[0]) * ((gradT - 0.5) * 2);
+        const bodyG = gradT < 0.5
+          ? BODY_TOP[1] + (BODY_MID[1] - BODY_TOP[1]) * (gradT * 2)
+          : BODY_MID[1] + (BODY_BOT[1] - BODY_MID[1]) * ((gradT - 0.5) * 2);
+        const bodyB = gradT < 0.5
+          ? BODY_TOP[2] + (BODY_MID[2] - BODY_TOP[2]) * (gradT * 2)
+          : BODY_MID[2] + (BODY_BOT[2] - BODY_MID[2]) * ((gradT - 0.5) * 2);
+
+        r = r * (1 - bodyAlpha) + bodyR * bodyAlpha;
+        g = g * (1 - bodyAlpha) + bodyG * bodyAlpha;
+        b = b * (1 - bodyAlpha) + bodyB * bodyAlpha;
+      }
+
+      // Blush
+      if (blushHits > 0) {
+        const blushAlpha = (blushHits / total) * 0.45;
+        r = r * (1 - blushAlpha) + BLUSH[0] * blushAlpha;
+        g = g * (1 - blushAlpha) + BLUSH[1] * blushAlpha;
+        b = b * (1 - blushAlpha) + BLUSH[2] * blushAlpha;
+      }
+
+      // Smile
+      if (smileHits > 0) {
+        const smileAlpha = smileHits / total;
+        r = r * (1 - smileAlpha) + RIM_DARK[0] * smileAlpha;
+        g = g * (1 - smileAlpha) + RIM_DARK[1] * smileAlpha;
+        b = b * (1 - smileAlpha) + RIM_DARK[2] * smileAlpha;
+      }
+
+      // Forehead Sparkle Star
+      if (starHits > 0) {
+        const starAlpha = starHits / total;
+        r = r * (1 - starAlpha) + SPARKLE[0] * starAlpha;
+        g = g * (1 - starAlpha) + SPARKLE[1] * starAlpha;
+        b = b * (1 - starAlpha) + SPARKLE[2] * starAlpha;
+      }
+
+      // Eyes
+      if (eyeHits > 0) {
+        const eyeAlpha = eyeHits / total;
+        r = r * (1 - eyeAlpha) + EYE_DARK[0] * eyeAlpha;
+        g = g * (1 - eyeAlpha) + EYE_DARK[1] * eyeAlpha;
+        b = b * (1 - eyeAlpha) + EYE_DARK[2] * eyeAlpha;
+      }
+      if (shine1Hits > 0 || shine2Hits > 0) {
+        const shineAlpha = Math.max(shine1Hits, shine2Hits) / total;
+        r = r * (1 - shineAlpha) + EYE_LIGHT[0] * shineAlpha;
+        g = g * (1 - shineAlpha) + EYE_LIGHT[1] * shineAlpha;
+        b = b * (1 - shineAlpha) + EYE_LIGHT[2] * shineAlpha;
       }
 
       const o = (y * size + x) * 4;
-      px[o] = Math.round(col[0]);
-      px[o + 1] = Math.round(col[1]);
-      px[o + 2] = Math.round(col[2]);
-      px[o + 3] = Math.round(Math.min(1, alpha) * 255);
+      px[o] = Math.round(r);
+      px[o + 1] = Math.round(g);
+      px[o + 2] = Math.round(b);
+      px[o + 3] = Math.round(Math.min(1, a) * 255);
     }
   }
   return px;
 }
 
-// ── PNG ───────────────────────────────────────────────────────────────────────
-
+// ── PNG ──
 const CRC_TABLE = (() => {
   const t = new Uint32Array(256);
   for (let n = 0; n < 256; n++) {
@@ -139,11 +277,11 @@ function encodePNG(size, rgba) {
   const ihdr = Buffer.alloc(13);
   ihdr.writeUInt32BE(size, 0);
   ihdr.writeUInt32BE(size, 4);
-  ihdr[8] = 8; // bit depth
-  ihdr[9] = 6; // RGBA
+  ihdr[8] = 8;
+  ihdr[9] = 6;
   const raw = Buffer.alloc(size * (size * 4 + 1));
   for (let y = 0; y < size; y++) {
-    raw[y * (size * 4 + 1)] = 0; // filter: none
+    raw[y * (size * 4 + 1)] = 0;
     Buffer.from(rgba.buffer, y * size * 4, size * 4).copy(raw, y * (size * 4 + 1) + 1);
   }
   return Buffer.concat([
@@ -153,8 +291,6 @@ function encodePNG(size, rgba) {
     chunk("IEND", Buffer.alloc(0)),
   ]);
 }
-
-// ── ICO (PNG-in-ICO, Vista and later) ─────────────────────────────────────────
 
 function encodeICO(entries) {
   const header = Buffer.alloc(6);
@@ -178,11 +314,9 @@ function encodeICO(entries) {
   return Buffer.concat([header, dir, ...entries.map((e) => e.png)]);
 }
 
-// ── Go ────────────────────────────────────────────────────────────────────────
-
 mkdirSync(OUT, { recursive: true });
-
-const png = (size) => encodePNG(size, renderMochi(size));
+console.log("Generating Powpow brand icons...");
+const png = (size) => encodePNG(size, renderPowpow(size));
 
 const files = {
   "32x32.png": png(32),
@@ -198,3 +332,4 @@ for (const [name, data] of Object.entries(files)) {
 const ico = encodeICO([16, 24, 32, 48, 64, 128, 256].map((size) => ({ size, png: png(size) })));
 writeFileSync(join(OUT, "icon.ico"), ico);
 console.log(`icon.ico — ${ico.length} bytes`);
+console.log("Done!");

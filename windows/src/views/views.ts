@@ -284,7 +284,7 @@ function buildOverview(actions: ViewActions): ViewHost {
 function buildPill(task: AgentTask, actions: ViewActions): HTMLElement {
   const label = task.id === "integration_claude" ? "VS Code" : task.name;
   const color = pillColor(task.id, task.color, State.settings.pillColors);
-  const canvas = createMiniBot({ ...task, color }, 24);
+  const canvas = createMiniBot({ ...task, color }, 20);
   const pill = h(
     "div",
     { class: "pill", onclick: () => actions.setFocus(task.id) },

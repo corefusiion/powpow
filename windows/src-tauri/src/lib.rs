@@ -314,6 +314,28 @@ fn set_pal_focus(app: AppHandle, focused: bool) {
     }
 }
 
+#[tauri::command]
+fn start_drag_follower(app: AppHandle) {
+    island::DRAG_FOLLOWER_ACTIVE.store(true, Ordering::Relaxed);
+    if let Some(pal) = app.get_webview_window("pal") {
+        let _ = pal.set_always_on_top(true);
+        let _ = pal.set_ignore_cursor_events(true);
+        let _ = pal.show();
+    }
+    let _ = app.emit("drag-follower-start", ());
+}
+
+#[tauri::command]
+fn stop_drag_follower(app: AppHandle) {
+    island::DRAG_FOLLOWER_ACTIVE.store(false, Ordering::Relaxed);
+    if let Some(pal) = app.get_webview_window("pal") {
+        if !PAL_WANDER.load(Ordering::Relaxed) {
+            let _ = pal.hide();
+        }
+    }
+    let _ = app.emit("drag-follower-stop", ());
+}
+
 // ── Claude Code hooks ─────────────────────────────────────────────────────────
 
 #[tauri::command]
@@ -723,6 +745,8 @@ pub fn run() {
             pal_action,
             set_pal_rect,
             set_pal_focus,
+            start_drag_follower,
+            stop_drag_follower,
             desktop_organize_preview,
             desktop_organize_apply,
             desktop_organize_undo,

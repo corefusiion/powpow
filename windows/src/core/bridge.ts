@@ -161,6 +161,9 @@ export const Bridge = {
     call<void>("set_pal_rect", { x, y, w, h }),
   /** Typing in the card: let the window take focus, then give it back. */
   setPalFocus: (focused: boolean) => call<void>("set_pal_focus", { focused }),
+  /** Screen-wide drag-out follower */
+  startDragFollower: () => call<void>("start_drag_follower"),
+  stopDragFollower: () => call<void>("stop_drag_follower"),
 
   // ── System Agent (Desktop Butler, Doc Creator, File Locator) ───────────────
   desktopOrganizePreview: (folderKind?: string) =>
