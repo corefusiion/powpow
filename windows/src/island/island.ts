@@ -1267,12 +1267,11 @@ export class Island {
       if (this.pal.getAttribute("bubble") !== targetBubble) {
         this.pal.setAttribute("bubble", targetBubble);
       }
-      // targetD is the actual diameter (20px compact, ~58px expanded).
-      // Scale dot-pal to sit harmoniously: 20-22px in notch, 62-66px in expanded card.
+      // Scale dot-pal to sit prominently: 26-28px in compact notch, 72-76px in expanded card.
       const targetD = size * 0.6;
       const d = isCompact
-        ? Math.min(22, Math.max(18, Math.round(targetD * 1.05)))
-        : Math.min(68, Math.max(54, Math.round(targetD * 1.1)));
+        ? Math.min(28, Math.max(25, Math.round(targetD * 1.35)))
+        : Math.min(78, Math.max(68, Math.round(targetD * 1.25)));
       const px = String(d);
       if (this.pal.getAttribute("size") !== px) this.pal.setAttribute("size", px);
       this.pal.style.width = `${d}px`;

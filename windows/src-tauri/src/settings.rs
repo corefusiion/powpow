@@ -64,6 +64,8 @@ pub struct Settings {
     #[serde(default)]
     pub show_codex_plan_in_notch: bool,
     #[serde(default)]
+    pub show_gemini_plan_in_notch: bool,
+    #[serde(default)]
     pub ollama_url: String,
     #[serde(default)]
     pub lmstudio_url: String,
@@ -144,6 +146,7 @@ impl Default for Settings {
             show_plan_in_notch: false,
             plan_relay_installed: false,
             show_codex_plan_in_notch: false,
+            show_gemini_plan_in_notch: false,
             ollama_url: String::new(),
             lmstudio_url: String::new(),
             custom_url: String::new(),

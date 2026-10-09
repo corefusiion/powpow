@@ -16,7 +16,7 @@ import { diffCardKey, renderDiffCard } from "./diff";
 import { buildChoose, buildUpload, buildUploading } from "./upload";
 import { renderIntegrationCard, type IntegrationCardHooks } from "./integrations";
 import { pillColor } from "../core/pill-colors";
-import { buildPlanPill, claudePillVisible, codexPillVisible, planCardOpen, PlanCard } from "./usage";
+import { buildPlanPill, claudePillVisible, codexPillVisible, geminiPillVisible, planCardOpen, PlanCard } from "./usage";
 
 export interface ViewActions {
   setView(v: IslandViewName): void;
@@ -97,8 +97,9 @@ export function buildHeader(actions: ViewActions): ViewHost {
 
   const gearBtn = h("button", { title: t("Settings…"), onclick: () => go("settings") }, svg(ICONS.gear, 14));
   const soundBtn = h("button", { title: t("Mute"), onclick: () => actions.toggleSound() }, svg(ICONS.speakerOn, 14));
-  const claudePill = buildPlanPill(false);
-  const codexPill = buildPlanPill(true);
+  const claudePill = buildPlanPill("claude");
+  const codexPill = buildPlanPill("codex");
+  const geminiPill = buildPlanPill("gemini");
   // "Running in Brazil" indicator: opens Settings where the language switches.
   const langBtn = h(
     "button",
@@ -119,7 +120,7 @@ export function buildHeader(actions: ViewActions): ViewHost {
     "div",
     { id: "header" },
     h("div", { class: "tabs" }, tabHome, tabStory, tabChat, tabDrop),
-    h("div", { class: "header-actions" }, claudePill.el, codexPill.el, langBtn, gearBtn, soundBtn),
+    h("div", { class: "header-actions" }, claudePill.el, codexPill.el, geminiPill.el, langBtn, gearBtn, soundBtn),
   );
 
   return {
@@ -139,6 +140,8 @@ export function buildHeader(actions: ViewActions): ViewHost {
       if (claudePillVisible()) claudePill.sync();
       codexPill.el.style.display = codexPillVisible() ? "" : "none";
       if (codexPillVisible()) codexPill.sync();
+      geminiPill.el.style.display = geminiPillVisible() ? "" : "none";
+      if (geminiPillVisible()) geminiPill.sync();
       el.style.opacity = v === "confused" ? "0" : "1";
     },
   };

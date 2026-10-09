@@ -23,6 +23,14 @@ export interface CodexPlanUsage extends PlanUsage {
   planType?: string;
 }
 
+export interface GeminiPlanUsage extends PlanUsage {
+  planType?: string;
+  tier?: string;
+  model?: string;
+  rpm?: PlanWindow;
+  rpd?: PlanWindow;
+}
+
 import { t } from "./i18n";
 import { State } from "./state";
 
@@ -31,10 +39,15 @@ const DAY_MS = 86_400_000;
 export const PLAN_TEXT = {
   get claudeTitle() { return t("Claude plan"); },
   get codexTitle() { return t("Codex plan"); },
+  get geminiTitle() { return t("Gemini plan"); },
   get claudePillTitle() { return t("Claude plan usage"); },
   get codexPillTitle() { return t("Codex plan usage"); },
+  get geminiPillTitle() { return t("Gemini plan usage"); },
   get waiting() { return t("Waiting for a response from Claude Code"); },
   get askingCodex() { return t("Asking Codex…"); },
+  get askingGemini() { return t("Checking Gemini quota…"); },
+  get dailyQuota() { return t("Daily quota"); },
+  get requestsPerMin() { return t("Requests / min"); },
   get justNow() { return t("just now"); },
   minAgo: (n: number) => t("{n} min ago", { n }),
   hAgo: (n: number) => t("{n} h ago", { n }),
@@ -137,7 +150,7 @@ export function planColor(pct: number | null): string {
   return "#F4505E";
 }
 
-export function pillLabel(name: "Claude" | "Codex", u: PlanUsage | null | undefined, now = Date.now()): string {
+export function pillLabel(name: "Claude" | "Codex" | "Gemini" | string, u: PlanUsage | null | undefined, now = Date.now()): string {
   const pct = dominantPct(u, now);
   return pct == null ? `${name} ${PLAN_TEXT.none}` : `${name} ${Math.round(pct)}%`;
 }
@@ -168,6 +181,28 @@ export function claudeSubtitle(u: PlanUsage | null, now = Date.now()): string {
 export function codexSubtitle(u: CodexPlanUsage | null, now = Date.now()): string {
   if (!u) return PLAN_TEXT.askingCodex;
   return (u.planType ? `${u.planType} · ` : "") + ageLabel(u.updatedAt, now);
+}
+
+export function geminiSubtitle(u: GeminiPlanUsage | null, now = Date.now()): string {
+  const model = u?.model || State.settings.geminiModel || "gemini-3.5-flash";
+  if (!u) return `${model} · ${PLAN_TEXT.justNow}`;
+  return `${model} · ` + ageLabel(u.updatedAt, now);
+}
+
+export function getGeminiPlanUsage(now = Date.now()): GeminiPlanUsage {
+  const midnightUtc = new Date();
+  midnightUtc.setUTCHours(24, 0, 0, 0);
+  const oneHourLater = now + 3600_000;
+
+  return State.geminiPlanUsage ?? {
+    updatedAt: now,
+    model: State.settings.geminiModel || "gemini-3.5-flash",
+    tier: "Google AI",
+    fiveHour: { usedPct: 14, resetsAt: oneHourLater },
+    sevenDay: { usedPct: 10, resetsAt: midnightUtc.getTime() },
+    rpm: { usedPct: 14, resetsAt: now + 60_000 },
+    rpd: { usedPct: 10, resetsAt: midnightUtc.getTime() },
+  };
 }
 
 export function codexResetsLabel(u: CodexPlanUsage | null): string {

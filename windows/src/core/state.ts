@@ -2,7 +2,7 @@
 
 import type { BotEmoteName, BotStateName, IslandMode, IslandViewName } from "./layout";
 import type { EyeShape } from "../mochi/engine";
-import type { CodexPlanUsage, PlanUsage } from "./plan";
+import type { CodexPlanUsage, GeminiPlanUsage, PlanUsage } from "./plan";
 
 export type AgentSource =
   | "claudeCode" | "geminiCli" | "antigravity" | "opencode" | "genericCli"
@@ -137,6 +137,8 @@ export interface Settings {
   planRelayInstalled: boolean;
   /** Show the Codex plan pill in the island header. */
   showCodexPlanInNotch: boolean;
+  /** Show the Gemini plan pill in the island header. */
+  showGeminiPlanInNotch: boolean;
   /** Model server addresses once connected; empty means not connected. */
   ollamaUrl?: string;
   lmstudioUrl?: string;
@@ -171,6 +173,7 @@ export const DEFAULT_SETTINGS: Settings = {
   showPlanInNotch: false,
   planRelayInstalled: false,
   showCodexPlanInNotch: false,
+  showGeminiPlanInNotch: false,
   ollamaUrl: "",
   lmstudioUrl: "",
   customUrl: "",
@@ -194,7 +197,6 @@ class AppState {
 
   isPinned = false;
   paused = false;
-
   uploadProgress = 0;
   uploadDuration = 2.4;
   fileDragOver = false;
@@ -206,11 +208,13 @@ class AppState {
   chatHistory: ChatMessage[] = [];
   pendingApproval: ApprovalInfo | null = null;
 
-  /** Plan usage numbers from Claude status line and Codex CLI. */
+  /** Plan usage numbers from Claude status line, Codex CLI and Gemini. */
   planUsage: PlanUsage | null = null;
   codexPlanUsage: CodexPlanUsage | null = null;
+  geminiPlanUsage: GeminiPlanUsage | null = null;
   showingPlanDetail = false;
   planDetailIsCodex = false;
+  planDetailKind: "claude" | "codex" | "gemini" = "claude";
 
   integrations: Record<string, IntegrationInfo> = {};
 
