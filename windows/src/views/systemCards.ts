@@ -198,3 +198,88 @@ export function renderLocatedFilesCard(query: string, files: LocatedFile[]): HTM
   card.append(head, list);
   return card;
 }
+
+// ── 4. Ghostwriter Card ───────────────────────────────────────────────────────
+
+export function renderGhostwriterCard(
+  appName: string,
+  windowTitle: string,
+  text: string,
+): HTMLElement {
+  const card = h("div", { class: "sys-agent-card success" });
+
+  const cleanApp = (appName || "App em foco").replace(/\.exe$/i, "");
+  const head = h(
+    "div",
+    { class: "sys-card-head" },
+    h("span", { class: "sys-icon", text: "✍️" }),
+    h("div", { class: "sys-title-group" },
+      h("span", { class: "sys-card-title", text: `Ghostwriter: ${cleanApp}` }),
+      h("span", { class: "sys-card-sub", text: windowTitle ? `Contexto: ${windowTitle.slice(0, 45)}...` : "Pronto para inserção direta" }),
+    ),
+  );
+
+  const textBox = h("div", { class: "sys-text-preview", text });
+
+  const btnInject = h("button", {
+    class: "primary sys-btn",
+    text: "✍️ Injetar no App Ativo",
+  });
+
+  const btnCopy = h("button", {
+    class: "sys-btn-ghost",
+    text: "📋 Copiar Texto",
+  });
+
+  btnInject.addEventListener("click", async () => {
+    btnInject.disabled = true;
+    btnInject.textContent = "Injetando...";
+    await Bridge.injectText(text);
+    Sound.play("finish");
+    btnInject.textContent = "✅ Injetado com sucesso!";
+    setTimeout(() => {
+      btnInject.textContent = "✍️ Injetar Novamente";
+      btnInject.disabled = false;
+    }, 2500);
+  });
+
+  btnCopy.addEventListener("click", () => {
+    void navigator.clipboard?.writeText(text);
+    Sound.play("peek");
+    btnCopy.textContent = "✅ Copiado!";
+    setTimeout(() => {
+      btnCopy.textContent = "📋 Copiar Texto";
+    }, 2000);
+  });
+
+  const actionsRow = h("div", { class: "sys-actions-row" }, btnInject, btnCopy);
+  card.append(head, textBox, actionsRow);
+  return card;
+}
+
+// ── 5. System Control Card ────────────────────────────────────────────────────
+
+export function renderSystemControlCard(action: string, message: string): HTMLElement {
+  const card = h("div", { class: "sys-agent-card" });
+
+  const icon = action.includes("volume")
+    ? (action.includes("mute") ? "🔇" : "🔊")
+    : action.includes("theme")
+    ? (action.includes("dark") ? "🌙" : "☀️")
+    : action.includes("bin")
+    ? "🗑️"
+    : "🔒";
+
+  const head = h(
+    "div",
+    { class: "sys-card-head" },
+    h("span", { class: "sys-icon", text: icon }),
+    h("div", { class: "sys-title-group" },
+      h("span", { class: "sys-card-title", text: "Comando do Windows Executado" }),
+      h("span", { class: "sys-card-sub", text: message }),
+    ),
+  );
+
+  card.append(head);
+  return card;
+}

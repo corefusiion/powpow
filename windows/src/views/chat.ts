@@ -8,7 +8,13 @@ import { t } from "../core/i18n";
 import { Sound } from "../core/sound";
 import { State, type ChatMessage } from "../core/state";
 import type { ViewActions, ViewHost } from "./views";
-import { renderDocCreatedCard, renderLocatedFilesCard, renderOrganizeCard } from "./systemCards";
+import {
+  renderDocCreatedCard,
+  renderGhostwriterCard,
+  renderLocatedFilesCard,
+  renderOrganizeCard,
+  renderSystemControlCard,
+} from "./systemCards";
 
 let nextId = 1;
 
@@ -190,6 +196,61 @@ export function buildPrompt(actions: ViewActions, onHeightChange: () => void): V
             return;
           }
         }
+      }
+
+      // ── System Agent: System Commander ───────────────────────────
+      let sysAction = "";
+      if (/(aumente|suba|mais|aumentar)\s*(o\s*)?volume/i.test(qLower)) sysAction = "volume_up";
+      else if (/(diminua|abaixe|menos|diminuir)\s*(o\s*)?volume/i.test(qLower)) sysAction = "volume_down";
+      else if (/mudo|silenciar|mutar/i.test(qLower)) sysAction = "volume_mute";
+      else if (/(ativar|coloque|modo)\s*escuro/i.test(qLower)) sysAction = "theme_dark";
+      else if (/(ativar|coloque|modo)\s*claro/i.test(qLower)) sysAction = "theme_light";
+      else if (/(esvazi(e|ar)|limp(e|ar))\s*(a\s*)?lixeira/i.test(qLower)) sysAction = "empty_recycle_bin";
+      else if (/(bloque(ie|ar)|trave|travar)\s*(o\s*)?(computador|tela|pc)/i.test(qLower)) sysAction = "lock_screen";
+
+      if (sysAction) {
+        const res = await Bridge.systemControl(sysAction);
+        if (res) {
+          const card = renderSystemControlCard(res.action, res.message);
+          State.chatHistory.push({
+            id: nextId++,
+            role: "assistant",
+            content: `⚙️ Comando executado com sucesso:`,
+            card,
+          });
+          State.stateOverride = null;
+          Sound.play("finish");
+          return;
+        }
+      }
+
+      // ── System Agent: Ghostwriter ─────────────────────────────────
+      const ghostMatch = qLower.match(/^(escreva|redija|responda|ajude a escrever|ghostwriter)\s+(um[a]?\s+)?(.+)$/i);
+      if (ghostMatch && ghostMatch[3]) {
+        const promptInstruction = ghostMatch[3].trim();
+        const winCtx = await Bridge.getActiveWindowContext();
+        const appLabel = winCtx?.appName || "Aplicativo ativo";
+        const titleLabel = winCtx?.title || "";
+
+        const enrichedPrompt = `Contexto do Sistema: O usuário está com o aplicativo '${appLabel}' (janela: '${titleLabel}') em foco. Escreva o seguinte texto para ser inserido ou colado diretamente nesse aplicativo:\n\n${promptInstruction}\n\nResponda diretamente com o texto final pronto para envio ou uso, sem introduções desnecessárias.`;
+
+        const reply = await Promise.race([
+          Bridge.chatSend(enrichedPrompt, context),
+          new Promise<never>((_, reject) =>
+            window.setTimeout(() => reject(new Error(t("Timed out talking to the model — try again."))), 60_000),
+          ),
+        ]);
+
+        const card = renderGhostwriterCard(appLabel, titleLabel, reply.text);
+        State.chatHistory.push({
+          id: nextId++,
+          role: "assistant",
+          content: `✍️ Rascunhei a resposta para você. Você pode injetá-la diretamente no ${appLabel.replace(/\.exe$/i, "")} ou copiar o texto:`,
+          card,
+        });
+        State.stateOverride = null;
+        Sound.play("finish");
+        return;
       }
 
       // Backend has its own 90s HTTP timeout, but a hung invoke must never

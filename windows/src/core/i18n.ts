@@ -433,6 +433,7 @@ const PT: Record<string, string> = {
   "Create document": "📄 Criar Documento",
   "Find files": "🔎 Localizar Arquivos",
   "Desktop Butler": "Desktop Butler",
+  "Ghostwriter": "✍️ Escrever no App Ativo",
 };
 
 export function t(key: string, vars?: Record<string, string | number>): string {

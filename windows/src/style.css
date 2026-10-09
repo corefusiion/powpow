@@ -2376,3 +2376,18 @@ p.said.bad {
 .sys-icon-btn:hover {
   background: rgba(255, 255, 255, 0.16);
 }
+
+.sys-text-preview {
+  max-height: 120px;
+  overflow-y: auto;
+  white-space: pre-wrap;
+  word-break: break-word;
+  background: rgba(0, 0, 0, 0.22);
+  padding: 8px 10px;
+  border-radius: 8px;
+  font-size: 11.5px;
+  line-height: 1.45;
+  color: var(--ink);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  user-select: text;
+}

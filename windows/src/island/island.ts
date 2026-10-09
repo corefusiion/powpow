@@ -571,6 +571,11 @@ export class Island {
         await this.sendPrompt("localizar arquivo boleto");
         break;
       }
+      case "ghostwriter": {
+        this.alert("prompt");
+        await this.sendPrompt("escreva uma resposta formal para a mensagem na tela");
+        break;
+      }
       case "pause":
         State.settings.wander = false;
         void Bridge.saveSettings(State.settings);

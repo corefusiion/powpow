@@ -177,6 +177,12 @@ export const Bridge = {
     call<void>("open_system_path", { path }),
   revealInExplorer: (path: string) =>
     call<void>("reveal_in_explorer", { path }),
+  systemControl: (action: string, value?: string) =>
+    call<SystemControlResult>("system_control", { action, value }),
+  injectText: (text: string) =>
+    call<void>("inject_text", { text }),
+  getActiveWindowContext: () =>
+    call<WindowContextInfo>("get_active_window_context"),
 };
 
 export interface ActiveWindowBounds {
@@ -317,4 +323,16 @@ export interface LocatedFile {
   size: number;
   modifiedSecsAgo: number;
   extension: string;
+}
+
+export interface SystemControlResult {
+  success: boolean;
+  action: string;
+  message: string;
+}
+
+export interface WindowContextInfo {
+  appName: string;
+  title: string;
+  isAvailable: boolean;
 }

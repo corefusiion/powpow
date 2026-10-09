@@ -9,6 +9,19 @@ use std::time::SystemTime;
 
 use serde::{Deserialize, Serialize};
 
+#[cfg(target_os = "windows")]
+use windows::Win32::UI::Input::KeyboardAndMouse::{
+    SendInput, INPUT, INPUT_0, INPUT_KEYBOARD, KEYBDINPUT, KEYEVENTF_KEYUP, VIRTUAL_KEY,
+};
+#[cfg(target_os = "windows")]
+use windows::Win32::UI::WindowsAndMessaging::{
+    GetForegroundWindow, GetWindowTextW, GetWindowThreadProcessId,
+};
+#[cfg(target_os = "windows")]
+use windows::Win32::System::Threading::{OpenProcess, PROCESS_QUERY_LIMITED_INFORMATION};
+#[cfg(target_os = "windows")]
+use windows::Win32::System::ProcessStatus::GetModuleBaseNameW;
+
 const CREATE_NO_WINDOW: u32 = 0x0800_0000;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -501,4 +514,256 @@ pub fn reveal_in_explorer(path: String) -> Result<(), String> {
     }
 
     Ok(())
+}
+
+// ── Phase 2: System Commander & Ghostwriter ───────────────────────────────────
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct SystemControlResult {
+    pub success: bool,
+    pub action: String,
+    pub message: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct WindowContextInfo {
+    pub app_name: String,
+    pub title: String,
+    pub is_available: bool,
+}
+
+#[cfg(target_os = "windows")]
+fn press_key(vk: VIRTUAL_KEY) {
+    let mk = |up: bool| INPUT {
+        r#type: INPUT_KEYBOARD,
+        Anonymous: INPUT_0 {
+            ki: KEYBDINPUT {
+                wVk: vk,
+                wScan: 0,
+                dwFlags: if up { KEYEVENTF_KEYUP } else { Default::default() },
+                time: 0,
+                dwExtraInfo: 0,
+            },
+        },
+    };
+    let mut inputs = [mk(false), mk(true)];
+    unsafe {
+        SendInput(&mut inputs, std::mem::size_of::<INPUT>() as i32);
+    }
+}
+
+#[cfg(target_os = "windows")]
+fn press_key_repeat(vk: VIRTUAL_KEY, count: usize) {
+    for _ in 0..count {
+        press_key(vk);
+        std::thread::sleep(std::time::Duration::from_millis(25));
+    }
+}
+
+pub fn system_control(action: String, _value: Option<String>) -> Result<SystemControlResult, String> {
+    match action.as_str() {
+        "volume_up" => {
+            #[cfg(target_os = "windows")]
+            {
+                let vk = VIRTUAL_KEY(0xAF); // VK_VOLUME_UP
+                press_key_repeat(vk, 5);
+            }
+            Ok(SystemControlResult {
+                success: true,
+                action,
+                message: "Volume aumentado.".into(),
+            })
+        }
+        "volume_down" => {
+            #[cfg(target_os = "windows")]
+            {
+                let vk = VIRTUAL_KEY(0xAE); // VK_VOLUME_DOWN
+                press_key_repeat(vk, 5);
+            }
+            Ok(SystemControlResult {
+                success: true,
+                action,
+                message: "Volume diminuído.".into(),
+            })
+        }
+        "volume_mute" => {
+            #[cfg(target_os = "windows")]
+            {
+                let vk = VIRTUAL_KEY(0xAD); // VK_VOLUME_MUTE
+                press_key(vk);
+            }
+            Ok(SystemControlResult {
+                success: true,
+                action,
+                message: "Mudo alternado.".into(),
+            })
+        }
+        "theme_dark" => {
+            #[cfg(target_os = "windows")]
+            {
+                use std::os::windows::process::CommandExt;
+                let _ = Command::new("powershell")
+                    .args([
+                        "-NoProfile",
+                        "-Command",
+                        "Set-ItemProperty -Path HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\Themes\\Personalize -Name AppsUseLightTheme -Value 0; Set-ItemProperty -Path HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\Themes\\Personalize -Name SystemUsesLightTheme -Value 0",
+                    ])
+                    .creation_flags(CREATE_NO_WINDOW)
+                    .status();
+            }
+            Ok(SystemControlResult {
+                success: true,
+                action,
+                message: "Modo escuro ativado no Windows.".into(),
+            })
+        }
+        "theme_light" => {
+            #[cfg(target_os = "windows")]
+            {
+                use std::os::windows::process::CommandExt;
+                let _ = Command::new("powershell")
+                    .args([
+                        "-NoProfile",
+                        "-Command",
+                        "Set-ItemProperty -Path HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\Themes\\Personalize -Name AppsUseLightTheme -Value 1; Set-ItemProperty -Path HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\Themes\\Personalize -Name SystemUsesLightTheme -Value 1",
+                    ])
+                    .creation_flags(CREATE_NO_WINDOW)
+                    .status();
+            }
+            Ok(SystemControlResult {
+                success: true,
+                action,
+                message: "Modo claro ativado no Windows.".into(),
+            })
+        }
+        "empty_recycle_bin" => {
+            #[cfg(target_os = "windows")]
+            {
+                use std::os::windows::process::CommandExt;
+                let _ = Command::new("powershell")
+                    .args([
+                        "-NoProfile",
+                        "-Command",
+                        "Clear-RecycleBin -Force -ErrorAction SilentlyContinue",
+                    ])
+                    .creation_flags(CREATE_NO_WINDOW)
+                    .status();
+            }
+            Ok(SystemControlResult {
+                success: true,
+                action,
+                message: "Lixeira do Windows esvaziada com sucesso.".into(),
+            })
+        }
+        "lock_screen" => {
+            #[cfg(target_os = "windows")]
+            {
+                use std::os::windows::process::CommandExt;
+                let _ = Command::new("rundll32.exe")
+                    .args(["user32.dll,LockWorkStation"])
+                    .creation_flags(CREATE_NO_WINDOW)
+                    .spawn();
+            }
+            Ok(SystemControlResult {
+                success: true,
+                action,
+                message: "Computador bloqueado.".into(),
+            })
+        }
+        _ => Err(format!("Ação do sistema desconhecida: {action}")),
+    }
+}
+
+pub fn inject_text(text: String) -> Result<(), String> {
+    if text.is_empty() {
+        return Ok(());
+    }
+
+    #[cfg(target_os = "windows")]
+    {
+        use std::io::Write;
+        use std::os::windows::process::CommandExt;
+
+        let mut child = Command::new("powershell")
+            .args(["-NoProfile", "-Command", "$input | Set-Clipboard"])
+            .stdin(std::process::Stdio::piped())
+            .creation_flags(CREATE_NO_WINDOW)
+            .spawn()
+            .map_err(|e| format!("Erro ao acessar área de transferência: {e}"))?;
+
+        if let Some(mut stdin) = child.stdin.take() {
+            let _ = stdin.write_all(text.as_bytes());
+        }
+        let _ = child.wait();
+
+        std::thread::sleep(std::time::Duration::from_millis(60));
+
+        let vk_ctrl = VIRTUAL_KEY(0x11);
+        let vk_v = VIRTUAL_KEY(0x56);
+        let mk = |vk: VIRTUAL_KEY, up: bool| INPUT {
+            r#type: INPUT_KEYBOARD,
+            Anonymous: INPUT_0 {
+                ki: KEYBDINPUT {
+                    wVk: vk,
+                    wScan: 0,
+                    dwFlags: if up { KEYEVENTF_KEYUP } else { Default::default() },
+                    time: 0,
+                    dwExtraInfo: 0,
+                },
+            },
+        };
+        let mut inputs = [
+            mk(vk_ctrl, false),
+            mk(vk_v, false),
+            mk(vk_v, true),
+            mk(vk_ctrl, true),
+        ];
+        unsafe {
+            SendInput(&mut inputs, std::mem::size_of::<INPUT>() as i32);
+        }
+    }
+
+    Ok(())
+}
+
+pub fn get_active_window_context() -> Result<WindowContextInfo, String> {
+    #[cfg(target_os = "windows")]
+    unsafe {
+        let hwnd = GetForegroundWindow();
+        if hwnd.is_invalid() {
+            return Ok(WindowContextInfo {
+                app_name: String::new(),
+                title: String::new(),
+                is_available: false,
+            });
+        }
+        let mut buf = [0u16; 512];
+        let len = GetWindowTextW(hwnd, &mut buf);
+        let title = String::from_utf16_lossy(&buf[..len as usize]).trim().to_string();
+
+        let mut pid = 0u32;
+        GetWindowThreadProcessId(hwnd, Some(&mut pid));
+        let mut app_name = String::new();
+        if pid > 0 {
+            if let Ok(handle) = OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, false, pid) {
+                let mut pbuf = [0u16; 260];
+                let plen = GetModuleBaseNameW(handle, None, &mut pbuf);
+                let _ = windows::Win32::Foundation::CloseHandle(handle);
+                app_name = String::from_utf16_lossy(&pbuf[..plen as usize]);
+            }
+        }
+        Ok(WindowContextInfo {
+            app_name,
+            title,
+            is_available: true,
+        })
+    }
+    #[cfg(not(target_os = "windows"))]
+    Ok(WindowContextInfo {
+        app_name: String::new(),
+        title: String::new(),
+        is_available: false,
+    })
 }

@@ -964,6 +964,11 @@ async function press(action: string) {
       showThought("🔎 O que você gostaria de encontrar?", "star");
       callPal(action);
       return;
+    case "ghostwriter":
+      setCard(false);
+      showThought("✍️ O que deseja escrever para o aplicativo ativo?", "star");
+      callPal(action);
+      return;
     case "pause":
     case "new-chat":
     case "settings":
@@ -1015,6 +1020,19 @@ async function main() {
 
   await onEvent<boolean>("pal-wander", (on) => setWander(on === true));
   await onEvent<string>("pal-state", (s) => applyState(s as BotStateName));
+  // Global summon hotkey: jumps to cursor, gives friendly greeting and opens quick command card!
+  await onEvent<null>("pal-summon", () => {
+    legs = [];
+    currentVelocity = 0;
+    idleUntil = performance.now() + 15000;
+    triggerEmote("star");
+    showThought("✨ Estou aqui! O que posso fazer por você?", "star");
+    setCard(true);
+    void Bridge.setPalFocus(true);
+    searchOpenBtn.hidden = true;
+    searchWrap.hidden = false;
+    searchInput.focus();
+  });
   // Pointer over the character or its card: stand still while it is there,
   // and close the card when it leaves (unless the user is typing in it).
   await onEvent<boolean>("pal-hover", (on) => setHovered(on === true));
