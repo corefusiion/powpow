@@ -45,15 +45,37 @@ O Powpow responde essas perguntas de relance. Um pequeno amigo animado encostado
 
 ## 03 · Conversa, arquivos e serviços
 
-**Chat na ilha.** Pergunte qualquer coisa ao seu agente direto da borda. Hoje os provedores são Anthropic (Claude) e Google Gemini. A chave fica no Keychain do macOS ou no Credential Manager do Windows: a interface só consegue perguntar se ela existe, nunca mostrá-la.
+**Chat na ilha.** Pergunte qualquer coisa ao seu agente direto da borda. Provedores com suporte nativo: Anthropic (Claude) e Google Gemini. Acompanhe o consumo e limites de cota diretamente nas pílulas de uso (**Plano Claude**, **Plano Codex** e **Plano Gemini**). As chaves de API vivem de forma segura no Keychain do macOS ou no Credential Manager do Windows.
 
-**Solte um arquivo.** Seu personagem vira uma caixa e engole o arquivo, pronto para você perguntar qualquer coisa sobre ele.
+**Solte um arquivo.** Seu personagem vira uma caixa e engole o arquivo, pronto para você fazer perguntas ou pedir análises sobre ele.
 
-**Anexe uma janela.** Arraste o companheiro sobre uma janela qualquer para acoplá-la como contexto do chat.
+**Anexe uma janela.** Arraste o companheiro sobre uma janela qualquer para acoplá-la como contexto da conversa.
 
-**Integrações.** Spotify, WhatsApp, Gmail, Outlook, Stripe, n8n, GitHub, Vercel, Resend, Notion e Cal.com — cada uma com sua pílula colorida, contador de não lidos ou estado atual e um cartão de detalhes. Todas opcionais; nenhuma é obrigatória para o resto funcionar.
+**Integrações.** Spotify (música em reprodução sem chaves), WhatsApp Web (leitor de mensagens não lidas), Gmail, Outlook, Stripe, n8n, GitHub, Vercel, Resend, Notion e Cal.com — cada uma com sua pílula colorida e cartão de detalhes.
 
-## 04 · O elenco
+## 04 · Agente do Computador (Ações de Sistema)
+
+O companheiro ganha superpoderes de um verdadeiro agente de sistema operacional no Windows, executando tarefas do dia a dia com segurança e APIs nativas:
+
+* **Desktop Butler (Organizador de Pastas):**
+  Analisa arquivos soltos na Área de Trabalho ou pasta Downloads e os organiza em subpastas inteligentes por categoria (Documentos, Imagens, Vídeos, Instaladores, Código, etc.). Exibe um cartão interativo com resumo e botão de **Desfazer** a qualquer momento.
+
+* **Criador de Documentos Interativo:**
+  Inicia a criação perguntando o que você precisa no chat da ilha, com botões para **Modelos Rápidos** (Planilha de Despesas & Finanças, Controle de Vendas & Estoque, Ata de Reunião, Documento de Notas) ou personalização livre por texto. Gera o arquivo no disco e abre imediatamente no aplicativo padrão do Windows.
+
+* **Localizador de Arquivos:**
+  Busca instantânea por termos, nomes ou extensões em Documentos, Downloads e Área de Trabalho, com filtros rápidos (PDFs, Planilhas, Documentos, Imagens) e botões diretos de **"Abrir"** e **"Ver na pasta"**.
+
+* **Ghostwriter (Escrever no App Ativo):**
+  Detecta a janela onde você estava trabalhando (Gmail no Chrome, Outlook, Word, Slack) e redige o e-mail ou texto ideal. Com 1 clique em **"Injetar no App Ativo"**, o Powpow restaura o foco da janela original (`SetForegroundWindow`) e insere o texto exatamente onde o cursor estiver posicionado.
+
+* **Comandante do Windows:**
+  Ajusta volume do sistema, ativa modo mudo, alterna tema Claro/Escuro diretamente no Registro do Windows, esvazia a lixeira e bloqueia o computador — tudo via comandos em linguagem natural ou atalhos.
+
+* **Segurança & Win32 Puro:**
+  Todas as ações de sistema usam chamadas diretas da API C do Windows (`user32`, `shell32`, Win32 Registry e Clipboard em memória Unicode). Zero processos ocultos de PowerShell e zero loops de teclado, eliminando falsos positivos de antivírus heurístico.
+
+## 05 · O elenco e Companheiro de Tela
 
 **Mochi**, o morador original da entalhadura, continua disponível. Ao lado dele: **Blu, Hop, Sunny, Lovi, Muse, Grok, Nova e Byte** — desenhados em SVG, com humores, olhos que acompanham o cursor e animações próprias para cada estado do agente.
 
@@ -71,13 +93,13 @@ O Powpow responde essas perguntas de relance. Um pequeno amigo animado encostado
 | arraste o personagem até uma janela | anexa a janela como contexto |
 | `Esc` | fecha a ilha |
 
-## 05 · Aparência e idioma
+## 06 · Aparência e idioma
 
 **Temas** — Onyx, Ice e Frost, mais a regra *Embasa*, que expande a ilha sobre fundos claros para o texto continuar legível.
 
 **Português e inglês** — a interface existe nas duas versões e troca ao vivo em *Configurações → Idioma*, sem reiniciar nada.
 
-## 06 · Privacidade
+## 07 · Privacidade
 
 - Sem telemetria e sem conta. O app não reporta nada a lugar nenhum.
 - Chaves de API e de integração vivem no Keychain (macOS) ou no Credential Manager (Windows) — nunca em disco, nunca na interface.
@@ -85,7 +107,7 @@ O Powpow responde essas perguntas de relance. Um pequeno amigo animado encostado
 - Sempre que os hooks do Claude Code precisam ser alterados, você recebe o diff exato, um backup datado e só então decide gravar. Nada é escrito sem o seu clique, e apenas as entradas do Powpow são tocadas.
 - O log de depuração fica na sua máquina (`%LOCALAPPDATA%\Powpow\powpow.log` no Windows) e não guarda comandos nem URLs completas.
 
-## 07 · Instalação
+## 08 · Instalação
 
 ### macOS
 
@@ -95,7 +117,7 @@ O Powpow responde essas perguntas de relance. Um pequeno amigo animado encostado
 
 ### Windows
 
-Não há entalhadura num PC, então a ilha escorrega do topo da tela. Baixe o instalador ou a versão portátil no artefato mais recente do [workflow do Windows](https://github.com/corefusiion/powpow/actions/workflows/windows.yml) — os artefatos ficam disponíveis por 3 dias — ou [compile você mesmo](#08--compilando-a-partir-do-código), são poucos minutos e não pede administrador. O detalhe de cada caminho está em [`windows/README.md`](windows/README.md), inclusive a nota sobre o falso positivo do Microsoft Defender no instalador ainda sem assinatura.
+Não há entalhadura num PC, então a ilha escorrega do topo da tela. Baixe o instalador ou a versão portátil no artefato mais recente do [workflow do Windows](https://github.com/corefusiion/powpow/actions/workflows/windows.yml) — os artefatos ficam disponíveis por 3 dias — ou [compile você mesmo](#09--compilando-a-partir-do-código), são poucos minutos e não pede administrador. O detalhe de cada caminho está em [`windows/README.md`](windows/README.md), inclusive a nota sobre o falso positivo do Microsoft Defender no instalador ainda sem assinatura.
 
 ### Pela linha de comando
 
@@ -122,7 +144,7 @@ npm run float        # o pal flutuante (Electron)
 npm run bridge       # só a ponte, sem janela
 ```
 
-## 08 · Compilando a partir do código
+## 09 · Compilando a partir do código
 
 **macOS** — requer macOS 15+, Xcode 16+ e [XcodeGen](https://github.com/yonaskolb/XcodeGen):
 
@@ -154,7 +176,7 @@ npm test               # suíte de testes (node --test)
 npm run bridge         # http://127.0.0.1:5175/dashboard
 ```
 
-## 09 · Configuração
+## 10 · Configuração
 
 Abra as Configurações pela barra de menu (macOS) ou pela bandeja (Windows):
 
@@ -168,7 +190,7 @@ Abra as Configurações pela barra de menu (macOS) ou pela bandeja (Windows):
 
 Se o Powpow não estiver no ar, os hooks saem imediatamente: **seu agente nunca fica esperando por ele.**
 
-## 10 · Como funciona
+## 11 · Como funciona
 
 **Windows** — um app [Tauri 2](https://tauri.app): a ilha é uma janela transparente, sempre por cima, que nunca rouba o foco. Os CLIs de agente conversam com o app por um relé minúsculo (`powpow-hook.exe`) via named pipe; os pedidos de permissão esperam o seu clique e só então respondem ao hook — com limite de 300 ms para chegar lá. As chaves ficam no Credential Manager.
 
@@ -194,7 +216,7 @@ O componente `<dot-pal>` também anda sozinho, sem build e sem dependências:
 
 Veja [`bridge/`](bridge/) e [`src/`](src/) para os adaptadores e a API completa do componente.
 
-## 11 · Estrutura do repositório
+## 12 · Estrutura do repositório
 
 | Onde | O que tem |
 |---|---|
@@ -209,18 +231,18 @@ Veja [`bridge/`](bridge/) e [`src/`](src/) para os adaptadores e a API completa 
 | [`test/`](test/), [`tests/`](tests/) | suíte Node (`node --test`) e testes Swift (geometria da tela, links seguros) |
 | [`scripts/`](scripts/), [`bin/`](bin/) | utilitários de desenvolvimento e a CLI `powpow` |
 
-## 12 · Estrada aberta
+## 13 · Estrada aberta
 
 - Ilha consumindo direto o feed SSE unificado da ponte
 - Mais provedores de chat — OpenRouter, OpenAI e outros
 - Mais personagens e mais personalização dentro da ilha
 - Mais agentes cobertos à medida que ganharem suporte a hooks
 
-## 13 · Contribuindo
+## 14 · Contribuindo
 
 Issues e pull requests são muito bem-vindos: novos adaptadores, personagens, sons, provedores e correções de bugs. O guia está em [CONTRIBUTING.md](CONTRIBUTING.md) — inclui os primeiros passos e boas contribuições para começar.
 
-## 14 · Licença
+## 15 · Licença
 
 - **Código:** [MIT](LICENSE) — use, faça fork, aprenda; é só manter os avisos de copyright.
 - **Ponte e componente web:** MIT — ver [LICENSE-dotpals](LICENSE-dotpals) e [THIRD_PARTY_NOTICES](THIRD_PARTY_NOTICES) para o código de terceiros adaptado.

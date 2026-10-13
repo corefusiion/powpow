@@ -46,12 +46,24 @@ few minutes and installs for the current user only — no admin prompt.
 | Click Mochi | It gets annoyed. Three times in a row and it goes dizzy |
 | Rest the pointer on Mochi for two seconds | Hearts |
 | Drag a file onto the island | Mochi turns into a box, swallows it, then offers to answer questions about it |
+| Drag companion onto any window | Captures a screenshot of that window and attaches it as chat context |
 | `Esc` | Closes the island |
 | Tray icon | Open, Settings…, Pause, Quit |
 
 Everything else happens on its own: a Claude Code permission request opens the
 island with **Deny / Allow**, a finished session shows what it did, and
 your integrations sit in the coloured pills next to Mochi.
+
+## System Agent (Windows OS Assistant)
+
+The desktop companion features direct system-level capabilities built on native Win32 APIs:
+
+- **Desktop Butler (Folder Organizer)**: Organizes scattered files on your Desktop or Downloads folder into tidy categories (Documents, Images, Videos, Installers, Code, Archives). Displays an interactive card with a summary and an immediate **Undo** button.
+- **Interactive Document Creator**: Clicking *Criar documento* starts an interactive chat flow in the island instead of generating an arbitrary file. Offers **Quick Template** chips (Expense Tracker, Sales & Stock, Meeting Notes, Scratchpad) or allows you to type your exact custom request. Automatically saves and opens the file in your default Windows app.
+- **File Locator**: Fast search across Documents, Downloads, and Desktop with instant filter chips (PDFs, Spreadsheets, Docs, Images) and one-click **"Open"** and **"Show in Folder"** buttons.
+- **Ghostwriter (Write in Active App)**: Intelligently detects the underlying application you were working on (Gmail in Chrome, Outlook, Word, Slack) before opening the island. Once your message is drafted, a single click on **"Inject into Active App"** restores foreground focus to the target window (`SetForegroundWindow`) and pastes the text directly at your cursor position via Unicode clipboard.
+- **System Commander**: Adjust master volume, mute audio, toggle Windows Dark/Light mode directly via the Registry, empty the Recycle Bin, and lock the workstation.
+- **Native & Antivirus Safe**: Every action uses direct Win32 C APIs (`user32`, `shell32`, Windows Registry, and global memory Unicode clipboard). Zero hidden PowerShell (`powershell.exe`) processes and zero keyboard loop hooks, completely eliminating heuristic antivirus false positives.
 
 ## Claude Code
 
@@ -226,3 +238,5 @@ problems. It stays on your machine.
   inbox pills over IMAP app passwords, island themes (Onyx/Ice/Frost) with the
   Embasa accent rule, and a **PT-BR interface** (header badge + Settings →
   Language, live switch).
+- **System Agent for Windows**: Desktop Butler with one-click undo, interactive Document Creator with quick templates, instant File Locator, Ghostwriter with active-window text injection, and native system controls (volume, theme, lock).
+
