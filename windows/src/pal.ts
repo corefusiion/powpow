@@ -958,7 +958,7 @@ async function press(action: string) {
       return;
     case "create-doc":
       setCard(false);
-      showThought("📄 Criando novo documento no sistema...", "happy");
+      showThought("📄 Que tipo de documento você gostaria de criar?", "happy");
       callPal(action);
       return;
     case "find-files":

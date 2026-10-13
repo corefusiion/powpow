@@ -582,17 +582,17 @@ export class Island {
       }
       case "create-doc": {
         this.alert("prompt");
-        await this.sendPrompt("criar planilha de despesas");
+        await this.views.get("prompt")?.promptInit?.("create-doc");
         break;
       }
       case "find-files": {
         this.alert("prompt");
-        await this.sendPrompt("localizar arquivo boleto");
+        await this.views.get("prompt")?.promptInit?.("find-files");
         break;
       }
       case "ghostwriter": {
         this.alert("prompt");
-        await this.sendPrompt("escreva uma resposta formal para a mensagem na tela");
+        await this.views.get("prompt")?.promptInit?.("ghostwriter");
         break;
       }
       case "pause":

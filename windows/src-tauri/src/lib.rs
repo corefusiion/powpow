@@ -602,13 +602,13 @@ fn system_control(action: String, value: Option<String>) -> Result<system_agent:
 }
 
 #[tauri::command]
-fn inject_text(text: String) -> Result<(), String> {
-    system_agent::inject_text(text)
+fn inject_text(app: AppHandle, text: String) -> Result<(), String> {
+    system_agent::inject_text(&app, text)
 }
 
 #[tauri::command]
-fn get_active_window_context() -> Result<system_agent::WindowContextInfo, String> {
-    system_agent::get_active_window_context()
+fn get_active_window_context(app: AppHandle) -> Result<system_agent::WindowContextInfo, String> {
+    system_agent::get_active_window_context(&app)
 }
 
 // ── Settings window ───────────────────────────────────────────────────────────

@@ -704,7 +704,7 @@ pub fn system_control(action: String, _value: Option<String>) -> Result<SystemCo
     }
 }
 
-pub fn inject_text(text: String) -> Result<(), String> {
+pub fn inject_text(app: &tauri::AppHandle, text: String) -> Result<(), String> {
     if text.is_empty() {
         return Ok(());
     }
@@ -714,6 +714,7 @@ pub fn inject_text(text: String) -> Result<(), String> {
         use windows::Win32::Foundation::HANDLE;
         use windows::Win32::System::DataExchange::{CloseClipboard, EmptyClipboard, OpenClipboard, SetClipboardData};
         use windows::Win32::System::Memory::{GlobalAlloc, GlobalLock, GlobalUnlock, GMEM_MOVEABLE};
+        use windows::Win32::UI::WindowsAndMessaging::SetForegroundWindow;
 
         if OpenClipboard(None).is_ok() {
             let _ = EmptyClipboard();
@@ -730,7 +731,12 @@ pub fn inject_text(text: String) -> Result<(), String> {
             let _ = CloseClipboard();
         }
 
-        std::thread::sleep(std::time::Duration::from_millis(60));
+        if let Some(target) = crate::capture::find_active_target(app) {
+            let _ = SetForegroundWindow(target);
+            std::thread::sleep(std::time::Duration::from_millis(150));
+        } else {
+            std::thread::sleep(std::time::Duration::from_millis(60));
+        }
 
         let vk_ctrl = VIRTUAL_KEY(0x11);
         let vk_v = VIRTUAL_KEY(0x56);
@@ -758,11 +764,14 @@ pub fn inject_text(text: String) -> Result<(), String> {
     Ok(())
 }
 
-pub fn get_active_window_context() -> Result<WindowContextInfo, String> {
+pub fn get_active_window_context(app: &tauri::AppHandle) -> Result<WindowContextInfo, String> {
     #[cfg(target_os = "windows")]
     unsafe {
-        let hwnd = GetForegroundWindow();
-        if hwnd.is_invalid() {
+        let hwnd = match crate::capture::find_active_target(app) {
+            Some(h) => h,
+            None => GetForegroundWindow(),
+        };
+        if hwnd.is_invalid() || hwnd.0.is_null() {
             return Ok(WindowContextInfo {
                 app_name: String::new(),
                 title: String::new(),

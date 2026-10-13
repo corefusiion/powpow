@@ -200,9 +200,8 @@ pub fn capture_screen() -> Result<AttachedWindow, String> {
     }
 }
 
-/// The window the user was working in before clicking the roaming pal. The pal
-/// is WS_EX_NOACTIVATE, so the click never changed what is in front.
-pub fn attach_active(app: &AppHandle) -> Result<AttachedWindow, String> {
+/// Finds the foreground non-Powpow user application window.
+pub fn find_active_target(app: &AppHandle) -> Option<HWND> {
     let mut target = unsafe { GetForegroundWindow() };
     let our_windows = ours(app);
 
@@ -239,6 +238,16 @@ pub fn attach_active(app: &AppHandle) -> Result<AttachedWindow, String> {
     }
 
     if !target.0.is_null() && !our_windows.contains(&target) && !unsafe { IsIconic(target) }.as_bool() {
+        Some(target)
+    } else {
+        None
+    }
+}
+
+/// The window the user was working in before clicking the roaming pal. The pal
+/// is WS_EX_NOACTIVATE, so the click never changed what is in front.
+pub fn attach_active(app: &AppHandle) -> Result<AttachedWindow, String> {
+    if let Some(target) = find_active_target(app) {
         if let Ok(attached) = save(target) {
             return Ok(attached);
         }
@@ -325,44 +334,7 @@ pub struct ActiveWindowBounds {
 /// Returns screen bounds and app info of the currently focused/active window
 /// without taking screenshots or doing heavy image processing.
 pub fn active_window_bounds(app: &AppHandle) -> Option<ActiveWindowBounds> {
-    let mut target = unsafe { GetForegroundWindow() };
-    let our_windows = ours(app);
-
-    if target.0.is_null() || our_windows.contains(&target) || unsafe { IsIconic(target) }.as_bool() {
-        let mut next = target;
-        while !next.0.is_null() {
-            let Ok(h) = (unsafe {
-                windows::Win32::UI::WindowsAndMessaging::GetWindow(
-                    next,
-                    windows::Win32::UI::WindowsAndMessaging::GW_HWNDNEXT,
-                )
-            }) else {
-                break;
-            };
-            if h.0.is_null() {
-                break;
-            }
-            next = h;
-            if !our_windows.contains(&next)
-                && !unsafe { IsIconic(next) }.as_bool()
-                && unsafe { windows::Win32::UI::WindowsAndMessaging::IsWindowVisible(next) }.as_bool()
-            {
-                let mut r = RECT::default();
-                if unsafe { GetWindowRect(next, &mut r) }.is_ok() {
-                    let w = r.right - r.left;
-                    let h = r.bottom - r.top;
-                    if w > 120 && h > 120 {
-                        target = next;
-                        break;
-                    }
-                }
-            }
-        }
-    }
-
-    if target.0.is_null() || our_windows.contains(&target) || unsafe { IsIconic(target) }.as_bool() {
-        return None;
-    }
+    let target = find_active_target(app)?;
 
     let mut rect = RECT::default();
     unsafe {

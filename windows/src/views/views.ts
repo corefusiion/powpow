@@ -47,6 +47,7 @@ export interface ViewHost {
   tick?(nowMs: number): void;
   /** Runs a prompt through the view as if typed - only the prompt view. */
   send?(query: string): Promise<void>;
+  promptInit?(mode: "create-doc" | "find-files" | "ghostwriter" | "organize-desktop"): Promise<void>;
 }
 
 // ── Shared pieces ─────────────────────────────────────────────────────────────

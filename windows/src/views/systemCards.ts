@@ -283,3 +283,111 @@ export function renderSystemControlCard(action: string, message: string): HTMLEl
   card.append(head);
   return card;
 }
+
+// ── 6. Interactive Prompt Cards (Initial Guidance) ───────────────────────────
+
+export function renderDocPromptCard(onSelect: (prompt: string) => void): HTMLElement {
+  const card = h("div", { class: "sys-agent-card" });
+
+  const head = h(
+    "div",
+    { class: "sys-card-head" },
+    h("span", { class: "sys-icon", text: "📄" }),
+    h("div", { class: "sys-title-group" },
+      h("span", { class: "sys-card-title", text: "Modelos Rápidos de Documentos" }),
+      h("span", { class: "sys-card-sub", text: "Escolha um modelo ou digite os detalhes no campo abaixo:" }),
+    ),
+  );
+
+  const grid = h("div", { class: "sys-prompt-grid" });
+
+  const options = [
+    { icon: "📊", label: "Planilha de Despesas", prompt: "crie uma planilha de despesas e controle financeiro" },
+    { icon: "📊", label: "Controle de Vendas", prompt: "crie uma planilha de controle de vendas e estoque" },
+    { icon: "📝", label: "Ata de Reunião", prompt: "crie uma ata de reunião estruturada com pauta e ações" },
+    { icon: "📄", label: "Documento de Notas", prompt: "crie um documento de notas com checklist de tarefas" },
+  ];
+
+  for (const opt of options) {
+    const btn = h("button", {
+      class: "sys-prompt-btn",
+      onclick: () => onSelect(opt.prompt),
+    }, h("span", { text: opt.icon }), h("span", { text: opt.label }));
+    grid.append(btn);
+  }
+
+  card.append(head, grid);
+  return card;
+}
+
+export function renderFindFilesPromptCard(onSelect: (prompt: string) => void): HTMLElement {
+  const card = h("div", { class: "sys-agent-card" });
+
+  const head = h(
+    "div",
+    { class: "sys-card-head" },
+    h("span", { class: "sys-icon", text: "🔎" }),
+    h("div", { class: "sys-title-group" },
+      h("span", { class: "sys-card-title", text: "Filtros Rápidos de Busca" }),
+      h("span", { class: "sys-card-sub", text: "Clique para filtrar ou digite o nome do arquivo abaixo:" }),
+    ),
+  );
+
+  const chips = h("div", { class: "sys-chips-row" });
+
+  const options = [
+    { label: "📑 PDFs recentes", prompt: "localizar .pdf" },
+    { label: "📊 Planilhas (.xlsx/.csv)", prompt: "localizar planilha" },
+    { label: "📝 Documentos (.docx/.txt)", prompt: "localizar documento" },
+    { label: "🖼️ Imagens", prompt: "localizar imagem" },
+  ];
+
+  for (const opt of options) {
+    const btn = h("button", {
+      class: "sys-chip-btn",
+      onclick: () => onSelect(opt.prompt),
+    }, h("span", { text: opt.label }));
+    chips.append(btn);
+  }
+
+  card.append(head, chips);
+  return card;
+}
+
+export function renderGhostwriterPromptCard(
+  appName: string,
+  onSelect: (prompt: string) => void,
+): HTMLElement {
+  const card = h("div", { class: "sys-agent-card" });
+  const cleanApp = (appName || "App em foco").replace(/\.exe$/i, "");
+
+  const head = h(
+    "div",
+    { class: "sys-card-head" },
+    h("span", { class: "sys-icon", text: "✍️" }),
+    h("div", { class: "sys-title-group" },
+      h("span", { class: "sys-card-title", text: `Escrever no ${cleanApp}` }),
+      h("span", { class: "sys-card-sub", text: "Escolha uma sugestão ou descreva o que deseja redigir:" }),
+    ),
+  );
+
+  const grid = h("div", { class: "sys-prompt-grid" });
+
+  const options = [
+    { icon: "📧", label: "E-mail Formal", prompt: "escreva um e-mail formal respondendo à mensagem" },
+    { icon: "🙏", label: "Agradecimento", prompt: "escreva uma resposta cordial de agradecimento e confirmação" },
+    { icon: "📋", label: "Resumo Executivo", prompt: "escreva um resumo executivo dos pontos principais" },
+    { icon: "✏️", label: "Tom Profissional", prompt: "redija uma resposta polida e profissional" },
+  ];
+
+  for (const opt of options) {
+    const btn = h("button", {
+      class: "sys-prompt-btn",
+      onclick: () => onSelect(opt.prompt),
+    }, h("span", { text: opt.icon }), h("span", { text: opt.label }));
+    grid.append(btn);
+  }
+
+  card.append(head, grid);
+  return card;
+}

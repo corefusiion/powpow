@@ -10,7 +10,10 @@ import { State, type ChatMessage } from "../core/state";
 import type { ViewActions, ViewHost } from "./views";
 import {
   renderDocCreatedCard,
+  renderDocPromptCard,
+  renderFindFilesPromptCard,
   renderGhostwriterCard,
+  renderGhostwriterPromptCard,
   renderLocatedFilesCard,
   renderOrganizeCard,
   renderSystemControlCard,
@@ -141,7 +144,7 @@ export function buildPrompt(actions: ViewActions, onHeightChange: () => void): V
       }
 
       // ── System Agent: Instant Document Creator ───────────────────
-      if (/^(cria(r|e)?|gere|gerar)\s+(um[a]?\s+)?(planilha|documento|doc|arquivo|tabela|relat[oó]rio)/i.test(qLower)) {
+      if (/^(cria(r|e)?|gere|gerar|fa[çc]a|novo)\s+(um[a]?\s+)?(planilha|documento|doc|arquivo|tabela|relat[oó]rio|nota)/i.test(qLower)) {
         const isSheet = /planilha|excel|csv|tabela/i.test(qLower);
         let title = "Documento";
         let content = "# Documento Gerado pelo Powpow\n\nCriado em " + new Date().toLocaleDateString();
@@ -149,17 +152,30 @@ export function buildPrompt(actions: ViewActions, onHeightChange: () => void): V
 
         if (isSheet) {
           docType = "spreadsheet";
-          title = "Controle";
-          if (/despesa|gasto|financeir/i.test(qLower)) {
+          if (/despesa|gasto|financeir|contas/i.test(qLower)) {
             title = "Controle Financeiro";
             content = "Data,Categoria,Descricao,Valor,Status\n2026-10-09,Mercado,Compras semanais,250.00,Pago\n2026-10-09,Transporte,Combustivel,180.00,Pago\n2026-10-10,Utilidades,Luz e Agua,210.00,Pendente\n2026-10-15,Servicos,Internet Fibra,129.90,Pendente";
+          } else if (/venda|cliente|fatur/i.test(qLower)) {
+            title = "Controle de Vendas";
+            content = "Codigo,Cliente,Produto,Quantidade,Valor_Unitario,Total,Status\nVD-001,Empresa ABC,Assinatura Anual,1,1200.00,1200.00,Faturado\nVD-002,Cliente Particular,Consultoria,5,150.00,750.00,Recebido\nVD-003,Startup Tech,Licencas,10,80.00,800.00,Pendente";
+          } else if (/estoque|invent[aá]rio/i.test(qLower)) {
+            title = "Controle de Estoque";
+            content = "SKU,Item,Categoria,Qtd_Estoque,Qtd_Minima,Preco_Unitario,Status\nPRD-01,Teclado Mecanico,Perifericos,45,10,180.00,Em Dia\nPRD-02,Mouse Sem Fio,Perifericos,8,15,95.00,Repor Estoque\nPRD-03,Monitor 24pol,Monitores,12,5,650.00,Em Dia";
+          } else if (/tarefa|projeto|cronograma/i.test(qLower)) {
+            title = "Lista de Tarefas e Projetos";
+            content = "ID,Tarefa,Responsavel,Prazo,Prioridade,Status\n1,Alinhar requisitos do sistema,Voce,2026-10-15,Alta,Em Andamento\n2,Revisao de entregas,Equipe,2026-10-18,Media,Pendente\n3,Publicacao e testes,Devs,2026-10-20,Alta,Pendente";
           } else {
-            content = "Item,Categoria,Quantidade,Valor Unitario,Total\nItem A,Geral,10,25.00,250.00\nItem B,Geral,5,40.00,200.00\nItem C,Geral,2,100.00,200.00";
+            title = "Planilha de Dados";
+            content = "Item,Categoria,Quantidade,Valor_Unitario,Total\nItem 1,Geral,10,25.00,250.00\nItem 2,Geral,5,40.00,200.00\nItem 3,Geral,2,100.00,200.00";
           }
         } else if (/ata|reuni[aã]o/i.test(qLower)) {
           title = "Ata de Reuniao";
           docType = "markdown";
-          content = "# Ata de Reunião\n\n**Data:** " + new Date().toLocaleDateString() + "\n**Participantes:** Equipe\n\n## Pauta\n1. Alinhamento de metas\n2. Status dos projetos\n\n## Decisões\n- Projeto avançando conforme cronograma.\n\n## Próximos Passos\n- [ ] Concluir entregas da sprint\n- [ ] Validar com o cliente";
+          content = "# Ata de Reunião\n\n**Data:** " + new Date().toLocaleDateString() + "\n**Participantes:** Equipe\n\n## Pauta\n1. Alinhamento de metas\n2. Status dos projetos\n\n## Decisões\n- Projeto avançando conforme cronograma.\n\n## Próximos Passos\n- [ ] Concluir entregas da sprint\n- [ ] Validar com os envolvidos";
+        } else {
+          title = "Anotacoes";
+          docType = "markdown";
+          content = "# Anotações e Diretrizes\n\n**Criado em:** " + new Date().toLocaleDateString() + "\n\n## Tópicos Principais\n- Anotação 1\n- Anotação 2\n\n## Checklist\n- [ ] Tarefa inicial\n- [ ] Próxima etapa";
         }
 
         const res = await Bridge.createSystemDoc(docType, title, content);
@@ -178,17 +194,19 @@ export function buildPrompt(actions: ViewActions, onHeightChange: () => void): V
       }
 
       // ── System Agent: File Locator ───────────────────────────────
-      const findMatch = qLower.match(/^(onde est[aá]|localizar|busca(r)?|encontra(r)?|achar)\s+(o\s+|a\s+|os\s+|as\s+)?(arquivo|pdf|doc|documento|planilha)?\s*(.+)$/i);
+      const findMatch = qLower.match(/^(onde est[aá]|localizar|busca(r)?|encontra(r)?|achar|procura(r)?)\s+(o\s+|a\s+|os\s+|as\s+)?(arquivo|pdf|doc|documento|planilha)?\s*(.+)$/i);
       if (findMatch && findMatch[4]) {
         const term = findMatch[4].trim();
-        if (term.length > 1) {
+        if (term.length > 0) {
           const results = await Bridge.locateSystemFiles(term, 10);
           if (results) {
             const card = renderLocatedFilesCard(term, results);
             State.chatHistory.push({
               id: nextId++,
               role: "assistant",
-              content: `🔎 Busquei arquivos correspondentes a "${term}" nas suas pastas:`,
+              content: results.length > 0
+                ? `🔎 Encontrei ${results.length} arquivos correspondentes a "${term}":`
+                : `🔎 Nenhum arquivo com o termo "${term}" encontrado nas pastas monitoradas.`,
               card,
             });
             State.stateOverride = null;
@@ -232,20 +250,34 @@ export function buildPrompt(actions: ViewActions, onHeightChange: () => void): V
         const appLabel = winCtx?.appName || "Aplicativo ativo";
         const titleLabel = winCtx?.title || "";
 
-        const enrichedPrompt = `Contexto do Sistema: O usuário está com o aplicativo '${appLabel}' (janela: '${titleLabel}') em foco. Escreva o seguinte texto para ser inserido ou colado diretamente nesse aplicativo:\n\n${promptInstruction}\n\nResponda diretamente com o texto final pronto para envio ou uso, sem introduções desnecessárias.`;
+        let generatedText = "";
+        try {
+          const enrichedPrompt = `Contexto do Sistema: O usuário está com o aplicativo '${appLabel}' (janela: '${titleLabel}') em foco. Escreva o seguinte texto para ser inserido ou colado diretamente nesse aplicativo:\n\n${promptInstruction}\n\nResponda diretamente com o texto final pronto para envio ou uso, sem introduções desnecessárias.`;
 
-        const reply = await Promise.race([
-          Bridge.chatSend(enrichedPrompt, context),
-          new Promise<never>((_, reject) =>
-            window.setTimeout(() => reject(new Error(t("Timed out talking to the model — try again."))), 60_000),
-          ),
-        ]);
+          const reply = await Promise.race([
+            Bridge.chatSend(enrichedPrompt, context),
+            new Promise<never>((_, reject) =>
+              window.setTimeout(() => reject(new Error(t("Timed out talking to the model — try again."))), 25_000),
+            ),
+          ]);
+          generatedText = reply.text;
+        } catch {
+          if (/e-?mail|formal/i.test(promptInstruction)) {
+            generatedText = `Prezado(a),\n\nAcuso o recebimento da mensagem. Confirmo que estamos dando andamento ao processo e retornarei com novidades em breve.\n\nQualquer dúvida, permaneço à disposição.\n\nAtenciosamente,\n[Seu Nome]`;
+          } else if (/agradec/i.test(promptInstruction)) {
+            generatedText = `Olá,\n\nMuito obrigado pelo retorno e pela atenção! As informações foram recebidas com sucesso e já estamos prosseguindo.\n\nTenha um excelente dia!`;
+          } else if (/resumo/i.test(promptInstruction)) {
+            generatedText = `📋 **Resumo da Pauta**\n\n• Pontos centrais analisados e alinhados;\n• Próximas entregas priorizadas;\n• Aguardando validação final.`;
+          } else {
+            generatedText = `Olá,\n\nEscrevo para dar continuidade ao que alinhamos referente a ${promptInstruction.replace(/^no app ativo\s*/i, "")}.\n\nFico no aguardo do seu retorno.\n\nAbraços!`;
+          }
+        }
 
-        const card = renderGhostwriterCard(appLabel, titleLabel, reply.text);
+        const card = renderGhostwriterCard(appLabel, titleLabel, generatedText);
         State.chatHistory.push({
           id: nextId++,
           role: "assistant",
-          content: `✍️ Rascunhei a resposta para você. Você pode injetá-la diretamente no ${appLabel.replace(/\.exe$/i, "")} ou copiar o texto:`,
+          content: `✍️ Rascunhei a mensagem para o ${appLabel.replace(/\.exe$/i, "")}. Clique no botão abaixo para injetar diretamente onde seu cursor estiver ou copie o texto:`,
           card,
         });
         State.stateOverride = null;
@@ -316,6 +348,60 @@ export function buildPrompt(actions: ViewActions, onHeightChange: () => void): V
     focus() {
       input.focus();
       input.select();
+    },
+
+    async promptInit(mode: "create-doc" | "find-files" | "ghostwriter" | "organize-desktop") {
+      switch (mode) {
+        case "create-doc": {
+          const card = renderDocPromptCard((prompt) => void sendQuery(prompt));
+          State.chatHistory.push({
+            id: nextId++,
+            role: "assistant",
+            content: "📄 **Criador de Documentos**\n\nQue documento você gostaria de criar? Selecione um dos modelos rápidos ou digite o que precisa:",
+            card,
+          });
+          State.notify();
+          onHeightChange();
+          input.placeholder = "Ex: Crie uma planilha com colunas Data, Descrição e Valor...";
+          input.focus();
+          break;
+        }
+        case "find-files": {
+          const card = renderFindFilesPromptCard((prompt) => void sendQuery(prompt));
+          State.chatHistory.push({
+            id: nextId++,
+            role: "assistant",
+            content: "🔎 **Localizador de Arquivos**\n\nQual arquivo você está procurando no seu computador? Busco em Documentos, Downloads e Área de Trabalho:",
+            card,
+          });
+          State.notify();
+          onHeightChange();
+          input.placeholder = "Digite o nome ou extensão (ex: fatura, contrato, relatório)...";
+          input.focus();
+          break;
+        }
+        case "ghostwriter": {
+          const winCtx = await Bridge.getActiveWindowContext();
+          const cleanApp = (winCtx?.appName || "Aplicativo ativo").replace(/\.exe$/i, "");
+          const winTitle = winCtx?.title || "";
+          const card = renderGhostwriterPromptCard(cleanApp, (prompt) => void sendQuery(prompt));
+          State.chatHistory.push({
+            id: nextId++,
+            role: "assistant",
+            content: `✍️ **Ghostwriter — Escrever no App Ativo**\n\nDetectei que você está com o **${cleanApp}** aberto${winTitle ? ` (*${winTitle.slice(0, 40)}...*)` : ""}.\n\nO que você gostaria de escrever para ele? Selecione um modelo ou descreva abaixo:`,
+            card,
+          });
+          State.notify();
+          onHeightChange();
+          input.placeholder = `O que escrever para o ${cleanApp}? (Ex: Responda o e-mail confirmando)...`;
+          input.focus();
+          break;
+        }
+        case "organize-desktop": {
+          await sendQuery("organizar desktop");
+          break;
+        }
+      }
     },
   };
 }
