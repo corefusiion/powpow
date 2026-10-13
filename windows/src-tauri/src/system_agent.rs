@@ -688,7 +688,11 @@ pub fn system_control(action: String, _value: Option<String>) -> Result<SystemCo
         "lock_screen" => {
             #[cfg(target_os = "windows")]
             unsafe {
-                let _ = windows::Win32::UI::WindowsAndMessaging::LockWorkStation();
+                #[link(name = "user32")]
+                extern "system" {
+                    fn LockWorkStation() -> i32;
+                }
+                let _ = LockWorkStation();
             }
             Ok(SystemControlResult {
                 success: true,
