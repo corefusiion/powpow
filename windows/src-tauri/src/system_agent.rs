@@ -383,7 +383,6 @@ pub fn locate_system_files(query: String, max_results: Option<usize>) -> Result<
     ];
 
     let mut results = Vec::new();
-    let now = SystemTime::now();
 
     for root in roots {
         if !root.exists() {
@@ -606,19 +605,25 @@ pub fn system_control(action: String, _value: Option<String>) -> Result<SystemCo
                 use windows::Win32::System::Registry::{
                     RegCloseKey, RegOpenKeyExW, RegSetValueExW, HKEY_CURRENT_USER, KEY_SET_VALUE, REG_DWORD,
                 };
-                use windows::core::w;
+                use windows::core::PCWSTR;
                 let mut hkey = windows::Win32::System::Registry::HKEY::default();
-                if RegOpenKeyExW(
+                let subkey: Vec<u16> = "Software\\Microsoft\\Windows\\CurrentVersion\\Themes\\Personalize\0"
+                    .encode_utf16()
+                    .collect();
+                let err = RegOpenKeyExW(
                     HKEY_CURRENT_USER,
-                    w!("Software\\Microsoft\\Windows\\CurrentVersion\\Themes\\Personalize"),
-                    0,
+                    PCWSTR(subkey.as_ptr()),
+                    None,
                     KEY_SET_VALUE,
                     &mut hkey,
-                ).is_ok() {
+                );
+                if err.0 == 0 {
                     let val: u32 = 0;
                     let bytes = val.to_ne_bytes();
-                    let _ = RegSetValueExW(hkey, w!("AppsUseLightTheme"), 0, REG_DWORD, Some(&bytes));
-                    let _ = RegSetValueExW(hkey, w!("SystemUsesLightTheme"), 0, REG_DWORD, Some(&bytes));
+                    let app_key: Vec<u16> = "AppsUseLightTheme\0".encode_utf16().collect();
+                    let sys_key: Vec<u16> = "SystemUsesLightTheme\0".encode_utf16().collect();
+                    let _ = RegSetValueExW(hkey, PCWSTR(app_key.as_ptr()), None, REG_DWORD, Some(&bytes));
+                    let _ = RegSetValueExW(hkey, PCWSTR(sys_key.as_ptr()), None, REG_DWORD, Some(&bytes));
                     let _ = RegCloseKey(hkey);
                 }
             }
@@ -634,19 +639,25 @@ pub fn system_control(action: String, _value: Option<String>) -> Result<SystemCo
                 use windows::Win32::System::Registry::{
                     RegCloseKey, RegOpenKeyExW, RegSetValueExW, HKEY_CURRENT_USER, KEY_SET_VALUE, REG_DWORD,
                 };
-                use windows::core::w;
+                use windows::core::PCWSTR;
                 let mut hkey = windows::Win32::System::Registry::HKEY::default();
-                if RegOpenKeyExW(
+                let subkey: Vec<u16> = "Software\\Microsoft\\Windows\\CurrentVersion\\Themes\\Personalize\0"
+                    .encode_utf16()
+                    .collect();
+                let err = RegOpenKeyExW(
                     HKEY_CURRENT_USER,
-                    w!("Software\\Microsoft\\Windows\\CurrentVersion\\Themes\\Personalize"),
-                    0,
+                    PCWSTR(subkey.as_ptr()),
+                    None,
                     KEY_SET_VALUE,
                     &mut hkey,
-                ).is_ok() {
+                );
+                if err.0 == 0 {
                     let val: u32 = 1;
                     let bytes = val.to_ne_bytes();
-                    let _ = RegSetValueExW(hkey, w!("AppsUseLightTheme"), 0, REG_DWORD, Some(&bytes));
-                    let _ = RegSetValueExW(hkey, w!("SystemUsesLightTheme"), 0, REG_DWORD, Some(&bytes));
+                    let app_key: Vec<u16> = "AppsUseLightTheme\0".encode_utf16().collect();
+                    let sys_key: Vec<u16> = "SystemUsesLightTheme\0".encode_utf16().collect();
+                    let _ = RegSetValueExW(hkey, PCWSTR(app_key.as_ptr()), None, REG_DWORD, Some(&bytes));
+                    let _ = RegSetValueExW(hkey, PCWSTR(sys_key.as_ptr()), None, REG_DWORD, Some(&bytes));
                     let _ = RegCloseKey(hkey);
                 }
             }
@@ -662,7 +673,11 @@ pub fn system_control(action: String, _value: Option<String>) -> Result<SystemCo
                 use windows::Win32::UI::Shell::{
                     SHEmptyRecycleBinW, SHERB_NOCONFIRMATION, SHERB_NOPROGRESSUI, SHERB_NOSOUND,
                 };
-                let _ = SHEmptyRecycleBinW(None, None, SHERB_NOCONFIRMATION | SHERB_NOPROGRESSUI | SHERB_NOSOUND);
+                let _ = SHEmptyRecycleBinW(
+                    None,
+                    windows::core::PCWSTR(std::ptr::null()),
+                    SHERB_NOCONFIRMATION | SHERB_NOPROGRESSUI | SHERB_NOSOUND,
+                );
             }
             Ok(SystemControlResult {
                 success: true,
@@ -705,7 +720,7 @@ pub fn inject_text(text: String) -> Result<(), String> {
                 if !ptr.is_null() {
                     std::ptr::copy_nonoverlapping(utf16.as_ptr() as *const u8, ptr as *mut u8, byte_len);
                     let _ = GlobalUnlock(hmem);
-                    let _ = SetClipboardData(13, HANDLE(hmem.0)); // 13 = CF_UNICODETEXT
+                    let _ = SetClipboardData(13, Some(HANDLE(hmem.0 as _))); // 13 = CF_UNICODETEXT
                 }
             }
             let _ = CloseClipboard();
@@ -727,13 +742,13 @@ pub fn inject_text(text: String) -> Result<(), String> {
                 },
             },
         };
-        let mut inputs = [
+        let inputs = [
             mk(vk_ctrl, false),
             mk(vk_v, false),
             mk(vk_v, true),
             mk(vk_ctrl, true),
         ];
-        SendInput(&mut inputs, std::mem::size_of::<INPUT>() as i32);
+        SendInput(&inputs, std::mem::size_of::<INPUT>() as i32);
     }
 
     Ok(())
