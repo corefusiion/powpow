@@ -182,8 +182,12 @@ export const Bridge = {
     call<void>("reveal_in_explorer", { path }),
   systemControl: (action: string, value?: string) =>
     call<SystemControlResult>("system_control", { action, value }),
-  injectText: (text: string) =>
-    call<void>("inject_text", { text }),
+  injectText: (text: string, targetField?: string, subject?: string) =>
+    call<void>("inject_text", {
+      text,
+      targetField: targetField ?? null,
+      subject: subject ?? null,
+    }),
   getActiveWindowContext: () =>
     call<WindowContextInfo>("get_active_window_context"),
 };

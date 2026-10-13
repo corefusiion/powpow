@@ -11,7 +11,7 @@ use serde::{Deserialize, Serialize};
 
 #[cfg(target_os = "windows")]
 use windows::Win32::UI::Input::KeyboardAndMouse::{
-    SendInput, INPUT, INPUT_0, INPUT_KEYBOARD, KEYBDINPUT, KEYEVENTF_KEYUP, VIRTUAL_KEY,
+    SendInput, INPUT, INPUT_0, INPUT_KEYBOARD, KEYBDINPUT, KEYEVENTF_KEYUP, VIRTUAL_KEY, VK_TAB,
 };
 #[cfg(target_os = "windows")]
 use windows::Win32::UI::WindowsAndMessaging::{
@@ -704,7 +704,38 @@ pub fn system_control(action: String, _value: Option<String>) -> Result<SystemCo
     }
 }
 
-pub fn inject_text(app: &tauri::AppHandle, text: String) -> Result<(), String> {
+#[cfg(target_os = "windows")]
+fn detect_focused_element_name() -> Option<String> {
+    use windows::Win32::System::Com::{CoCreateInstance, CoInitializeEx, CLSCTX_INPROC_SERVER, COINIT_MULTITHREADED};
+    use windows::Win32::UI::Accessibility::{CUIAutomation, IUIAutomation};
+
+    unsafe {
+        let _ = CoInitializeEx(None, COINIT_MULTITHREADED);
+        let uia: IUIAutomation = CoCreateInstance(&CUIAutomation, None, CLSCTX_INPROC_SERVER).ok()?;
+        let elem = uia.GetFocusedElement().ok()?;
+        let mut name = String::new();
+        if let Ok(bstr) = elem.CurrentName() {
+            name = String::from_utf16_lossy(&bstr).trim().to_string();
+        }
+        if name.is_empty() {
+            if let Ok(bstr) = elem.CurrentAriaRole() {
+                name = String::from_utf16_lossy(&bstr).trim().to_string();
+            }
+        }
+        if !name.is_empty() {
+            Some(name)
+        } else {
+            None
+        }
+    }
+}
+
+pub fn inject_text(
+    app: &tauri::AppHandle,
+    text: String,
+    target_field: Option<String>,
+    subject: Option<String>,
+) -> Result<(), String> {
     if text.is_empty() {
         return Ok(());
     }
@@ -716,31 +747,25 @@ pub fn inject_text(app: &tauri::AppHandle, text: String) -> Result<(), String> {
         use windows::Win32::System::Memory::{GlobalAlloc, GlobalLock, GlobalUnlock, GMEM_MOVEABLE};
         use windows::Win32::UI::WindowsAndMessaging::SetForegroundWindow;
 
-        if OpenClipboard(None).is_ok() {
-            let _ = EmptyClipboard();
-            let utf16: Vec<u16> = text.encode_utf16().chain(std::iter::once(0)).collect();
-            let byte_len = utf16.len() * 2;
-            if let Ok(hmem) = GlobalAlloc(GMEM_MOVEABLE, byte_len) {
-                let ptr = GlobalLock(hmem);
-                if !ptr.is_null() {
-                    std::ptr::copy_nonoverlapping(utf16.as_ptr() as *const u8, ptr as *mut u8, byte_len);
-                    let _ = GlobalUnlock(hmem);
-                    let _ = SetClipboardData(13, Some(HANDLE(hmem.0 as _))); // 13 = CF_UNICODETEXT
-                }
-            }
-            let _ = CloseClipboard();
-        }
-
+        let mut win_title = String::new();
         if let Some(target) = crate::capture::find_active_target(app) {
+            let mut buf = [0u16; 512];
+            let len = GetWindowTextW(target, &mut buf);
+            win_title = String::from_utf16_lossy(&buf[..len as usize]).to_lowercase();
+
             let _ = SetForegroundWindow(target);
-            std::thread::sleep(std::time::Duration::from_millis(150));
+            std::thread::sleep(std::time::Duration::from_millis(180));
         } else {
             std::thread::sleep(std::time::Duration::from_millis(60));
         }
 
-        let vk_ctrl = VIRTUAL_KEY(0x11);
-        let vk_v = VIRTUAL_KEY(0x56);
-        let mk = |vk: VIRTUAL_KEY, up: bool| INPUT {
+        let is_email_app = win_title.contains("gmail")
+            || win_title.contains("outlook")
+            || win_title.contains("e-mail")
+            || win_title.contains("email")
+            || win_title.contains("mail");
+
+        let mk_key = |vk: VIRTUAL_KEY, up: bool| INPUT {
             r#type: INPUT_KEYBOARD,
             Anonymous: INPUT_0 {
                 ki: KEYBDINPUT {
@@ -752,13 +777,119 @@ pub fn inject_text(app: &tauri::AppHandle, text: String) -> Result<(), String> {
                 },
             },
         };
-        let inputs = [
-            mk(vk_ctrl, false),
-            mk(vk_v, false),
-            mk(vk_v, true),
-            mk(vk_ctrl, true),
-        ];
-        SendInput(&inputs, std::mem::size_of::<INPUT>() as i32);
+
+        let press_tab = || {
+            let inputs = [mk_key(VK_TAB, false), mk_key(VK_TAB, true)];
+            SendInput(&inputs, std::mem::size_of::<INPUT>() as i32);
+            std::thread::sleep(std::time::Duration::from_millis(80));
+        };
+
+        let press_ctrl_v = || {
+            let vk_ctrl = VIRTUAL_KEY(0x11);
+            let vk_v = VIRTUAL_KEY(0x56);
+            let inputs = [
+                mk_key(vk_ctrl, false),
+                mk_key(vk_v, false),
+                mk_key(vk_v, true),
+                mk_key(vk_ctrl, true),
+            ];
+            SendInput(&inputs, std::mem::size_of::<INPUT>() as i32);
+            std::thread::sleep(std::time::Duration::from_millis(60));
+        };
+
+        let set_clipboard = |content: &str| {
+            if OpenClipboard(None).is_ok() {
+                let _ = EmptyClipboard();
+                let utf16: Vec<u16> = content.encode_utf16().chain(std::iter::once(0)).collect();
+                let byte_len = utf16.len() * 2;
+                if let Ok(hmem) = GlobalAlloc(GMEM_MOVEABLE, byte_len) {
+                    let ptr = GlobalLock(hmem);
+                    if !ptr.is_null() {
+                        std::ptr::copy_nonoverlapping(utf16.as_ptr() as *const u8, ptr as *mut u8, byte_len);
+                        let _ = GlobalUnlock(hmem);
+                        let _ = SetClipboardData(13, Some(HANDLE(hmem.0 as _))); // 13 = CF_UNICODETEXT
+                    }
+                }
+                let _ = CloseClipboard();
+            }
+        };
+
+        // Query focused element via UI Automation
+        let focused_raw = detect_focused_element_name().unwrap_or_default().to_lowercase();
+
+        let in_recipient_field = focused_raw.contains("para")
+            || focused_raw.contains("destinat")
+            || focused_raw.contains("to")
+            || focused_raw.contains("recipient");
+
+        let in_subject_field = focused_raw.contains("assunto") || focused_raw.contains("subject");
+
+        let in_body_field = focused_raw.contains("corpo")
+            || focused_raw.contains("body")
+            || focused_raw.contains("mensagem")
+            || focused_raw.contains("texto da mensagem");
+
+        match target_field.as_deref() {
+            Some("email_all") => {
+                let subj = subject.as_deref().unwrap_or("");
+                if in_recipient_field || (is_email_app && !in_subject_field && !in_body_field) {
+                    // Navigate from "Para" to "Assunto"
+                    press_tab();
+                    if !subj.is_empty() {
+                        set_clipboard(subj);
+                        press_ctrl_v();
+                    }
+                    // Navigate from "Assunto" to "Corpo da mensagem"
+                    press_tab();
+                    set_clipboard(&text);
+                    press_ctrl_v();
+                } else if in_subject_field {
+                    if !subj.is_empty() {
+                        set_clipboard(subj);
+                        press_ctrl_v();
+                    }
+                    press_tab();
+                    set_clipboard(&text);
+                    press_ctrl_v();
+                } else {
+                    set_clipboard(&text);
+                    press_ctrl_v();
+                }
+            }
+            Some("email_body") => {
+                if in_body_field {
+                    // Cursor is already in the body!
+                    set_clipboard(&text);
+                    press_ctrl_v();
+                } else if in_subject_field {
+                    // In Subject -> 1 Tab to Body
+                    press_tab();
+                    set_clipboard(&text);
+                    press_ctrl_v();
+                } else if in_recipient_field || is_email_app {
+                    // In "Para" field (or standard Compose window):
+                    // Tab 1: Para -> Assunto
+                    press_tab();
+                    // Tab 2: Assunto -> Corpo da mensagem
+                    press_tab();
+                    // Now focused in the body ("mais abaixo no corpo do email")!
+                    set_clipboard(&text);
+                    press_ctrl_v();
+                } else {
+                    set_clipboard(&text);
+                    press_ctrl_v();
+                }
+            }
+            _ => {
+                set_clipboard(&text);
+                press_ctrl_v();
+            }
+        }
+    }
+
+    #[cfg(not(target_os = "windows"))]
+    {
+        let _ = (app, text, target_field, subject);
     }
 
     Ok(())

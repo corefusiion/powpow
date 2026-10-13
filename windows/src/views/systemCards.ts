@@ -209,51 +209,166 @@ export function renderGhostwriterCard(
   const card = h("div", { class: "sys-agent-card success" });
 
   const cleanApp = (appName || "App em foco").replace(/\.exe$/i, "");
+  const isEmailContext =
+    /gmail|outlook|mail/i.test(appName) ||
+    /gmail|outlook|mail/i.test(windowTitle) ||
+    /^\s*(?:assunto|subject)\s*:/i.test(text);
+
+  let subject = "";
+  let body = text.trim();
+
+  const emailMatch = text.match(/^\s*(?:assunto|subject)\s*:\s*([^\r\n]+)\r?\n+([\s\S]*)$/i);
+  if (emailMatch) {
+    subject = emailMatch[1].trim();
+    body = emailMatch[2].trim();
+  }
+
+  const icon = isEmailContext ? "📧" : "✍️";
+  const subText = isEmailContext
+    ? "Mapeamento inteligente: corpo e assunto detectados"
+    : (windowTitle ? `Contexto: ${windowTitle.slice(0, 45)}...` : "Pronto para inserção direta");
+
   const head = h(
     "div",
     { class: "sys-card-head" },
-    h("span", { class: "sys-icon", text: "✍️" }),
+    h("span", { class: "sys-icon", text: icon }),
     h("div", { class: "sys-title-group" },
       h("span", { class: "sys-card-title", text: `Ghostwriter: ${cleanApp}` }),
-      h("span", { class: "sys-card-sub", text: windowTitle ? `Contexto: ${windowTitle.slice(0, 45)}...` : "Pronto para inserção direta" }),
+      h("span", { class: "sys-card-sub", text: subText }),
     ),
   );
 
-  const textBox = h("div", { class: "sys-text-preview", text });
+  const elementsToAppend: HTMLElement[] = [head];
 
-  const btnInject = h("button", {
-    class: "primary sys-btn",
-    text: "✍️ Injetar no App Ativo",
-  });
+  if (isEmailContext) {
+    if (subject) {
+      const subjectBox = h(
+        "div",
+        { class: "sys-email-subject-box" },
+        h("span", { class: "sys-email-tag", text: "Assunto:" }),
+        h("span", { class: "sys-email-subject-text", text: subject }),
+        h("button", {
+          class: "sys-btn-mini",
+          title: "Copiar Assunto",
+          onclick: (e) => {
+            e.stopPropagation();
+            void navigator.clipboard?.writeText(subject);
+            Sound.play("peek");
+          },
+          text: "📋 Copiar",
+        }),
+      );
+      elementsToAppend.push(subjectBox);
+    }
 
-  const btnCopy = h("button", {
-    class: "sys-btn-ghost",
-    text: "📋 Copiar Texto",
-  });
+    elementsToAppend.push(h("div", { class: "sys-email-body-label", text: "📄 Corpo do E-mail:" }));
+    const textBox = h("div", { class: "sys-text-preview", text: body });
+    elementsToAppend.push(textBox);
 
-  btnInject.addEventListener("click", async () => {
-    btnInject.disabled = true;
-    btnInject.textContent = "Injetando...";
-    await Bridge.injectText(text);
-    Sound.play("finish");
-    btnInject.textContent = "✅ Injetado com sucesso!";
-    setTimeout(() => {
-      btnInject.textContent = "✍️ Injetar Novamente";
-      btnInject.disabled = false;
-    }, 2500);
-  });
+    const btnInjectBody = h("button", {
+      class: "primary sys-btn",
+      text: "📧 Injetar no Corpo do E-mail",
+    });
+    btnInjectBody.addEventListener("click", async () => {
+      btnInjectBody.disabled = true;
+      btnInjectBody.textContent = "Injetando no corpo...";
+      await Bridge.injectText(body, "email_body");
+      Sound.play("finish");
+      btnInjectBody.textContent = "✅ Injetado no corpo com sucesso!";
+      setTimeout(() => {
+        btnInjectBody.textContent = "📧 Injetar no Corpo do E-mail";
+        btnInjectBody.disabled = false;
+      }, 2500);
+    });
 
-  btnCopy.addEventListener("click", () => {
-    void navigator.clipboard?.writeText(text);
-    Sound.play("peek");
-    btnCopy.textContent = "✅ Copiado!";
-    setTimeout(() => {
-      btnCopy.textContent = "📋 Copiar Texto";
-    }, 2000);
-  });
+    const actionsRow = h("div", { class: "sys-actions-row" }, btnInjectBody);
 
-  const actionsRow = h("div", { class: "sys-actions-row" }, btnInject, btnCopy);
-  card.append(head, textBox, actionsRow);
+    if (subject) {
+      const btnInjectAll = h("button", {
+        class: "sys-btn",
+        text: "📝 Preencher Assunto e Corpo",
+      });
+      btnInjectAll.addEventListener("click", async () => {
+        btnInjectAll.disabled = true;
+        btnInjectAll.textContent = "Preenchendo campos...";
+        await Bridge.injectText(body, "email_all", subject);
+        Sound.play("finish");
+        btnInjectAll.textContent = "✅ Assunto e corpo preenchidos!";
+        setTimeout(() => {
+          btnInjectAll.textContent = "📝 Preencher Assunto e Corpo";
+          btnInjectAll.disabled = false;
+        }, 2500);
+      });
+      actionsRow.append(btnInjectAll);
+    }
+
+    const btnInjectCursor = h("button", {
+      class: "sys-btn-ghost",
+      text: "✍️ No Cursor Atual",
+    });
+    btnInjectCursor.addEventListener("click", async () => {
+      btnInjectCursor.disabled = true;
+      btnInjectCursor.textContent = "Injetando...";
+      await Bridge.injectText(body, "cursor");
+      Sound.play("finish");
+      btnInjectCursor.textContent = "✅ Injetado!";
+      setTimeout(() => {
+        btnInjectCursor.textContent = "✍️ No Cursor Atual";
+        btnInjectCursor.disabled = false;
+      }, 2500);
+    });
+
+    const btnCopy = h("button", {
+      class: "sys-btn-ghost",
+      text: "📋 Copiar Texto",
+    });
+    btnCopy.addEventListener("click", () => {
+      void navigator.clipboard?.writeText(text);
+      Sound.play("peek");
+      btnCopy.textContent = "✅ Copiado!";
+      setTimeout(() => {
+        btnCopy.textContent = "📋 Copiar Texto";
+      }, 2000);
+    });
+
+    actionsRow.append(btnInjectCursor, btnCopy);
+    elementsToAppend.push(actionsRow);
+  } else {
+    const textBox = h("div", { class: "sys-text-preview", text });
+    const btnInject = h("button", {
+      class: "primary sys-btn",
+      text: "✍️ Injetar no App Ativo",
+    });
+    btnInject.addEventListener("click", async () => {
+      btnInject.disabled = true;
+      btnInject.textContent = "Injetando...";
+      await Bridge.injectText(text, "cursor");
+      Sound.play("finish");
+      btnInject.textContent = "✅ Injetado com sucesso!";
+      setTimeout(() => {
+        btnInject.textContent = "✍️ Injetar Novamente";
+        btnInject.disabled = false;
+      }, 2500);
+    });
+
+    const btnCopy = h("button", {
+      class: "sys-btn-ghost",
+      text: "📋 Copiar Texto",
+    });
+    btnCopy.addEventListener("click", () => {
+      void navigator.clipboard?.writeText(text);
+      Sound.play("peek");
+      btnCopy.textContent = "✅ Copiado!";
+      setTimeout(() => {
+        btnCopy.textContent = "📋 Copiar Texto";
+      }, 2000);
+    });
+
+    const actionsRow = h("div", { class: "sys-actions-row" }, btnInject, btnCopy);
+    elementsToAppend.push(textBox, actionsRow);
+  }
+
+  card.append(...elementsToAppend);
   return card;
 }
 

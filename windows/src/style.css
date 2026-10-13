@@ -2469,3 +2469,54 @@ p.said.bad {
   border-color: rgba(255, 255, 255, 0.3);
 }
 
+.sys-email-subject-box {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 8px;
+}
+
+.sys-email-tag {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--accent, #a78bfa);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.sys-email-subject-text {
+  flex: 1;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--ink);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.sys-btn-mini {
+  padding: 3px 8px;
+  font-size: 10px;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  color: var(--ink);
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.sys-btn-mini:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.sys-email-body-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--dim, #a1a1aa);
+  margin-top: 2px;
+  margin-bottom: -4px;
+}
+

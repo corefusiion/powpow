@@ -602,8 +602,13 @@ fn system_control(action: String, value: Option<String>) -> Result<system_agent:
 }
 
 #[tauri::command]
-fn inject_text(app: AppHandle, text: String) -> Result<(), String> {
-    system_agent::inject_text(&app, text)
+fn inject_text(
+    app: AppHandle,
+    text: String,
+    target_field: Option<String>,
+    subject: Option<String>,
+) -> Result<(), String> {
+    system_agent::inject_text(&app, text, target_field, subject)
 }
 
 #[tauri::command]

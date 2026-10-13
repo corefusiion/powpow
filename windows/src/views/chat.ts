@@ -252,7 +252,16 @@ export function buildPrompt(actions: ViewActions, onHeightChange: () => void): V
 
         let generatedText = "";
         try {
-          const enrichedPrompt = `Contexto do Sistema: O usuário está com o aplicativo '${appLabel}' (janela: '${titleLabel}') em foco. Escreva o seguinte texto para ser inserido ou colado diretamente nesse aplicativo:\n\n${promptInstruction}\n\nResponda diretamente com o texto final pronto para envio ou uso, sem introduções desnecessárias.`;
+          const isEmailContext =
+            /e-?mail|mensagem|formal|agradec/i.test(promptInstruction) ||
+            /gmail|outlook|mail/i.test(appLabel) ||
+            /gmail|outlook|mail/i.test(titleLabel);
+
+          const emailDirective = isEmailContext
+            ? ` IMPORTANTE: Se for um e-mail, inicie com "Assunto: <título conciso>", dê um salto de linha e redija o corpo do e-mail.`
+            : "";
+
+          const enrichedPrompt = `Contexto do Sistema: O usuário está com o aplicativo '${appLabel}' (janela: '${titleLabel}') em foco. Escreva o seguinte texto para ser inserido ou colado diretamente nesse aplicativo:\n\n${promptInstruction}\n\nResponda diretamente com o texto final pronto para envio ou uso, sem introduções desnecessárias.${emailDirective}`;
 
           const reply = await Promise.race([
             Bridge.chatSend(enrichedPrompt, context),
@@ -263,9 +272,9 @@ export function buildPrompt(actions: ViewActions, onHeightChange: () => void): V
           generatedText = reply.text;
         } catch {
           if (/e-?mail|formal/i.test(promptInstruction)) {
-            generatedText = `Prezado(a),\n\nAcuso o recebimento da mensagem. Confirmo que estamos dando andamento ao processo e retornarei com novidades em breve.\n\nQualquer dúvida, permaneço à disposição.\n\nAtenciosamente,\n[Seu Nome]`;
+            generatedText = `Assunto: Confirmação de recebimento e andamento\n\nPrezado(a),\n\nAcuso o recebimento da mensagem. Confirmo que estamos dando andamento ao processo e retornarei com novidades em breve.\n\nQualquer dúvida, permaneço à disposição.\n\nAtenciosamente,\n[Seu Nome]`;
           } else if (/agradec/i.test(promptInstruction)) {
-            generatedText = `Olá,\n\nMuito obrigado pelo retorno e pela atenção! As informações foram recebidas com sucesso e já estamos prosseguindo.\n\nTenha um excelente dia!`;
+            generatedText = `Assunto: Agradecimento e confirmação\n\nOlá,\n\nMuito obrigado pelo retorno e pela atenção! As informações foram recebidas com sucesso e já estamos prosseguindo.\n\nTenha um excelente dia!`;
           } else if (/resumo/i.test(promptInstruction)) {
             generatedText = `📋 **Resumo da Pauta**\n\n• Pontos centrais analisados e alinhados;\n• Próximas entregas priorizadas;\n• Aguardando validação final.`;
           } else {
@@ -273,11 +282,18 @@ export function buildPrompt(actions: ViewActions, onHeightChange: () => void): V
           }
         }
 
+        const isEmail =
+          /gmail|outlook|mail/i.test(appLabel) ||
+          /gmail|outlook|mail/i.test(titleLabel) ||
+          /^\s*(?:assunto|subject)\s*:/i.test(generatedText);
+
         const card = renderGhostwriterCard(appLabel, titleLabel, generatedText);
         State.chatHistory.push({
           id: nextId++,
           role: "assistant",
-          content: `✍️ Rascunhei a mensagem para o ${appLabel.replace(/\.exe$/i, "")}. Clique no botão abaixo para injetar diretamente onde seu cursor estiver ou copie o texto:`,
+          content: isEmail
+            ? `📧 Rascunhei o e-mail para o **${appLabel.replace(/\.exe$/i, "")}**. Você pode injetar diretamente no corpo da mensagem, preencher assunto + corpo ou colar no cursor:`
+            : `✍️ Rascunhei a mensagem para o **${appLabel.replace(/\.exe$/i, "")}**. Clique no botão abaixo para injetar diretamente onde seu cursor estiver ou copie o texto:`,
           card,
         });
         State.stateOverride = null;
