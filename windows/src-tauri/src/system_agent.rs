@@ -602,16 +602,25 @@ pub fn system_control(action: String, _value: Option<String>) -> Result<SystemCo
         }
         "theme_dark" => {
             #[cfg(target_os = "windows")]
-            {
-                use std::os::windows::process::CommandExt;
-                let _ = Command::new("powershell")
-                    .args([
-                        "-NoProfile",
-                        "-Command",
-                        "Set-ItemProperty -Path HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\Themes\\Personalize -Name AppsUseLightTheme -Value 0; Set-ItemProperty -Path HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\Themes\\Personalize -Name SystemUsesLightTheme -Value 0",
-                    ])
-                    .creation_flags(CREATE_NO_WINDOW)
-                    .status();
+            unsafe {
+                use windows::Win32::System::Registry::{
+                    RegCloseKey, RegOpenKeyExW, RegSetValueExW, HKEY_CURRENT_USER, KEY_SET_VALUE, REG_DWORD,
+                };
+                use windows::core::w;
+                let mut hkey = windows::Win32::System::Registry::HKEY::default();
+                if RegOpenKeyExW(
+                    HKEY_CURRENT_USER,
+                    w!("Software\\Microsoft\\Windows\\CurrentVersion\\Themes\\Personalize"),
+                    0,
+                    KEY_SET_VALUE,
+                    &mut hkey,
+                ).is_ok() {
+                    let val: u32 = 0;
+                    let bytes = val.to_ne_bytes();
+                    let _ = RegSetValueExW(hkey, w!("AppsUseLightTheme"), 0, REG_DWORD, Some(&bytes));
+                    let _ = RegSetValueExW(hkey, w!("SystemUsesLightTheme"), 0, REG_DWORD, Some(&bytes));
+                    let _ = RegCloseKey(hkey);
+                }
             }
             Ok(SystemControlResult {
                 success: true,
@@ -621,16 +630,25 @@ pub fn system_control(action: String, _value: Option<String>) -> Result<SystemCo
         }
         "theme_light" => {
             #[cfg(target_os = "windows")]
-            {
-                use std::os::windows::process::CommandExt;
-                let _ = Command::new("powershell")
-                    .args([
-                        "-NoProfile",
-                        "-Command",
-                        "Set-ItemProperty -Path HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\Themes\\Personalize -Name AppsUseLightTheme -Value 1; Set-ItemProperty -Path HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\Themes\\Personalize -Name SystemUsesLightTheme -Value 1",
-                    ])
-                    .creation_flags(CREATE_NO_WINDOW)
-                    .status();
+            unsafe {
+                use windows::Win32::System::Registry::{
+                    RegCloseKey, RegOpenKeyExW, RegSetValueExW, HKEY_CURRENT_USER, KEY_SET_VALUE, REG_DWORD,
+                };
+                use windows::core::w;
+                let mut hkey = windows::Win32::System::Registry::HKEY::default();
+                if RegOpenKeyExW(
+                    HKEY_CURRENT_USER,
+                    w!("Software\\Microsoft\\Windows\\CurrentVersion\\Themes\\Personalize"),
+                    0,
+                    KEY_SET_VALUE,
+                    &mut hkey,
+                ).is_ok() {
+                    let val: u32 = 1;
+                    let bytes = val.to_ne_bytes();
+                    let _ = RegSetValueExW(hkey, w!("AppsUseLightTheme"), 0, REG_DWORD, Some(&bytes));
+                    let _ = RegSetValueExW(hkey, w!("SystemUsesLightTheme"), 0, REG_DWORD, Some(&bytes));
+                    let _ = RegCloseKey(hkey);
+                }
             }
             Ok(SystemControlResult {
                 success: true,
@@ -640,16 +658,11 @@ pub fn system_control(action: String, _value: Option<String>) -> Result<SystemCo
         }
         "empty_recycle_bin" => {
             #[cfg(target_os = "windows")]
-            {
-                use std::os::windows::process::CommandExt;
-                let _ = Command::new("powershell")
-                    .args([
-                        "-NoProfile",
-                        "-Command",
-                        "Clear-RecycleBin -Force -ErrorAction SilentlyContinue",
-                    ])
-                    .creation_flags(CREATE_NO_WINDOW)
-                    .status();
+            unsafe {
+                use windows::Win32::UI::Shell::{
+                    SHEmptyRecycleBinW, SHERB_NOCONFIRMATION, SHERB_NOPROGRESSUI, SHERB_NOSOUND,
+                };
+                let _ = SHEmptyRecycleBinW(None, None, SHERB_NOCONFIRMATION | SHERB_NOPROGRESSUI | SHERB_NOSOUND);
             }
             Ok(SystemControlResult {
                 success: true,
@@ -659,12 +672,8 @@ pub fn system_control(action: String, _value: Option<String>) -> Result<SystemCo
         }
         "lock_screen" => {
             #[cfg(target_os = "windows")]
-            {
-                use std::os::windows::process::CommandExt;
-                let _ = Command::new("rundll32.exe")
-                    .args(["user32.dll,LockWorkStation"])
-                    .creation_flags(CREATE_NO_WINDOW)
-                    .spawn();
+            unsafe {
+                let _ = windows::Win32::UI::WindowsAndMessaging::LockWorkStation();
             }
             Ok(SystemControlResult {
                 success: true,
@@ -682,21 +691,25 @@ pub fn inject_text(text: String) -> Result<(), String> {
     }
 
     #[cfg(target_os = "windows")]
-    {
-        use std::io::Write;
-        use std::os::windows::process::CommandExt;
+    unsafe {
+        use windows::Win32::Foundation::HANDLE;
+        use windows::Win32::System::DataExchange::{CloseClipboard, EmptyClipboard, OpenClipboard, SetClipboardData};
+        use windows::Win32::System::Memory::{GlobalAlloc, GlobalLock, GlobalUnlock, GMEM_MOVEABLE};
 
-        let mut child = Command::new("powershell")
-            .args(["-NoProfile", "-Command", "$input | Set-Clipboard"])
-            .stdin(std::process::Stdio::piped())
-            .creation_flags(CREATE_NO_WINDOW)
-            .spawn()
-            .map_err(|e| format!("Erro ao acessar área de transferência: {e}"))?;
-
-        if let Some(mut stdin) = child.stdin.take() {
-            let _ = stdin.write_all(text.as_bytes());
+        if OpenClipboard(None).is_ok() {
+            let _ = EmptyClipboard();
+            let utf16: Vec<u16> = text.encode_utf16().chain(std::iter::once(0)).collect();
+            let byte_len = utf16.len() * 2;
+            if let Ok(hmem) = GlobalAlloc(GMEM_MOVEABLE, byte_len) {
+                let ptr = GlobalLock(hmem);
+                if !ptr.is_null() {
+                    std::ptr::copy_nonoverlapping(utf16.as_ptr() as *const u8, ptr as *mut u8, byte_len);
+                    let _ = GlobalUnlock(hmem);
+                    let _ = SetClipboardData(13, HANDLE(hmem.0)); // 13 = CF_UNICODETEXT
+                }
+            }
+            let _ = CloseClipboard();
         }
-        let _ = child.wait();
 
         std::thread::sleep(std::time::Duration::from_millis(60));
 
@@ -720,9 +733,7 @@ pub fn inject_text(text: String) -> Result<(), String> {
             mk(vk_v, true),
             mk(vk_ctrl, true),
         ];
-        unsafe {
-            SendInput(&mut inputs, std::mem::size_of::<INPUT>() as i32);
-        }
+        SendInput(&mut inputs, std::mem::size_of::<INPUT>() as i32);
     }
 
     Ok(())

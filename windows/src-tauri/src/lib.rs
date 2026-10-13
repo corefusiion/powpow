@@ -790,46 +790,7 @@ pub fn run() {
             pipe::start(handle.clone());
             integrations::start(handle.clone());
 
-            // Global hotkeys:
-            // - Ctrl+8: toggle wander
-            // - Ctrl+Shift+Space: summon companion to current mouse cursor position!
-            let hotkey_app = handle.clone();
-            std::thread::spawn(move || {
-                use windows::Win32::UI::Input::KeyboardAndMouse::{GetAsyncKeyState, VK_CONTROL, VK_SHIFT, VK_SPACE};
-                use windows::Win32::UI::WindowsAndMessaging::GetCursorPos;
-                use windows::Win32::Foundation::POINT;
-                let mut was_eight_pressed = false;
-                let mut was_summon_pressed = false;
-                loop {
-                    std::thread::sleep(std::time::Duration::from_millis(35));
-                    let ctrl = unsafe { (GetAsyncKeyState(VK_CONTROL.0 as i32) as u16 & 0x8000) != 0 };
-                    let eight = unsafe { (GetAsyncKeyState(0x38) as u16 & 0x8000) != 0 };
-                    let shift = unsafe { (GetAsyncKeyState(VK_SHIFT.0 as i32) as u16 & 0x8000) != 0 };
-                    let space = unsafe { (GetAsyncKeyState(VK_SPACE.0 as i32) as u16 & 0x8000) != 0 };
 
-                    let eight_pressed = ctrl && eight;
-                    if eight_pressed && !was_eight_pressed {
-                        was_eight_pressed = true;
-                        let current = PAL_WANDER.load(Ordering::Relaxed);
-                        let next = !current;
-                        set_pal_wander(hotkey_app.clone(), next);
-                        let _ = hotkey_app.emit_to(island::WINDOW_LABEL, "pal-wander-toggle", next);
-                    } else if !eight_pressed && was_eight_pressed {
-                        was_eight_pressed = false;
-                    }
-
-                    let summon_pressed = ctrl && shift && space;
-                    if summon_pressed && !was_summon_pressed {
-                        was_summon_pressed = true;
-                        let mut pt = POINT::default();
-                        unsafe { let _ = GetCursorPos(&mut pt); };
-                        move_pal(hotkey_app.clone(), (pt.x - 70) as f64, (pt.y - 120) as f64);
-                        let _ = hotkey_app.emit_to("pal", "pal-summon", ());
-                    } else if !summon_pressed && was_summon_pressed {
-                        was_summon_pressed = false;
-                    }
-                }
-            });
 
             Ok(())
         })
