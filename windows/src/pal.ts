@@ -7,7 +7,7 @@
 // card of actions — the island owns what each one means.
 
 import "./pal.css";
-import { Bridge, IS_TAURI, onEvent, type BootInfo } from "./core/bridge";
+import { Bridge, IS_TAURI, onEvent, type BootInfo, type IntegrationUpdate } from "./core/bridge";
 import { PANEL_H, PANEL_W, type BotStateName, type BotEmoteName } from "./core/layout";
 import { PAL_EMOTE, PAL_STATE } from "./island/palState";
 import { BotEngine } from "./mochi/engine";
@@ -94,7 +94,12 @@ function triggerEmote(emote: CompanionEmote) {
   if (pal) void pal.emote(palEmote);
 }
 
-function showThought(text: string, emote: CompanionEmote = "happy") {
+function showThought(
+  text: string,
+  emote: CompanionEmote = "happy",
+  durationMs = 4800,
+  isAlert = false,
+) {
   if (!thoughtEl || !thoughtTextEl) return;
   if (thoughtTimer != null) {
     window.clearTimeout(thoughtTimer);
@@ -102,13 +107,343 @@ function showThought(text: string, emote: CompanionEmote = "happy") {
   }
   thoughtTextEl.textContent = text;
   thoughtEl.hidden = false;
+  if (isAlert) {
+    thoughtEl.classList.add("is-alert");
+  } else {
+    thoughtEl.classList.remove("is-alert");
+  }
   Sound.play("peek");
   triggerEmote(emote);
 
   thoughtTimer = window.setTimeout(() => {
-    if (thoughtEl) thoughtEl.hidden = true;
+    if (thoughtEl) {
+      thoughtEl.hidden = true;
+      thoughtEl.classList.remove("is-alert");
+    }
     thoughtTimer = null;
-  }, 4800);
+  }, durationMs);
+}
+
+function triggerLivelyReaction(options?: {
+  emote?: CompanionEmote;
+  pose?: "celebrate" | "wave" | "think" | "observe";
+  sound?: "greet" | "finish" | "proud" | "pop";
+}) {
+  const emotes: CompanionEmote[] = ["star", "happy", "surprised", "love", "wink"];
+  const chosenEmote = options?.emote ?? emotes[Math.floor(Math.random() * emotes.length)];
+
+  const sounds = ["greet", "finish", "proud", "pop"] as const;
+  const chosenSound = options?.sound ?? sounds[Math.floor(Math.random() * sounds.length)];
+
+  triggerEmote(chosenEmote);
+  Sound.play(chosenSound);
+
+  if (pal) {
+    const poses: Array<"celebrate" | "wave" | "observe"> = ["celebrate", "wave", "observe"];
+    const chosenPose = options?.pose ?? poses[Math.floor(Math.random() * poses.length)];
+    pal.setPose(chosenPose);
+    window.setTimeout(() => {
+      if (pal && (pal.pose === "celebrate" || pal.pose === "wave")) {
+        pal.setPose("idle");
+      }
+    }, 4500);
+  }
+
+  root.classList.remove("pal-alert-bounce");
+  void root.offsetWidth;
+  root.classList.add("pal-alert-bounce");
+  window.setTimeout(() => {
+    root.classList.remove("pal-alert-bounce");
+  }, 900);
+}
+
+async function hasConnectedAiKey(): Promise<boolean> {
+  try {
+    const hasGemini = (await Bridge.secretPresent("gemini-api-key")) ?? false;
+    const hasClaude = (await Bridge.secretPresent("anthropic-api-key")) ?? false;
+    return hasGemini || hasClaude;
+  } catch {
+    return false;
+  }
+}
+
+async function generateAiEmailAlert(from: string, subject: string, snippet: string): Promise<string> {
+  const hasKey = await hasConnectedAiKey();
+  if (hasKey) {
+    try {
+      const prompt = `Você é o mascote assistente do usuário na área de trabalho. Acabou de chegar um e-mail:
+- Remetente: ${from}
+- Assunto: ${subject}
+${snippet ? `- Trecho: ${snippet}` : ""}
+
+Crie uma fala curta e descontraída avisando o usuário sobre o e-mail e dando um resumo rápido do assunto em português.
+Regras:
+- Máximo de 12 a 15 palavras.
+- Seja amigável, ágil e expressivo.
+- Sem introduções como "Aqui está", sem aspas.
+- Termine com um emoji temático.`;
+
+      const res = await Promise.race([
+        Bridge.chatSend(prompt, null),
+        new Promise<never>((_, reject) => setTimeout(() => reject(new Error("timeout")), 3800)),
+      ]);
+      if (res?.text) {
+        let clean = res.text.replace(/^["'«“]|["'»”]$/g, "").replace(/\n.*/s, "").trim();
+        if (clean.length > 95) clean = clean.slice(0, 92) + "…";
+        if (clean) return clean;
+      }
+    } catch {
+      // Fallback below
+    }
+  }
+
+  const shortFrom = from.split(" ")[0].slice(0, 16);
+  const shortSubj = subject.length > 32 ? subject.slice(0, 30) + "…" : subject;
+  const fallbacks = [
+    `Eii! Chegou e-mail de ${shortFrom}: "${shortSubj}"! 📬`,
+    `Novo e-mail na área! ${shortFrom} mandou: "${shortSubj}" ✉️`,
+    `Opa! Mensagem nova de ${shortFrom} sobre "${shortSubj}"! ✨`,
+    `Dá uma olhada, ${shortFrom} acabou de te mandar um e-mail! 📨`,
+  ];
+  return fallbacks[Math.floor(Math.random() * fallbacks.length)];
+}
+
+async function generateAiWhatsAppAlert(contact?: string): Promise<string> {
+  const hasKey = await hasConnectedAiKey();
+  if (hasKey) {
+    try {
+      const prompt = `Você é o mascote assistente do usuário na área de trabalho.
+Chegou uma nova mensagem no WhatsApp${contact ? ` de '${contact}'` : ""}.
+Gere um aviso curto, espontâneo e divertido em português (máximo de 8 a 10 palavras, sem aspas) avisando o usuário. Termine com um emoji.`;
+
+      const res = await Promise.race([
+        Bridge.chatSend(prompt, null),
+        new Promise<never>((_, reject) => setTimeout(() => reject(new Error("timeout")), 3000)),
+      ]);
+      if (res?.text) {
+        let clean = res.text.replace(/^["'«“]|["'»”]$/g, "").replace(/\n.*/s, "").trim();
+        if (clean.length > 75) clean = clean.slice(0, 72) + "…";
+        if (clean) return clean;
+      }
+    } catch {
+      // Fallback below
+    }
+  }
+
+  if (contact) {
+    const waPhrases = [
+      `${contact} está falando no WhatsApp! 💬`,
+      `Opa, nova mensagem do ${contact} no Whats! 🟢`,
+      `${contact} te mandou mensagem no WhatsApp! 👀`,
+      `Mensagem nova do ${contact}! Dá uma olhada no Whats! 📱`,
+    ];
+    return waPhrases[Math.floor(Math.random() * waPhrases.length)];
+  }
+
+  const waPhrases = [
+    "Chegou nova mensagem no WhatsApp! 💬",
+    "Alerta verde: mensagem nova no Whats! 🟢",
+    "Tem mensagem nova esperando no WhatsApp! 📱",
+    "Opa, chegou mensagem nova no WhatsApp! 🚀",
+  ];
+  return waPhrases[Math.floor(Math.random() * waPhrases.length)];
+}
+
+async function generateAiMeetingAlert(
+  title: string,
+  attendee: string,
+  timeInfo: string,
+  isReminder: boolean,
+): Promise<string> {
+  const hasKey = await hasConnectedAiKey();
+  if (hasKey) {
+    try {
+      const prompt = isReminder
+        ? `Você é o mascote assistente do usuário.
+A reunião '${title}' ${attendee ? `com ${attendee}` : ""} começa em ${timeInfo}!
+Dê um lembrete amigável, rápido e descontraído em português (máximo de 10 a 12 palavras, sem aspas). Termine com um emoji.`
+        : `Você é o mascote assistente do usuário.
+Um novo agendamento acabou de ser confirmado: '${title}' com ${attendee}.
+Dê um aviso animado e prestativo em português (máximo de 10 a 12 palavras, sem aspas). Termine com um emoji.`;
+
+      const res = await Promise.race([
+        Bridge.chatSend(prompt, null),
+        new Promise<never>((_, reject) => setTimeout(() => reject(new Error("timeout")), 3000)),
+      ]);
+      if (res?.text) {
+        let clean = res.text.replace(/^["'«“]|["'»”]$/g, "").replace(/\n.*/s, "").trim();
+        if (clean.length > 85) clean = clean.slice(0, 82) + "…";
+        if (clean) return clean;
+      }
+    } catch {
+      // Fallback below
+    }
+  }
+
+  if (isReminder) {
+    const phrases = [
+      `Lembrete: Reunião "${title}" em ${timeInfo}! ⏰`,
+      `Quase na hora de "${title}"! Prepare um café! ☕`,
+      `Alerta de reunião: "${title}" começa em breve! 📅`,
+    ];
+    return phrases[Math.floor(Math.random() * phrases.length)];
+  }
+
+  const phrases = [
+    `Novo agendamento: "${title}" com ${attendee}! 📅`,
+    `Compromisso confirmado na sua agenda: "${title}"! ✨`,
+    `Temos reunião nova marcada: "${title}"! 🚀`,
+  ];
+  return phrases[Math.floor(Math.random() * phrases.length)];
+}
+
+// ── Stateful Deduplication for Intelligent Assistant Alerts ───────────────
+const seenEmailKeys = new Set<string>();
+let isEmailInitialPollDone = false;
+
+let lastWhatsAppCount = 0;
+let lastWhatsAppAlertTime = 0;
+let isWhatsAppInitialPollDone = false;
+
+const seenBookingKeys = new Set<string>();
+const notifiedMeetingTimes = new Set<string>();
+let isCalcomInitialPollDone = false;
+let lastKnownBookings: Array<{ id: string; title: string; start: string; attendeeName?: string }> = [];
+
+async function handlePalIntegrationAlert(update: IntegrationUpdate) {
+  if (update.error) return;
+
+  // 1. Email alerts (Gmail & Outlook)
+  if (update.id === "integration_gmail" || update.id === "integration_outlook") {
+    const latest = Array.isArray(update.data?.latest)
+      ? (update.data.latest as Array<{ from: string; subject: string; snippet?: string }>)
+      : [];
+
+    if (!isEmailInitialPollDone) {
+      isEmailInitialPollDone = true;
+      for (const m of latest) {
+        seenEmailKeys.add(`${update.id}:${m.from}:${m.subject}`);
+      }
+      return;
+    }
+
+    const newEmails = latest.filter((m) => !seenEmailKeys.has(`${update.id}:${m.from}:${m.subject}`));
+    if (newEmails.length === 0) return;
+
+    for (const m of newEmails) {
+      seenEmailKeys.add(`${update.id}:${m.from}:${m.subject}`);
+    }
+
+    const newest = newEmails[0];
+    const cleanFrom = (newest.from || "Alguém")
+      .replace(/<[^>]+>/g, "")
+      .replace(/"/g, "")
+      .trim();
+    const cleanSubj = newest.subject || "(sem assunto)";
+    const cleanSnippet = newest.snippet || "";
+
+    legs = [];
+    currentVelocity = 0;
+    idleUntil = performance.now() + 8000;
+
+    triggerLivelyReaction({ emote: "star", pose: "celebrate", sound: "greet" });
+
+    void generateAiEmailAlert(cleanFrom, cleanSubj, cleanSnippet).then((alertText) => {
+      showThought(alertText, "star", 7500, true);
+    });
+    return;
+  }
+
+  // 2. WhatsApp messages
+  if (update.id === "integration_whatsapp") {
+    const unread = Number(update.data?.unread ?? 0);
+    const contact = (update.data?.contact as string | undefined)?.trim() || "";
+
+    if (!isWhatsAppInitialPollDone) {
+      isWhatsAppInitialPollDone = true;
+      lastWhatsAppCount = unread;
+      return;
+    }
+
+    const now = performance.now();
+    if (unread > lastWhatsAppCount && unread > 0 && now - lastWhatsAppAlertTime > 16000) {
+      lastWhatsAppAlertTime = now;
+      lastWhatsAppCount = unread;
+
+      legs = [];
+      currentVelocity = 0;
+      idleUntil = performance.now() + 7000;
+
+      triggerLivelyReaction({ emote: "wink", pose: "wave", sound: "pop" });
+
+      void generateAiWhatsAppAlert(contact).then((alertText) => {
+        showThought(alertText, "wink", 6500, true);
+      });
+    } else {
+      lastWhatsAppCount = unread;
+    }
+    return;
+  }
+
+  // 3. Cal.com and Meetings
+  if (update.id === "integration_calcom") {
+    const bookings = Array.isArray(update.data?.bookings)
+      ? (update.data.bookings as Array<{ id: string; title: string; start: string; attendeeName?: string }>)
+      : [];
+    lastKnownBookings = bookings;
+
+    if (!isCalcomInitialPollDone) {
+      isCalcomInitialPollDone = true;
+      for (const b of bookings) {
+        seenBookingKeys.add(`${b.id}:${b.start}`);
+      }
+      return;
+    }
+
+    for (const b of bookings) {
+      const key = `${b.id}:${b.start}`;
+      if (!seenBookingKeys.has(key)) {
+        seenBookingKeys.add(key);
+
+        legs = [];
+        currentVelocity = 0;
+        idleUntil = performance.now() + 7000;
+
+        triggerLivelyReaction({ emote: "star", pose: "celebrate", sound: "finish" });
+        const attendee = b.attendeeName || "um convidado";
+        void generateAiMeetingAlert(b.title, attendee, b.start, false).then((alertText) => {
+          showThought(alertText, "star", 7000, true);
+        });
+        return;
+      }
+    }
+  }
+}
+
+function checkUpcomingMeetings() {
+  const now = Date.now();
+  for (const b of lastKnownBookings) {
+    if (!b.start) continue;
+    const startMs = Date.parse(b.start);
+    if (isNaN(startMs)) continue;
+    const diffMs = startMs - now;
+    const diffMin = Math.round(diffMs / 60000);
+    // Alert between 1 and 15 minutes before the meeting
+    if (diffMin >= 1 && diffMin <= 15) {
+      const key = `${b.id}:${b.start}:15min`;
+      if (!notifiedMeetingTimes.has(key)) {
+        notifiedMeetingTimes.add(key);
+        legs = [];
+        currentVelocity = 0;
+        idleUntil = performance.now() + 8000;
+        triggerLivelyReaction({ emote: "surprised", pose: "wave", sound: "pop" });
+        const timeStr = `${diffMin} min`;
+        void generateAiMeetingAlert(b.title, b.attendeeName || "", timeStr, true).then((alertText) => {
+          showThought(alertText, "surprised", 7500, true);
+        });
+      }
+    }
+  }
 }
 
 function generateRealWindowThought(appName: string, rawTitle: string): { text: string; emote: CompanionEmote } {
@@ -1079,6 +1414,9 @@ async function main() {
     routedTo = null;
     idleUntil = 0;
   });
+
+  await onEvent<IntegrationUpdate>("integration", (u) => void handlePalIntegrationAlert(u));
+  window.setInterval(checkUpcomingMeetings, 60000);
 
   // On the body: the card. On a button: its action, owned by the island.
   root.addEventListener("click", (e) => {

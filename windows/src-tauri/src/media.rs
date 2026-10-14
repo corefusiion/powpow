@@ -120,11 +120,13 @@ pub fn press(action: &str) -> Result<(), String> {
 pub struct WhatsAppState {
     pub present: bool,
     pub unread: u32,
+    pub contact: Option<String>,
 }
 
 struct WaFound {
     present: bool,
     unread: u32,
+    contact: Option<String>,
 }
 
 unsafe extern "system" fn wa_enum_proc(hwnd: HWND, lparam: LPARAM) -> BOOL {
@@ -137,13 +139,25 @@ unsafe extern "system" fn wa_enum_proc(hwnd: HWND, lparam: LPARAM) -> BOOL {
             let lower = title.to_lowercase();
             if lower.contains("whatsapp") {
                 found.present = true;
-                // "(3) WhatsApp" → 3. Take the max across windows so two
-                // windows on the same session never double-count.
-                let trimmed = title.trim_start();
+                // "(3) WhatsApp" or "(1) Marcos - WhatsApp"
+                let trimmed = title.trim();
                 if let Some(rest) = trimmed.strip_prefix('(') {
                     if let Some(end) = rest.find(')') {
                         if let Ok(n) = rest[..end].trim().parse::<u32>() {
                             found.unread = found.unread.max(n);
+                            let after = rest[end + 1..].trim();
+                            let candidate = if let Some((c, _)) = after.split_once(" - ") {
+                                c.trim()
+                            } else if let Some((c, _)) = after.split_once(" — ") {
+                                c.trim()
+                            } else if let Some((c, _)) = after.split_once(": ") {
+                                c.trim()
+                            } else {
+                                ""
+                            };
+                            if !candidate.is_empty() && !candidate.eq_ignore_ascii_case("whatsapp") {
+                                found.contact = Some(candidate.to_string());
+                            }
                         }
                     }
                 }
@@ -154,12 +168,20 @@ unsafe extern "system" fn wa_enum_proc(hwnd: HWND, lparam: LPARAM) -> BOOL {
 }
 
 pub fn whatsapp() -> WhatsAppState {
-    let mut found = WaFound { present: false, unread: 0 };
+    let mut found = WaFound {
+        present: false,
+        unread: 0,
+        contact: None,
+    };
     unsafe {
         let _ = EnumWindows(
             Some(wa_enum_proc),
             LPARAM(&mut found as *mut WaFound as isize),
         );
     };
-    WhatsAppState { present: found.present, unread: found.unread }
+    WhatsAppState {
+        present: found.present,
+        unread: found.unread,
+        contact: found.contact,
+    }
 }

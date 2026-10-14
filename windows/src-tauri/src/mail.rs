@@ -39,6 +39,7 @@ pub const OUTLOOK: Account = Account {
 pub struct MailItem {
     pub from: String,
     pub subject: String,
+    pub snippet: Option<String>,
 }
 
 #[derive(Serialize, Clone, Default)]
@@ -124,7 +125,7 @@ pub fn check(account: &Account) -> Result<MailboxState, String> {
                                 .unwrap_or_else(|| "?".into())
                         })
                         .unwrap_or_else(|| "?".into());
-                    items.push((seq_no, MailItem { from, subject }));
+                    items.push((seq_no, MailItem { from, subject, snippet: None }));
                 }
             }
             items.sort_by_key(|(seq, _)| std::cmp::Reverse(*seq));

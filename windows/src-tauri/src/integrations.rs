@@ -42,7 +42,8 @@ pub struct IntegrationEvent {
 }
 
 fn emit(app: &AppHandle, update: IntegrationUpdate) {
-    let _ = app.emit_to(WINDOW_LABEL, "integration", update);
+    let _ = app.emit_to(WINDOW_LABEL, "integration", update.clone());
+    let _ = app.emit_to("pal", "integration", update);
 }
 
 fn client() -> reqwest::Client {
@@ -189,19 +190,21 @@ async fn poll_whatsapp(app: AppHandle) {
     let event = if wa.unread > 0 && is_new("whatsapp", &wa.unread.to_string()) {
         Some(IntegrationEvent {
             success: true,
-            label: if wa.unread == 1 {
+            label: if let Some(c) = &wa.contact {
+                format!("{c} no WhatsApp")
+            } else if wa.unread == 1 {
                 "1 unread message".into()
             } else {
                 format!("{} unread messages", wa.unread)
             },
-            detail: None,
+            detail: wa.contact.clone(),
         })
     } else {
         None
     };
     emit(&app, IntegrationUpdate {
         id: "integration_whatsapp",
-        data: json!({ "present": wa.present, "unread": wa.unread }),
+        data: json!({ "present": wa.present, "unread": wa.unread, "contact": wa.contact }),
         error: None,
         event,
     });

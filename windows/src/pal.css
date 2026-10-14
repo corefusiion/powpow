@@ -127,21 +127,27 @@ dot-pal {
   position: absolute;
   left: 10px;
   top: 14px;
-  max-width: 220px;
-  min-width: 120px;
-  padding: 8px 12px;
-  background: rgba(18, 20, 30, 0.94);
+  max-width: 280px;
+  min-width: 130px;
+  padding: 9px 13px;
+  background: rgba(18, 20, 30, 0.96);
   backdrop-filter: blur(14px);
   -webkit-backdrop-filter: blur(14px);
-  border: 1.5px solid rgba(129, 140, 248, 0.5);
+  border: 1.5px solid rgba(129, 140, 248, 0.55);
   border-radius: 16px;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45), 0 0 12px rgba(99, 102, 241, 0.2);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45), 0 0 12px rgba(99, 102, 241, 0.25);
   color: #f8fafc;
-  font: 600 11.5px/1.35 system-ui, -apple-system, sans-serif;
+  font: 600 11.5px/1.4 system-ui, -apple-system, sans-serif;
   text-align: center;
   pointer-events: none;
   z-index: 100;
   animation: pal-thought-pop 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+  word-break: break-word;
+}
+
+.pal-thought.is-alert {
+  border-color: rgba(245, 158, 11, 0.75);
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.55), 0 0 16px rgba(245, 158, 11, 0.35);
 }
 
 .pal-thought[hidden] {
@@ -153,6 +159,10 @@ dot-pal {
   border-radius: 50%;
   background: rgba(129, 140, 248, 0.9);
   border: 1px solid rgba(255, 255, 255, 0.25);
+}
+
+.pal-thought.is-alert .pal-thought-bubble-dot {
+  background: rgba(245, 158, 11, 0.9);
 }
 
 .pal-thought-bubble-dot.dot-1 {
@@ -178,6 +188,19 @@ dot-pal {
     opacity: 1;
     transform: scale(1) translateY(0);
   }
+}
+
+@keyframes pal-alert-bounce {
+  0% { transform: translateY(0) scale(1); }
+  25% { transform: translateY(-20px) scale(1.1); }
+  45% { transform: translateY(0) scale(0.95); }
+  65% { transform: translateY(-10px) scale(1.04); }
+  85% { transform: translateY(0) scale(0.98); }
+  100% { transform: translateY(0) scale(1); }
+}
+
+.pal-alert-bounce {
+  animation: pal-alert-bounce 0.8s cubic-bezier(0.25, 1, 0.5, 1);
 }
 
 /* ── Eating the Close Button ── */

@@ -187,9 +187,11 @@ pub async fn unread() -> Result<MailboxState, String> {
         if let Ok(msg) = get_json(&url, &token2).await {
             let subject = header(&msg, "Subject");
             let from = header(&msg, "From");
+            let snippet = msg.get("snippet").and_then(Value::as_str).map(str::to_string);
             latest.push(MailItem {
                 from: if from.is_empty() { "?".into() } else { from },
                 subject: if subject.is_empty() { "(no subject)".into() } else { subject },
+                snippet,
             });
         }
     }

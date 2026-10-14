@@ -30,7 +30,7 @@ fn token_url() -> String {
 
 const GRAPH_LIST: &str = "https://graph.microsoft.com/v1.0/me/messages\
     ?$filter=isRead%20eq%20false&$orderby=receivedDateTime%20desc&$top=10\
-    &$select=id,subject,from,receivedDateTime";
+    &$select=id,subject,from,receivedDateTime,bodyPreview";
 
 #[derive(Serialize, Deserialize, Default)]
 struct OAuthStore {
@@ -253,6 +253,7 @@ pub async fn unread() -> Result<MailboxState, String> {
                 .filter(|s| !s.is_empty())
                 .map(str::to_string)
                 .unwrap_or_else(|| "(no subject)".into()),
+            snippet: m.get("bodyPreview").and_then(Value::as_str).map(str::to_string),
         })
         .collect();
     Ok(MailboxState { unread, latest })
