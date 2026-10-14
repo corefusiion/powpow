@@ -135,6 +135,9 @@ export const Bridge = {
   outlookSignout: () => callOrThrow<void>("outlook_signout"),
   /** Opens the configured n8n instance in the browser. */
   openN8n: () => call<void>("open_n8n"),
+  /** Sends an email reply (Gmail API / Outlook Graph API, or opens browser prefilled). */
+  sendEmailReply: (service: string, to: string, subject: string, body: string) =>
+    callOrThrow<string>("send_email_reply", { service, to, subject, body }),
 
   /** Tray → Pause. Stops the integration pollers, not just the island. */
   setPaused: (paused: boolean) => call<void>("set_paused", { paused }),

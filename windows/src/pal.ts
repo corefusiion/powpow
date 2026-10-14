@@ -85,9 +85,24 @@ const alertSnippetEl = document.getElementById("pal-alert-snippet");
 const alertProgressFillEl = document.getElementById("pal-alert-progress-fill");
 const alertCloseBtn = document.getElementById("pal-alert-close");
 const alertAuraEl = document.getElementById("pal-alert-aura");
+const alertReplyBtn = document.getElementById("pal-alert-reply-btn") as HTMLButtonElement | null;
+const alertReplyBox = document.getElementById("pal-alert-reply-box");
+const alertReplyTo = document.getElementById("pal-alert-reply-to");
+const alertReplyInput = document.getElementById("pal-alert-reply-input") as HTMLTextAreaElement | null;
+const alertReplyCancel = document.getElementById("pal-alert-reply-cancel") as HTMLButtonElement | null;
+const alertReplySend = document.getElementById("pal-alert-reply-send") as HTMLButtonElement | null;
+const alertReplyStatus = document.getElementById("pal-alert-reply-status");
 
 let isAlertOpen = false;
+let isReplying = false;
 let alertTimer: number | null = null;
+let alertStartTimestamp = 0;
+let alertDurationMs = 30000;
+let alertRemainingMs = 30000;
+
+let currentAlertService = "";
+let currentAlertSenderRaw = "";
+let currentAlertSubject = "";
 
 let thoughtTimer: number | null = null;
 let lastObservationTime = 0;
@@ -145,9 +160,103 @@ function closeAlertPopup() {
     alertTimer = null;
   }
   isAlertOpen = false;
+  isReplying = false;
+  if (alertReplyBox) alertReplyBox.hidden = true;
+  if (alertReplyBtn) alertReplyBtn.hidden = true;
+  if (alertReplyStatus) alertReplyStatus.hidden = true;
+  if (alertReplyInput) alertReplyInput.value = "";
   if (alertPopupEl) alertPopupEl.hidden = true;
   if (alertAuraEl) alertAuraEl.hidden = true;
+  void Bridge.setPalFocus(false);
   pushRect();
+}
+
+function extractEmailAddress(from: string): string {
+  const angle = from.match(/<([^>]+)>/);
+  if (angle) return angle[1].trim();
+  const direct = from.match(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/);
+  if (direct) return direct[0].trim();
+  return from.trim();
+}
+
+function openReplyMode() {
+  if (!isAlertOpen) return;
+  isReplying = true;
+  if (alertTimer != null) {
+    window.clearTimeout(alertTimer);
+    alertTimer = null;
+  }
+  if (alertReplyBtn) alertReplyBtn.hidden = true;
+  if (alertReplyBox) alertReplyBox.hidden = false;
+  if (alertReplyStatus) alertReplyStatus.hidden = true;
+  if (alertReplyTo) alertReplyTo.textContent = `Para: ${currentAlertSenderRaw || "remetente"}`;
+  if (alertReplyInput) {
+    alertReplyInput.value = "";
+    alertReplyInput.focus();
+  }
+  void Bridge.setPalFocus(true);
+}
+
+function cancelReplyMode() {
+  isReplying = false;
+  if (alertReplyBox) alertReplyBox.hidden = true;
+  if (alertReplyBtn) alertReplyBtn.hidden = false;
+  if (alertReplyStatus) alertReplyStatus.hidden = true;
+  void Bridge.setPalFocus(false);
+  alertStartTimestamp = performance.now();
+  alertRemainingMs = 12000;
+  alertTimer = window.setTimeout(() => {
+    closeAlertPopup();
+  }, alertRemainingMs);
+}
+
+async function sendReply() {
+  if (!alertReplyInput) return;
+  const text = alertReplyInput.value.trim();
+  if (!text) {
+    alertReplyInput.focus();
+    return;
+  }
+
+  const recipient = extractEmailAddress(currentAlertSenderRaw);
+  if (!recipient) {
+    alertReplyInput.focus();
+    return;
+  }
+
+  if (alertReplySend) {
+    alertReplySend.disabled = true;
+    alertReplySend.textContent = "Enviando...";
+  }
+
+  try {
+    const res = await Bridge.sendEmailReply(
+      currentAlertService,
+      recipient,
+      currentAlertSubject,
+      text,
+    );
+    if (alertReplyStatus) {
+      alertReplyStatus.textContent = res === "sent" ? "✓ Resposta enviada!" : "✓ Aberto no navegador!";
+      alertReplyStatus.hidden = false;
+    }
+    window.setTimeout(() => {
+      closeAlertPopup();
+    }, 2400);
+  } catch {
+    if (alertReplyStatus) {
+      alertReplyStatus.textContent = "✓ Aberto no navegador!";
+      alertReplyStatus.hidden = false;
+    }
+    window.setTimeout(() => {
+      closeAlertPopup();
+    }, 2400);
+  } finally {
+    if (alertReplySend) {
+      alertReplySend.disabled = false;
+      alertReplySend.textContent = "Enviar ✈️";
+    }
+  }
 }
 
 function triggerVisualAlert(options?: {
@@ -193,6 +302,8 @@ interface AlertPopupData {
   sender: string;
   subject: string;
   snippet: string;
+  service?: "gmail" | "outlook" | "whatsapp" | "calcom";
+  senderRaw?: string;
   durationMs?: number;
 }
 
@@ -203,6 +314,10 @@ function showAlertPopup(data: AlertPopupData) {
   closeAlertPopup();
   isAlertOpen = true;
 
+  currentAlertService = data.service || "";
+  currentAlertSenderRaw = data.senderRaw || data.sender;
+  currentAlertSubject = data.subject || "";
+
   alertPopupEl.className = `pal-alert-popup ${data.theme}`;
   if (alertBadgeEl) alertBadgeEl.className = `pal-alert-badge ${data.theme}`;
   if (alertIconEl) alertIconEl.textContent = data.icon;
@@ -211,12 +326,24 @@ function showAlertPopup(data: AlertPopupData) {
   if (alertSubjectEl) alertSubjectEl.textContent = data.subject;
   if (alertSnippetEl) alertSnippetEl.textContent = data.snippet;
 
-  const duration = data.durationMs || 9000;
+  // Show "Responder" button for emails
+  const isEmail = data.service === "gmail" || data.service === "outlook";
+  if (alertReplyBtn) {
+    alertReplyBtn.hidden = !isEmail;
+  }
+  if (alertReplyBox) alertReplyBox.hidden = true;
+  if (alertReplyStatus) alertReplyStatus.hidden = true;
+
+  // 30 seconds default duration for comfortable reading
+  alertDurationMs = data.durationMs || 30000;
+  alertRemainingMs = alertDurationMs;
+  alertStartTimestamp = performance.now();
+
   if (alertProgressFillEl) {
     alertProgressFillEl.style.transition = "none";
     alertProgressFillEl.style.width = "100%";
     void alertProgressFillEl.offsetWidth;
-    alertProgressFillEl.style.transition = `width ${duration}ms linear`;
+    alertProgressFillEl.style.transition = `width ${alertDurationMs}ms linear`;
     alertProgressFillEl.style.width = "0%";
   }
 
@@ -225,7 +352,7 @@ function showAlertPopup(data: AlertPopupData) {
 
   alertTimer = window.setTimeout(() => {
     closeAlertPopup();
-  }, duration);
+  }, alertDurationMs);
 }
 
 function cleanSnippet(raw?: string): string {
@@ -295,7 +422,9 @@ async function handlePalIntegrationAlert(update: IntegrationUpdate) {
       sender: cleanFrom || "Novo E-mail",
       subject: cleanSubj,
       snippet: snippetText,
-      durationMs: 9000,
+      service: isGmail ? "gmail" : "outlook",
+      senderRaw: newest.from || "",
+      durationMs: 30000,
     });
     return;
   }
@@ -1387,6 +1516,55 @@ async function main() {
   alertCloseBtn?.addEventListener("click", (e) => {
     e.stopPropagation();
     closeAlertPopup();
+  });
+
+  alertReplyBtn?.addEventListener("click", (e) => {
+    e.stopPropagation();
+    openReplyMode();
+  });
+
+  alertReplyCancel?.addEventListener("click", (e) => {
+    e.stopPropagation();
+    cancelReplyMode();
+  });
+
+  alertReplySend?.addEventListener("click", (e) => {
+    e.stopPropagation();
+    void sendReply();
+  });
+
+  alertReplyInput?.addEventListener("keydown", (e) => {
+    if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) {
+      e.preventDefault();
+      void sendReply();
+    } else if (e.key === "Escape") {
+      e.preventDefault();
+      cancelReplyMode();
+    }
+    e.stopPropagation();
+  });
+
+  alertReplyInput?.addEventListener("focus", () => void Bridge.setPalFocus(true));
+  alertReplyInput?.addEventListener("blur", () => {
+    if (!isReplying) void Bridge.setPalFocus(false);
+  });
+
+  alertPopupEl?.addEventListener("mouseenter", () => {
+    if (isReplying) return;
+    if (alertTimer != null) {
+      window.clearTimeout(alertTimer);
+      alertTimer = null;
+      alertRemainingMs -= (performance.now() - alertStartTimestamp);
+      if (alertRemainingMs < 4000) alertRemainingMs = 4000;
+    }
+  });
+
+  alertPopupEl?.addEventListener("mouseleave", () => {
+    if (isReplying || !isAlertOpen) return;
+    alertStartTimestamp = performance.now();
+    alertTimer = window.setTimeout(() => {
+      closeAlertPopup();
+    }, alertRemainingMs);
   });
 
   root.addEventListener("click", (e) => {

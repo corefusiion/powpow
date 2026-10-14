@@ -83,7 +83,7 @@ O companheiro ganha superpoderes de um verdadeiro agente de sistema operacional 
 
 **Mascote Andarilho & Assistente na Área de Trabalho (Roaming Pal):**
 * **Perambulação Suave e Atenta:** O mascote caminha de forma relaxada pela tela, posicionando-se de forma inteligente ao lado do seu trabalho ativo para acompanhar sua rotina sem atrapalhar.
-* **Popup Informativo de E-mail (Gmail e Outlook):** Ao chegar um novo e-mail, o mascote dá um salto alegre e exibe um card/popup informativo ao seu lado contendo o remetente, o assunto e o trecho real da mensagem de forma clara e elegante, sem poluição de áudio.
+* **Popup Informativo de E-mail com Resposta Rápida (Gmail e Outlook):** Ao chegar um novo e-mail, o mascote dá um salto alegre e exibe um card visual ao seu lado com remetente, assunto e o trecho real da mensagem. O tempo de leitura é estendido (30 segundos ou pausado ao passar o mouse), e conta com um botão minimalista **"↩ Responder"** para redigir e enviar a resposta diretamente do próprio popup (ou com atalho `Ctrl+Enter`).
 * **Alertas Visuais do WhatsApp:** Detecta mensagens recentes no WhatsApp Web e mostra no popup o nome de quem enviou (ex.: *"Marcos"*).
 * **Lembretes e Agendamentos de Reuniões:** Mostra no popup quando um novo compromisso for marcado no Cal.com / agenda e exibe um lembrete visual 15 minutos antes da reunião começar.
 * **Efeitos Visuais e Zero Áudio:** Alertas 100% visuais, com aura brilhante em expansão, estrelinhas flutuantes, poses de comemoração ou aceno, barra de progresso suave e botão de fechar — sem reproduzir áudio para não interromper seu foco ou músicas.

@@ -356,6 +356,35 @@ dot-pal {
   font-size: 9.5px;
 }
 
+.pal-alert-actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.pal-alert-reply-btn {
+  background: rgba(255, 255, 255, 0.09);
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  color: #e2e8f0;
+  font-size: 10px;
+  font-weight: 600;
+  padding: 2px 7px;
+  border-radius: 6px;
+  cursor: pointer;
+  line-height: 1.2;
+  transition: background 0.15s, border-color 0.15s, color 0.15s;
+}
+
+.pal-alert-reply-btn:hover {
+  background: rgba(255, 255, 255, 0.2);
+  border-color: rgba(255, 255, 255, 0.4);
+  color: #fff;
+}
+
+.pal-alert-reply-btn[hidden] {
+  display: none;
+}
+
 .pal-alert-close {
   background: transparent;
   border: 0;
@@ -413,6 +442,125 @@ dot-pal {
   -webkit-box-orient: vertical;
   overflow: hidden;
   word-break: break-word;
+}
+
+/* ── Inline Reply Box ── */
+.pal-alert-reply-box {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-top: 3px;
+  animation: pal-alert-reply-expand 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.pal-alert-reply-box[hidden] {
+  display: none;
+}
+
+@keyframes pal-alert-reply-expand {
+  from {
+    opacity: 0;
+    transform: translateY(-4px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.pal-alert-reply-to {
+  font-size: 9.5px;
+  font-weight: 600;
+  color: #93c5fd;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.pal-alert-reply-input {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 5px 7px;
+  font-size: 11px;
+  line-height: 1.35;
+  background: rgba(0, 0, 0, 0.5);
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  border-radius: 6px;
+  color: #f8fafc;
+  resize: none;
+  outline: none;
+  font-family: inherit;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.pal-alert-reply-input:focus {
+  border-color: rgba(96, 165, 250, 0.7);
+  box-shadow: 0 0 10px rgba(96, 165, 250, 0.35);
+}
+
+.pal-alert-reply-input::placeholder {
+  color: rgba(255, 255, 255, 0.4);
+}
+
+.pal-alert-reply-actions {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 5px;
+}
+
+.pal-alert-reply-cancel {
+  background: transparent;
+  border: 0;
+  color: #94a3b8;
+  font-size: 10px;
+  padding: 3px 6px;
+  cursor: pointer;
+  border-radius: 4px;
+  transition: color 0.15s, background 0.15s;
+}
+
+.pal-alert-reply-cancel:hover {
+  color: #f1f5f9;
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.pal-alert-reply-send {
+  background: linear-gradient(135deg, #2563eb, #4f46e5);
+  border: 0;
+  color: #fff;
+  font-size: 10.5px;
+  font-weight: 600;
+  padding: 3.5px 10px;
+  border-radius: 6px;
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(37, 99, 235, 0.4);
+  transition: filter 0.15s, transform 0.1s;
+}
+
+.pal-alert-reply-send:hover {
+  filter: brightness(1.15);
+}
+
+.pal-alert-reply-send:active {
+  transform: scale(0.96);
+}
+
+.pal-alert-reply-send:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.pal-alert-reply-status {
+  font-size: 10px;
+  font-weight: 600;
+  color: #4ade80;
+  text-align: center;
+  padding: 2px 0;
+}
+
+.pal-alert-reply-status[hidden] {
+  display: none;
 }
 
 .pal-alert-progress-bar {

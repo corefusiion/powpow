@@ -18,7 +18,7 @@ use serde_json::Value;
 use crate::mail::{MailItem, MailboxState};
 
 const TENANT: &str = "consumers";
-const SCOPE: &str = "offline_access Mail.Read";
+const SCOPE: &str = "offline_access Mail.Read Mail.Send";
 
 fn device_url() -> String {
     format!("https://login.microsoftonline.com/{TENANT}/oauth2/v2.0/devicecode")
@@ -357,5 +357,52 @@ pub fn signout() -> Result<(), String> {
     clear_big("outlook-oauth");
     clear_big("outlook-refresh-token");
     let _ = crate::secrets::clear("outlook-device-code");
+    Ok(())
+}
+
+pub fn has_oauth() -> bool {
+    load().is_some()
+}
+
+pub async fn send_reply(to: &str, subject: &str, body: &str) -> Result<(), String> {
+    let token = access_token().await?;
+    let http = client()?;
+
+    let subj = if subject.starts_with("Re:") || subject.starts_with("RE:") {
+        subject.to_string()
+    } else {
+        format!("Re: {subject}")
+    };
+
+    let payload = serde_json::json!({
+        "message": {
+            "subject": subj,
+            "body": {
+                "contentType": "Text",
+                "content": body
+            },
+            "toRecipients": [
+                {
+                    "emailAddress": {
+                        "address": to
+                    }
+                }
+            ]
+        },
+        "saveToSentItems": true
+    });
+
+    let res = http
+        .post("https://graph.microsoft.com/v1.0/me/sendMail")
+        .bearer_auth(&token)
+        .json(&payload)
+        .send()
+        .await
+        .map_err(|e| format!("Outlook send network error: {e}"))?;
+
+    if !res.status().is_success() {
+        let err_text = res.text().await.unwrap_or_default();
+        return Err(format!("Outlook send error: {err_text}"));
+    }
     Ok(())
 }

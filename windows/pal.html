@@ -29,13 +29,28 @@
             <span id="pal-alert-icon" class="pal-alert-icon">✉️</span>
             <span id="pal-alert-type" class="pal-alert-type">Novo E-mail</span>
           </span>
-          <button id="pal-alert-close" class="pal-alert-close" type="button" aria-label="Fechar">✕</button>
+          <div class="pal-alert-actions">
+            <button id="pal-alert-reply-btn" class="pal-alert-reply-btn" type="button" hidden>↩ Responder</button>
+            <button id="pal-alert-close" class="pal-alert-close" type="button" aria-label="Fechar">✕</button>
+          </div>
         </div>
         <div class="pal-alert-body">
           <div id="pal-alert-sender" class="pal-alert-sender"></div>
           <div id="pal-alert-subject" class="pal-alert-subject"></div>
           <div id="pal-alert-snippet" class="pal-alert-snippet"></div>
         </div>
+
+        <!-- Inline Reply Box for Quick Email Responses -->
+        <div id="pal-alert-reply-box" class="pal-alert-reply-box" hidden>
+          <div id="pal-alert-reply-to" class="pal-alert-reply-to"></div>
+          <textarea id="pal-alert-reply-input" class="pal-alert-reply-input" placeholder="Digite sua resposta..." rows="2"></textarea>
+          <div class="pal-alert-reply-actions">
+            <button id="pal-alert-reply-cancel" class="pal-alert-reply-cancel" type="button">Cancelar</button>
+            <button id="pal-alert-reply-send" class="pal-alert-reply-send" type="button">Enviar ✈️</button>
+          </div>
+          <div id="pal-alert-reply-status" class="pal-alert-reply-status" hidden></div>
+        </div>
+
         <div class="pal-alert-progress-bar">
           <div id="pal-alert-progress-fill" class="pal-alert-progress-fill"></div>
         </div>

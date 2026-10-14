@@ -616,6 +616,77 @@ fn get_active_window_context(app: AppHandle) -> Result<system_agent::WindowConte
     system_agent::get_active_window_context(&app)
 }
 
+#[tauri::command]
+async fn send_email_reply(
+    service: String,
+    to: String,
+    subject: String,
+    body: String,
+) -> Result<String, String> {
+    let clean_to = to.trim();
+    let clean_subj = subject.trim();
+    let clean_body = body.trim();
+    if clean_to.is_empty() || clean_body.is_empty() {
+        return Err("Recipient or message is empty".into());
+    }
+
+    fn simple_url_encode(s: &str) -> String {
+        let mut out = String::with_capacity(s.len());
+        for b in s.bytes() {
+            if b.is_ascii_alphanumeric() || matches!(b, b'-' | b'_' | b'.' | b'~') {
+                out.push(b as char);
+            } else {
+                out.push_str(&format!("%{b:02X}"));
+            }
+        }
+        out
+    }
+
+    if service.eq_ignore_ascii_case("gmail") {
+        if gmail::has_oauth() {
+            if let Ok(()) = gmail::send_reply(clean_to, clean_subj, clean_body).await {
+                return Ok("sent".into());
+            }
+        }
+        let url = format!(
+            "https://mail.google.com/mail/?view=cm&fs=1&to={}&su={}&body={}",
+            simple_url_encode(clean_to),
+            simple_url_encode(clean_subj),
+            simple_url_encode(clean_body)
+        );
+        open_url(url);
+        return Ok("opened_in_browser".into());
+    }
+
+    if service.eq_ignore_ascii_case("outlook") {
+        if outlook::has_oauth() {
+            if let Ok(()) = outlook::send_reply(clean_to, clean_subj, clean_body).await {
+                return Ok("sent".into());
+            }
+        }
+        let url = format!(
+            "https://outlook.live.com/mail/0/deeplink/compose?to={}&subject={}&body={}",
+            simple_url_encode(clean_to),
+            simple_url_encode(clean_subj),
+            simple_url_encode(clean_body)
+        );
+        open_url(url);
+        return Ok("opened_in_browser".into());
+    }
+
+    let url = format!(
+        "mailto:{}?subject={}&body={}",
+        simple_url_encode(clean_to),
+        simple_url_encode(clean_subj),
+        simple_url_encode(clean_body)
+    );
+    let _ = Command::new("rundll32.exe")
+        .args(["url.dll,FileProtocolHandler", &url])
+        .creation_flags(CREATE_NO_WINDOW)
+        .spawn();
+    Ok("opened_in_browser".into())
+}
+
 // ── Settings window ───────────────────────────────────────────────────────────
 
 /// WebView2 allows exactly one browser environment per app, and its options are
@@ -762,6 +833,7 @@ pub fn run() {
             system_control,
             inject_text,
             get_active_window_context,
+            send_email_reply,
         ])
         .setup(move |app| {
             let handle = app.handle().clone();

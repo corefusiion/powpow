@@ -20,7 +20,7 @@ use crate::mail::{MailItem, MailboxState};
 
 const AUTH_URL: &str = "https://accounts.google.com/o/oauth2/v2/auth";
 const TOKEN_URL: &str = "https://oauth2.googleapis.com/token";
-const SCOPE: &str = "https://www.googleapis.com/auth/gmail.readonly";
+const SCOPE: &str = "https://www.googleapis.com/auth/gmail.readonly https://www.googleapis.com/auth/gmail.send";
 const API_ME: &str = "https://gmail.googleapis.com/gmail/v1/users/me";
 const REDIRECT_PATH: &str = "/auth";
 
@@ -349,4 +349,39 @@ fn open_browser(url: &str) {
         .args(["url.dll,FileProtocolHandler", url])
         .creation_flags(CREATE_NO_WINDOW)
         .spawn();
+}
+
+pub async fn send_reply(to: &str, subject: &str, body: &str) -> Result<(), String> {
+    let token = access_token().await?;
+    let http = client()?;
+
+    let subj = if subject.starts_with("Re:") || subject.starts_with("RE:") {
+        subject.to_string()
+    } else {
+        format!("Re: {subject}")
+    };
+
+    let raw_msg = format!(
+        "To: {to}\r\nSubject: {subj}\r\nContent-Type: text/plain; charset=utf-8\r\n\r\n{body}"
+    );
+    use base64::Engine;
+    let encoded = base64::engine::general_purpose::URL_SAFE_NO_PAD.encode(raw_msg.as_bytes());
+
+    let payload = serde_json::json!({
+        "raw": encoded
+    });
+
+    let res = http
+        .post(format!("{API_ME}/messages/send"))
+        .bearer_auth(&token)
+        .json(&payload)
+        .send()
+        .await
+        .map_err(|e| format!("Gmail send network error: {e}"))?;
+
+    if !res.status().is_success() {
+        let err_text = res.text().await.unwrap_or_default();
+        return Err(format!("Gmail send error: {err_text}"));
+    }
+    Ok(())
 }
