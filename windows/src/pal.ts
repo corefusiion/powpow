@@ -74,6 +74,21 @@ const engine = new BotEngine();
 const thoughtEl = document.getElementById("pal-thought");
 const thoughtTextEl = document.getElementById("pal-thought-content");
 
+// Informative notification popup elements (no audio, rich formatted card)
+const alertPopupEl = document.getElementById("pal-alert-popup");
+const alertBadgeEl = document.getElementById("pal-alert-badge");
+const alertIconEl = document.getElementById("pal-alert-icon");
+const alertTypeEl = document.getElementById("pal-alert-type");
+const alertSenderEl = document.getElementById("pal-alert-sender");
+const alertSubjectEl = document.getElementById("pal-alert-subject");
+const alertSnippetEl = document.getElementById("pal-alert-snippet");
+const alertProgressFillEl = document.getElementById("pal-alert-progress-fill");
+const alertCloseBtn = document.getElementById("pal-alert-close");
+const alertAuraEl = document.getElementById("pal-alert-aura");
+
+let isAlertOpen = false;
+let alertTimer: number | null = null;
+
 let thoughtTimer: number | null = null;
 let lastObservationTime = 0;
 const OBSERVATION_INTERVAL_MS = 48000; // minimum 48s between thoughts (anti-spam)
@@ -124,19 +139,26 @@ function showThought(
   }, durationMs);
 }
 
-function triggerLivelyReaction(options?: {
+function closeAlertPopup() {
+  if (alertTimer != null) {
+    window.clearTimeout(alertTimer);
+    alertTimer = null;
+  }
+  isAlertOpen = false;
+  if (alertPopupEl) alertPopupEl.hidden = true;
+  if (alertAuraEl) alertAuraEl.hidden = true;
+  pushRect();
+}
+
+function triggerVisualAlert(options?: {
   emote?: CompanionEmote;
   pose?: "celebrate" | "wave" | "think" | "observe";
-  sound?: "greet" | "finish" | "proud" | "pop";
 }) {
   const emotes: CompanionEmote[] = ["star", "happy", "surprised", "love", "wink"];
   const chosenEmote = options?.emote ?? emotes[Math.floor(Math.random() * emotes.length)];
 
-  const sounds = ["greet", "finish", "proud", "pop"] as const;
-  const chosenSound = options?.sound ?? sounds[Math.floor(Math.random() * sounds.length)];
-
   triggerEmote(chosenEmote);
-  Sound.play(chosenSound);
+  // NO AUDIO: User specifically requested visual effects and animations without audio.
 
   if (pal) {
     const poses: Array<"celebrate" | "wave" | "observe"> = ["celebrate", "wave", "observe"];
@@ -155,146 +177,63 @@ function triggerLivelyReaction(options?: {
   window.setTimeout(() => {
     root.classList.remove("pal-alert-bounce");
   }, 900);
-}
 
-async function hasConnectedAiKey(): Promise<boolean> {
-  try {
-    const hasGemini = (await Bridge.secretPresent("gemini-api-key")) ?? false;
-    const hasClaude = (await Bridge.secretPresent("anthropic-api-key")) ?? false;
-    return hasGemini || hasClaude;
-  } catch {
-    return false;
+  if (alertAuraEl) {
+    alertAuraEl.hidden = false;
+    window.setTimeout(() => {
+      if (alertAuraEl) alertAuraEl.hidden = true;
+    }, 3200);
   }
 }
 
-async function generateAiEmailAlert(from: string, subject: string, snippet: string): Promise<string> {
-  const hasKey = await hasConnectedAiKey();
-  if (hasKey) {
-    try {
-      const prompt = `Você é o mascote assistente do usuário na área de trabalho. Acabou de chegar um e-mail:
-- Remetente: ${from}
-- Assunto: ${subject}
-${snippet ? `- Trecho: ${snippet}` : ""}
-
-Crie uma fala curta e descontraída avisando o usuário sobre o e-mail e dando um resumo rápido do assunto em português.
-Regras:
-- Máximo de 12 a 15 palavras.
-- Seja amigável, ágil e expressivo.
-- Sem introduções como "Aqui está", sem aspas.
-- Termine com um emoji temático.`;
-
-      const res = await Promise.race([
-        Bridge.chatSend(prompt, null),
-        new Promise<never>((_, reject) => setTimeout(() => reject(new Error("timeout")), 3800)),
-      ]);
-      if (res?.text) {
-        let clean = res.text.replace(/^["'«“]|["'»”]$/g, "").replace(/\n.*/s, "").trim();
-        if (clean.length > 95) clean = clean.slice(0, 92) + "…";
-        if (clean) return clean;
-      }
-    } catch {
-      // Fallback below
-    }
-  }
-
-  const shortFrom = from.split(" ")[0].slice(0, 16);
-  const shortSubj = subject.length > 32 ? subject.slice(0, 30) + "…" : subject;
-  const fallbacks = [
-    `Eii! Chegou e-mail de ${shortFrom}: "${shortSubj}"! 📬`,
-    `Novo e-mail na área! ${shortFrom} mandou: "${shortSubj}" ✉️`,
-    `Opa! Mensagem nova de ${shortFrom} sobre "${shortSubj}"! ✨`,
-    `Dá uma olhada, ${shortFrom} acabou de te mandar um e-mail! 📨`,
-  ];
-  return fallbacks[Math.floor(Math.random() * fallbacks.length)];
+interface AlertPopupData {
+  theme: "theme-email" | "theme-gmail" | "theme-outlook" | "theme-whatsapp" | "theme-calendar";
+  icon: string;
+  typeLabel: string;
+  sender: string;
+  subject: string;
+  snippet: string;
+  durationMs?: number;
 }
 
-async function generateAiWhatsAppAlert(contact?: string): Promise<string> {
-  const hasKey = await hasConnectedAiKey();
-  if (hasKey) {
-    try {
-      const prompt = `Você é o mascote assistente do usuário na área de trabalho.
-Chegou uma nova mensagem no WhatsApp${contact ? ` de '${contact}'` : ""}.
-Gere um aviso curto, espontâneo e divertido em português (máximo de 8 a 10 palavras, sem aspas) avisando o usuário. Termine com um emoji.`;
+function showAlertPopup(data: AlertPopupData) {
+  if (!alertPopupEl) return;
+  if (cardOpen) setCard(false);
 
-      const res = await Promise.race([
-        Bridge.chatSend(prompt, null),
-        new Promise<never>((_, reject) => setTimeout(() => reject(new Error("timeout")), 3000)),
-      ]);
-      if (res?.text) {
-        let clean = res.text.replace(/^["'«“]|["'»”]$/g, "").replace(/\n.*/s, "").trim();
-        if (clean.length > 75) clean = clean.slice(0, 72) + "…";
-        if (clean) return clean;
-      }
-    } catch {
-      // Fallback below
-    }
+  closeAlertPopup();
+  isAlertOpen = true;
+
+  alertPopupEl.className = `pal-alert-popup ${data.theme}`;
+  if (alertBadgeEl) alertBadgeEl.className = `pal-alert-badge ${data.theme}`;
+  if (alertIconEl) alertIconEl.textContent = data.icon;
+  if (alertTypeEl) alertTypeEl.textContent = data.typeLabel;
+  if (alertSenderEl) alertSenderEl.textContent = data.sender;
+  if (alertSubjectEl) alertSubjectEl.textContent = data.subject;
+  if (alertSnippetEl) alertSnippetEl.textContent = data.snippet;
+
+  const duration = data.durationMs || 9000;
+  if (alertProgressFillEl) {
+    alertProgressFillEl.style.transition = "none";
+    alertProgressFillEl.style.width = "100%";
+    void alertProgressFillEl.offsetWidth;
+    alertProgressFillEl.style.transition = `width ${duration}ms linear`;
+    alertProgressFillEl.style.width = "0%";
   }
 
-  if (contact) {
-    const waPhrases = [
-      `${contact} está falando no WhatsApp! 💬`,
-      `Opa, nova mensagem do ${contact} no Whats! 🟢`,
-      `${contact} te mandou mensagem no WhatsApp! 👀`,
-      `Mensagem nova do ${contact}! Dá uma olhada no Whats! 📱`,
-    ];
-    return waPhrases[Math.floor(Math.random() * waPhrases.length)];
-  }
+  alertPopupEl.hidden = false;
+  pushRect();
 
-  const waPhrases = [
-    "Chegou nova mensagem no WhatsApp! 💬",
-    "Alerta verde: mensagem nova no Whats! 🟢",
-    "Tem mensagem nova esperando no WhatsApp! 📱",
-    "Opa, chegou mensagem nova no WhatsApp! 🚀",
-  ];
-  return waPhrases[Math.floor(Math.random() * waPhrases.length)];
+  alertTimer = window.setTimeout(() => {
+    closeAlertPopup();
+  }, duration);
 }
 
-async function generateAiMeetingAlert(
-  title: string,
-  attendee: string,
-  timeInfo: string,
-  isReminder: boolean,
-): Promise<string> {
-  const hasKey = await hasConnectedAiKey();
-  if (hasKey) {
-    try {
-      const prompt = isReminder
-        ? `Você é o mascote assistente do usuário.
-A reunião '${title}' ${attendee ? `com ${attendee}` : ""} começa em ${timeInfo}!
-Dê um lembrete amigável, rápido e descontraído em português (máximo de 10 a 12 palavras, sem aspas). Termine com um emoji.`
-        : `Você é o mascote assistente do usuário.
-Um novo agendamento acabou de ser confirmado: '${title}' com ${attendee}.
-Dê um aviso animado e prestativo em português (máximo de 10 a 12 palavras, sem aspas). Termine com um emoji.`;
-
-      const res = await Promise.race([
-        Bridge.chatSend(prompt, null),
-        new Promise<never>((_, reject) => setTimeout(() => reject(new Error("timeout")), 3000)),
-      ]);
-      if (res?.text) {
-        let clean = res.text.replace(/^["'«“]|["'»”]$/g, "").replace(/\n.*/s, "").trim();
-        if (clean.length > 85) clean = clean.slice(0, 82) + "…";
-        if (clean) return clean;
-      }
-    } catch {
-      // Fallback below
-    }
-  }
-
-  if (isReminder) {
-    const phrases = [
-      `Lembrete: Reunião "${title}" em ${timeInfo}! ⏰`,
-      `Quase na hora de "${title}"! Prepare um café! ☕`,
-      `Alerta de reunião: "${title}" começa em breve! 📅`,
-    ];
-    return phrases[Math.floor(Math.random() * phrases.length)];
-  }
-
-  const phrases = [
-    `Novo agendamento: "${title}" com ${attendee}! 📅`,
-    `Compromisso confirmado na sua agenda: "${title}"! ✨`,
-    `Temos reunião nova marcada: "${title}"! 🚀`,
-  ];
-  return phrases[Math.floor(Math.random() * phrases.length)];
+function cleanSnippet(raw?: string): string {
+  if (!raw) return "";
+  const doc = new DOMParser().parseFromString(raw, "text/html");
+  let text = (doc.body.textContent || "").replace(/\s+/g, " ").trim();
+  if (text.length > 140) text = text.slice(0, 137) + "…";
+  return text;
 }
 
 // ── Stateful Deduplication for Intelligent Assistant Alerts ───────────────
@@ -339,17 +278,24 @@ async function handlePalIntegrationAlert(update: IntegrationUpdate) {
       .replace(/<[^>]+>/g, "")
       .replace(/"/g, "")
       .trim();
-    const cleanSubj = newest.subject || "(sem assunto)";
-    const cleanSnippet = newest.snippet || "";
+    const cleanSubj = newest.subject || "(Sem assunto)";
+    const snippetText = cleanSnippet(newest.snippet) || "Novo e-mail recebido na sua caixa de entrada.";
 
     legs = [];
     currentVelocity = 0;
-    idleUntil = performance.now() + 8000;
+    idleUntil = performance.now() + 9000;
 
-    triggerLivelyReaction({ emote: "star", pose: "celebrate", sound: "greet" });
+    triggerVisualAlert({ emote: "star", pose: "celebrate" });
 
-    void generateAiEmailAlert(cleanFrom, cleanSubj, cleanSnippet).then((alertText) => {
-      showThought(alertText, "star", 7500, true);
+    const isGmail = update.id === "integration_gmail";
+    showAlertPopup({
+      theme: isGmail ? "theme-gmail" : "theme-outlook",
+      icon: isGmail ? "📬" : "✉️",
+      typeLabel: isGmail ? "Gmail" : "Outlook",
+      sender: cleanFrom || "Novo E-mail",
+      subject: cleanSubj,
+      snippet: snippetText,
+      durationMs: 9000,
     });
     return;
   }
@@ -372,12 +318,18 @@ async function handlePalIntegrationAlert(update: IntegrationUpdate) {
 
       legs = [];
       currentVelocity = 0;
-      idleUntil = performance.now() + 7000;
+      idleUntil = performance.now() + 8000;
 
-      triggerLivelyReaction({ emote: "wink", pose: "wave", sound: "pop" });
+      triggerVisualAlert({ emote: "wink", pose: "wave" });
 
-      void generateAiWhatsAppAlert(contact).then((alertText) => {
-        showThought(alertText, "wink", 6500, true);
+      showAlertPopup({
+        theme: "theme-whatsapp",
+        icon: "💬",
+        typeLabel: "WhatsApp",
+        sender: contact || "WhatsApp Web",
+        subject: unread === 1 ? "1 nova mensagem não lida" : `${unread} novas mensagens não lidas`,
+        snippet: contact ? `Mensagem recente recebida de ${contact}.` : "Mensagem recebida no WhatsApp.",
+        durationMs: 8000,
       });
     } else {
       lastWhatsAppCount = unread;
@@ -407,12 +359,19 @@ async function handlePalIntegrationAlert(update: IntegrationUpdate) {
 
         legs = [];
         currentVelocity = 0;
-        idleUntil = performance.now() + 7000;
+        idleUntil = performance.now() + 8500;
 
-        triggerLivelyReaction({ emote: "star", pose: "celebrate", sound: "finish" });
-        const attendee = b.attendeeName || "um convidado";
-        void generateAiMeetingAlert(b.title, attendee, b.start, false).then((alertText) => {
-          showThought(alertText, "star", 7000, true);
+        triggerVisualAlert({ emote: "star", pose: "celebrate" });
+        const attendee = b.attendeeName || "Convidado";
+        const startTime = b.start ? new Date(b.start).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) : "";
+        showAlertPopup({
+          theme: "theme-calendar",
+          icon: "📅",
+          typeLabel: "Novo Agendamento",
+          sender: b.title || "Reunião Confirmada",
+          subject: `Com: ${attendee}`,
+          snippet: startTime ? `Horário confirmado: ${startTime}` : "Compromisso confirmado na sua agenda.",
+          durationMs: 8500,
         });
         return;
       }
@@ -435,11 +394,16 @@ function checkUpcomingMeetings() {
         notifiedMeetingTimes.add(key);
         legs = [];
         currentVelocity = 0;
-        idleUntil = performance.now() + 8000;
-        triggerLivelyReaction({ emote: "surprised", pose: "wave", sound: "pop" });
-        const timeStr = `${diffMin} min`;
-        void generateAiMeetingAlert(b.title, b.attendeeName || "", timeStr, true).then((alertText) => {
-          showThought(alertText, "surprised", 7500, true);
+        idleUntil = performance.now() + 8500;
+        triggerVisualAlert({ emote: "surprised", pose: "wave" });
+        showAlertPopup({
+          theme: "theme-calendar",
+          icon: "⏰",
+          typeLabel: "Reunião em Breve",
+          sender: b.title || "Reunião",
+          subject: `Início em ${diffMin} minutos`,
+          snippet: b.attendeeName ? `Participante: ${b.attendeeName}` : "Sua reunião começará em breve.",
+          durationMs: 8500,
         });
       }
     }
@@ -1220,7 +1184,7 @@ function syncCharacter() {
 /** Tell Rust which part of the window takes the mouse: the body, plus the
  *  card when it is open — the transparent rest stays click-through. */
 function pushRect() {
-  lastRect = { x: 0, y: 0, w: cardOpen ? WIN_W : PAL_W, h: PAL_H };
+  lastRect = { x: 0, y: 0, w: (cardOpen || isAlertOpen) ? WIN_W : PAL_W, h: PAL_H };
   void Bridge.setPalRect(lastRect.x, lastRect.y, lastRect.w, lastRect.h);
 }
 
@@ -1228,6 +1192,7 @@ function setCard(open: boolean) {
   if (open === cardOpen) return;
   cardOpen = open;
   cardEl.hidden = !open;
+  if (open && isAlertOpen) closeAlertPopup();
   if (!open) {
     searchWrap.hidden = true;
     searchOpenBtn.hidden = false;
@@ -1419,6 +1384,11 @@ async function main() {
   window.setInterval(checkUpcomingMeetings, 60000);
 
   // On the body: the card. On a button: its action, owned by the island.
+  alertCloseBtn?.addEventListener("click", (e) => {
+    e.stopPropagation();
+    closeAlertPopup();
+  });
+
   root.addEventListener("click", (e) => {
     const el = (e.target as HTMLElement).closest("[data-action]") as HTMLElement | null;
     if (el?.dataset.action) {
@@ -1426,6 +1396,7 @@ async function main() {
       return;
     }
     if ((e.target as HTMLElement).closest("#pal-card")) return; // a gap, not a button
+    if ((e.target as HTMLElement).closest("#pal-alert-popup")) return;
     if (e.clientX <= PAL_W) setCard(!cardOpen);
   });
   searchInput.addEventListener("focus", () => void Bridge.setPalFocus(true));

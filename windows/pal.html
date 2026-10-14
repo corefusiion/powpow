@@ -14,6 +14,33 @@
         <div class="pal-thought-bubble-dot dot-2"></div>
       </div>
 
+      <!-- Visual alert aura & sparkle rings for lively notifications (no audio) -->
+      <div id="pal-alert-aura" class="pal-alert-aura" hidden>
+        <div class="pal-aura-pulse"></div>
+        <div class="pal-sparkle s-1">✨</div>
+        <div class="pal-sparkle s-2">⭐</div>
+        <div class="pal-sparkle s-3">✨</div>
+      </div>
+
+      <!-- Informative Notification Popup for Emails, WhatsApp & Calendar -->
+      <div id="pal-alert-popup" class="pal-alert-popup" hidden>
+        <div class="pal-alert-header">
+          <span id="pal-alert-badge" class="pal-alert-badge theme-email">
+            <span id="pal-alert-icon" class="pal-alert-icon">✉️</span>
+            <span id="pal-alert-type" class="pal-alert-type">Novo E-mail</span>
+          </span>
+          <button id="pal-alert-close" class="pal-alert-close" type="button" aria-label="Fechar">✕</button>
+        </div>
+        <div class="pal-alert-body">
+          <div id="pal-alert-sender" class="pal-alert-sender"></div>
+          <div id="pal-alert-subject" class="pal-alert-subject"></div>
+          <div id="pal-alert-snippet" class="pal-alert-snippet"></div>
+        </div>
+        <div class="pal-alert-progress-bar">
+          <div id="pal-alert-progress-fill" class="pal-alert-progress-fill"></div>
+        </div>
+      </div>
+
       <!-- Close button bite toy -->
       <div id="pal-close-bite" class="pal-close-bite" hidden>
         <div class="pal-close-icon">✕</div>

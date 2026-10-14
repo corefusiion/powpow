@@ -81,13 +81,13 @@ O companheiro ganha superpoderes de um verdadeiro agente de sistema operacional 
 
 **Monte o seu.** Em *Configurações → Personagem*, o construtor deixa escolher forma, olhos, topinho, cor e pelugem, com prévia ao vivo e botão de sorteio. "Usar este pal" grava a criação e ela passa a ser sua opção pessoal na lista de personagens.
 
-**Mascote Andarilho & Assistente Real na Área de Trabalho (Roaming Pal):**
-* **Perambulação Suave e Atenta:** O mascote caminha de forma relaxada pela sua tela, posicionando-se de forma inteligente ao lado do seu trabalho ativo para acompanhar sua rotina sem atrapalhar.
-* **Alertas Vivos de E-mail com Resumo por IA:** Ao chegar um novo e-mail (Gmail ou Outlook), o mascote dá um pulinho animado, toca um som alegre e exibe um balão com um resumo ágil e descontraído gerado em tempo real pelo modelo de IA conectado (Gemini ou Claude), em vez de mensagens duras ou repetitivas.
-* **Notificações de WhatsApp com Nome do Contato:** Detecta mensagens novas no WhatsApp Web e avisa exatamente quem está falando (ex.: *"Marcos está falando no Whats! 💬"*).
-* **Lembretes e Agendamentos de Reuniões:** Avisa quando um novo compromisso for marcado no Cal.com / agenda e dispara um lembrete animado 15 minutos antes da reunião começar.
-* **Deduplicação Inteligente & Zero Repetição:** Alertas nunca se repetem para itens já lidos ou notificados. O mascote aprende o estado inicial silenciosamente e só desperta para novidades reais.
-* **Animações e Reações Orgânicas:** Pulos, pulsações no balão de fala, acenos, poses comemorativas e sons divertidos variam dinamicamente a cada nova interação.
+**Mascote Andarilho & Assistente na Área de Trabalho (Roaming Pal):**
+* **Perambulação Suave e Atenta:** O mascote caminha de forma relaxada pela tela, posicionando-se de forma inteligente ao lado do seu trabalho ativo para acompanhar sua rotina sem atrapalhar.
+* **Popup Informativo de E-mail (Gmail e Outlook):** Ao chegar um novo e-mail, o mascote dá um salto alegre e exibe um card/popup informativo ao seu lado contendo o remetente, o assunto e o trecho real da mensagem de forma clara e elegante, sem poluição de áudio.
+* **Alertas Visuais do WhatsApp:** Detecta mensagens recentes no WhatsApp Web e mostra no popup o nome de quem enviou (ex.: *"Marcos"*).
+* **Lembretes e Agendamentos de Reuniões:** Mostra no popup quando um novo compromisso for marcado no Cal.com / agenda e exibe um lembrete visual 15 minutos antes da reunião começar.
+* **Efeitos Visuais e Zero Áudio:** Alertas 100% visuais, com aura brilhante em expansão, estrelinhas flutuantes, poses de comemoração ou aceno, barra de progresso suave e botão de fechar — sem reproduzir áudio para não interromper seu foco ou músicas.
+* **Deduplicação Inteligente & Zero Repetição:** Alertas nunca se repetem para itens já visualizados ou notificados anteriormente.
 
 **Gestos.** Eles reagem o tempo todo — e os 28 sons do app acompanham cada evento, com opção de mudo quando o trabalho pede silêncio:
 
