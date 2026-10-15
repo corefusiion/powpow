@@ -34,7 +34,7 @@ use windows::Win32::UI::WindowsAndMessaging::{
 
 use crate::files;
 
-#[derive(Serialize)]
+#[derive(Serialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct AttachedWindow {
     pub name: String,
@@ -42,6 +42,7 @@ pub struct AttachedWindow {
     pub size: u64,
     pub app_name: String,
     pub title: String,
+    pub data_url: Option<String>,
 }
 
 /// Every window that belongs to us: a capture must never pick one of Powpow's
@@ -53,6 +54,18 @@ fn ours(app: &AppHandle) -> Vec<HWND> {
         .filter_map(|w| w.hwnd().ok())
         .map(|raw| HWND(raw.0 as *mut _))
         .collect()
+}
+
+fn is_our_window(app: &AppHandle, hwnd: HWND) -> bool {
+    if hwnd.0.is_null() {
+        return false;
+    }
+    let mut pid = 0u32;
+    unsafe { GetWindowThreadProcessId(hwnd, Some(&mut pid)) };
+    if pid != 0 && pid == std::process::id() {
+        return true;
+    }
+    ours(app).contains(&hwnd)
 }
 
 fn window_text(hwnd: HWND) -> String {
@@ -149,8 +162,7 @@ pub fn attach(app: &AppHandle) -> Result<AttachedWindow, String> {
         GetCursorPos(&mut point).map_err(|_| "cannot read cursor position".to_string())?;
     }
     let target = unsafe { WindowFromPoint(point) };
-    let our_windows = ours(app);
-    if target.0.is_null() || our_windows.contains(&target) {
+    if target.0.is_null() || is_our_window(app, target) {
         return attach_active(app);
     }
     if check_target(app, target, "").is_err() {
@@ -186,6 +198,9 @@ pub fn capture_screen() -> Result<AttachedWindow, String> {
         let dest = dir.join(format!("tela-{stamp}.png"));
         img.save(&dest).map_err(|e| format!("cannot save capture: {e}"))?;
         let size = std::fs::metadata(&dest).map(|m| m.len()).unwrap_or(0);
+        let data_url = std::fs::read(&dest)
+            .ok()
+            .map(|b| format!("data:image/png;base64,{}", crate::claude::base64_for(&b)));
 
         Ok(AttachedWindow {
             name: dest
@@ -196,52 +211,138 @@ pub fn capture_screen() -> Result<AttachedWindow, String> {
             size,
             app_name: "Tela".into(),
             title: "Captura de tela".into(),
+            data_url,
         })
     }
 }
 
+/// Captures a chosen screen region (physical pixels) into the inbox.
+pub fn capture_rect(x: i32, y: i32, width: i32, height: i32) -> Result<AttachedWindow, String> {
+    if width < 8 || height < 8 {
+        return Err("seleção de tela muito pequena".into());
+    }
+    let rect = RECT {
+        left: x,
+        top: y,
+        right: x + width,
+        bottom: y + height,
+    };
+    let (w, h, pixels) = capture(rect)?;
+    let img = image::RgbaImage::from_raw(w, h, pixels)
+        .ok_or_else(|| "captured image is corrupt".to_string())?;
+
+    // For snippets and selections, keep 1:1 crisp pixel clarity unless unusually huge
+    let (w2, h2) = if w > 1568 {
+        let h2 = (h as f32 * 1568.0 / w as f32).round() as u32;
+        (1568, h2.max(1))
+    } else {
+        (w, h)
+    };
+    let img = if w2 != w || h2 != h {
+        image::imageops::resize(&img, w2, h2, image::imageops::FilterType::Triangle)
+    } else {
+        img
+    };
+
+    let dir = files::inbox_dir();
+    std::fs::create_dir_all(&dir).map_err(|e| e.to_string())?;
+    let stamp = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .map(|d| d.as_secs())
+        .unwrap_or(0);
+    let dest = dir.join(format!("selecao-{stamp}.png"));
+    img.save(&dest).map_err(|e| format!("cannot save capture: {e}"))?;
+    let size = std::fs::metadata(&dest).map(|m| m.len()).unwrap_or(0);
+    let data_url = std::fs::read(&dest)
+        .ok()
+        .map(|b| format!("data:image/png;base64,{}", crate::claude::base64_for(&b)));
+
+    Ok(AttachedWindow {
+        name: dest
+            .file_name()
+            .map(|n| n.to_string_lossy().to_string())
+            .unwrap_or_else(|| "selecao.png".into()),
+        path: dest.to_string_lossy().to_string(),
+        size,
+        app_name: "Área Selecionada".into(),
+        title: format!("Seleção ({width}x{height})"),
+        data_url,
+    })
+}
+
 /// Finds the foreground non-Powpow user application window.
 pub fn find_active_target(app: &AppHandle) -> Option<HWND> {
-    let mut target = unsafe { GetForegroundWindow() };
-    let our_windows = ours(app);
-
-    if target.0.is_null() || our_windows.contains(&target) || unsafe { IsIconic(target) }.as_bool() {
-        let mut next = target;
-        while !next.0.is_null() {
-            let Ok(h) = (unsafe {
-                windows::Win32::UI::WindowsAndMessaging::GetWindow(
-                    next,
-                    windows::Win32::UI::WindowsAndMessaging::GW_HWNDNEXT,
-                )
-            }) else {
-                break;
-            };
-            if h.0.is_null() {
-                break;
-            }
-            next = h;
-            if !our_windows.contains(&next)
-                && !unsafe { IsIconic(next) }.as_bool()
-                && unsafe { windows::Win32::UI::WindowsAndMessaging::IsWindowVisible(next) }.as_bool()
-            {
-                let mut r = RECT::default();
-                if unsafe { GetWindowRect(next, &mut r) }.is_ok() {
-                    let w = r.right - r.left;
-                    let h = r.bottom - r.top;
-                    if w > 120 && h > 120 {
-                        target = next;
-                        break;
-                    }
-                }
+    let fg = unsafe { GetForegroundWindow() };
+    if !fg.0.is_null() && !is_our_window(app, fg) && !unsafe { IsIconic(fg) }.as_bool() {
+        let mut r = RECT::default();
+        if unsafe { GetWindowRect(fg, &mut r) }.is_ok() {
+            let w = r.right - r.left;
+            let h = r.bottom - r.top;
+            if w > 160 && h > 160 {
+                return Some(fg);
             }
         }
     }
 
-    if !target.0.is_null() && !our_windows.contains(&target) && !unsafe { IsIconic(target) }.as_bool() {
-        Some(target)
-    } else {
-        None
+    struct Search {
+        our_pid: u32,
+        found: Option<HWND>,
     }
+
+    unsafe extern "system" fn enum_proc(
+        hwnd: HWND,
+        lparam: windows::Win32::Foundation::LPARAM,
+    ) -> windows::Win32::Foundation::BOOL {
+        let search = &mut *(lparam.0 as *mut Search);
+        let mut pid = 0u32;
+        GetWindowThreadProcessId(hwnd, Some(&mut pid));
+        if pid == search.our_pid || pid == 0 {
+            return true.into();
+        }
+
+        if !windows::Win32::UI::WindowsAndMessaging::IsWindowVisible(hwnd).as_bool()
+            || IsIconic(hwnd).as_bool()
+        {
+            return true.into();
+        }
+
+        let mut rect = RECT::default();
+        if GetWindowRect(hwnd, &mut rect).is_err() {
+            return true.into();
+        }
+        let w = rect.right - rect.left;
+        let h = rect.bottom - rect.top;
+        if w < 160 || h < 160 {
+            return true.into();
+        }
+
+        let title = window_text(hwnd);
+        if title.is_empty()
+            || title == "Program Manager"
+            || title == "Windows Input Experience"
+            || title == "Settings"
+            || title.starts_with("Powpow")
+        {
+            return true.into();
+        }
+
+        search.found = Some(hwnd);
+        false.into()
+    }
+
+    let mut search = Search {
+        our_pid: std::process::id(),
+        found: None,
+    };
+
+    unsafe {
+        let _ = windows::Win32::UI::WindowsAndMessaging::EnumWindows(
+            Some(enum_proc),
+            windows::Win32::Foundation::LPARAM(&mut search as *mut _ as isize),
+        );
+    }
+
+    search.found
 }
 
 /// The window the user was working in before clicking the roaming pal. The pal
@@ -258,7 +359,7 @@ pub fn attach_active(app: &AppHandle) -> Result<AttachedWindow, String> {
 
 /// Ours or minimized are clean errors, never a capture.
 fn check_target(app: &AppHandle, target: HWND, ours_msg: &str) -> Result<(), String> {
-    if ours(app).contains(&target) {
+    if is_our_window(app, target) {
         return Err(ours_msg.into());
     }
     if unsafe { IsIconic(target) }.as_bool() {
@@ -307,6 +408,9 @@ fn save(target: HWND) -> Result<AttachedWindow, String> {
     let dest = dir.join(format!("{base}-{stamp}.png"));
     img.save(&dest).map_err(|e| format!("cannot save capture: {e}"))?;
     let size = std::fs::metadata(&dest).map(|m| m.len()).unwrap_or(0);
+    let data_url = std::fs::read(&dest)
+        .ok()
+        .map(|b| format!("data:image/png;base64,{}", crate::claude::base64_for(&b)));
 
     Ok(AttachedWindow {
         name: dest
@@ -317,6 +421,7 @@ fn save(target: HWND) -> Result<AttachedWindow, String> {
         size,
         app_name,
         title,
+        data_url,
     })
 }
 

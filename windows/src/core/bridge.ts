@@ -155,6 +155,13 @@ export const Bridge = {
   palState: () => call<string>("pal_state"),
   /** The window the user was working in - the pal's Screen analysis. */
   attachActiveWindow: () => callOrThrow<AttachedWindow>("attach_active_window"),
+  /** Captures a specific rectangular area on the screen (physical coords). */
+  captureScreenRect: (x: number, y: number, width: number, height: number) =>
+    callOrThrow<AttachedWindow>("capture_screen_rect", { x, y, width, height }),
+  /** Resizes the pal window dynamically. */
+  resizePal: (width: number, height: number) => call<void>("resize_pal", { width, height }),
+  /** Shows or hides the pal window directly. */
+  setPalVisible: (visible: boolean) => call<void>("set_pal_visible", { visible }),
   /** Screen bounds of active window without screenshot overhead for perching. */
   activeWindowBounds: () => call<ActiveWindowBounds | null>("get_active_window_bounds"),
   /** A card button pressed on the pal; the island owns what it means. */
@@ -273,6 +280,7 @@ export interface AttachedWindow {
   size: number;
   appName: string;
   title: string;
+  dataUrl?: string | null;
 }
 
 export interface DragDropPayload {

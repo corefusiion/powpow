@@ -107,6 +107,20 @@ const chatRecaptureBtn = document.getElementById("pal-chat-recapture-btn");
 const chatClearBtn = document.getElementById("pal-chat-clear-btn");
 const chatCloseBtn = document.getElementById("pal-chat-close-btn");
 const chatQuickTagsEl = document.getElementById("pal-chat-quick-tags");
+const chatSelectAreaBtn = document.getElementById("pal-chat-select-area-btn");
+const chatPreviewCardEl = document.getElementById("pal-chat-preview-card");
+const chatThumbWrapEl = document.getElementById("pal-chat-thumb-wrap");
+const chatThumbImgEl = document.getElementById("pal-chat-thumb-img") as HTMLImageElement | null;
+const chatThumbTitleEl = document.getElementById("pal-chat-thumb-title");
+const chatThumbSubEl = document.getElementById("pal-chat-thumb-sub");
+const chatThumbRetakeBtn = document.getElementById("pal-chat-thumb-retake-btn");
+const chatLightboxEl = document.getElementById("pal-chat-lightbox");
+const chatLightboxImgEl = document.getElementById("pal-chat-lightbox-img") as HTMLImageElement | null;
+const chatLightboxCloseBtn = document.getElementById("pal-chat-lightbox-close");
+
+const selectorOverlayEl = document.getElementById("pal-selector-overlay");
+const selectorBoxEl = document.getElementById("pal-selector-box");
+const selectorSizeBadgeEl = document.getElementById("pal-selector-size-badge");
 
 let isChatOpen = false;
 let isChatSending = false;
@@ -1484,7 +1498,45 @@ function removeChatTyping() {
   typingRowEl = null;
 }
 
-async function openScreenChat() {
+function updateChatPreviewUI(win: AttachedWindow | null) {
+  if (!win) {
+    if (chatPreviewCardEl) chatPreviewCardEl.hidden = true;
+    return;
+  }
+  if (chatPreviewCardEl) chatPreviewCardEl.hidden = false;
+  if (chatThumbImgEl && win.dataUrl) {
+    chatThumbImgEl.src = win.dataUrl;
+  }
+  if (chatThumbTitleEl) {
+    chatThumbTitleEl.textContent = win.appName === "Área Selecionada"
+      ? "🎯 Área Selecionada"
+      : `📸 ${win.appName || "Tela Capturada"}`;
+  }
+  if (chatThumbSubEl) {
+    chatThumbSubEl.textContent = win.title ? win.title : "Pronta para análise e fórmulas";
+  }
+}
+
+async function startScreenAnalysis() {
+  if (cardOpen) setCard(false);
+  if (isAlertOpen) closeAlertPopup();
+
+  Sound.play("attach");
+  triggerEmote("surprised");
+  if (pal) pal.setPose("think");
+
+  // Capture the active application window immediately while it is still in the foreground!
+  let win: AttachedWindow | null = null;
+  try {
+    win = await Bridge.attachActiveWindow();
+  } catch (err) {
+    console.warn("[pal] attachActiveWindow fallback", err);
+  }
+
+  await openScreenChat(win);
+}
+
+async function openScreenChat(initialWindow: AttachedWindow | null = null) {
   if (cardOpen) setCard(false);
   if (isAlertOpen) closeAlertPopup();
 
@@ -1514,38 +1566,55 @@ async function openScreenChat() {
   pushRect();
   void Bridge.setPalFocus(true);
 
-  triggerEmote("surprised");
-  if (pal) pal.setPose("think");
-
   if (chatPopupEl) chatPopupEl.hidden = false;
   if (chatMessagesEl) chatMessagesEl.innerHTML = "";
 
-  try {
-    Sound.play("attach");
-    const win = await Bridge.attachActiveWindow();
-    currentAttachedWindow = win;
-    const { icon, name } = resolveAppPresentation(win.appName, win.title);
+  currentAttachedWindow = initialWindow;
+  updateChatPreviewUI(initialWindow);
+
+  if (initialWindow) {
+    const { icon, name } = resolveAppPresentation(initialWindow.appName, initialWindow.title);
     if (chatAppIconEl) chatAppIconEl.textContent = icon;
     if (chatAppNameEl) chatAppNameEl.textContent = name;
     if (chatTargetTitleEl) {
-      chatTargetTitleEl.textContent = win.title ? `Janela: ${win.title}` : `Aplicativo: ${win.appName}`;
+      chatTargetTitleEl.textContent = initialWindow.title ? `Janela: ${initialWindow.title}` : `Aplicativo: ${initialWindow.appName}`;
     }
 
     void Bridge.chatReset();
 
     appendChatMessage(
       "assistant",
-      `👋 Capturei a tela de **${name}**!\n\nComo posso te ajudar com o que está visível? Pode perguntar sobre **fórmulas de Excel**, **cálculos**, **código**, **dados** ou pedir explicações e resumos!`,
+      `👋 Capturei a tela de **${name}**!\n\nComo posso te ajudar com o que está visível? Pode perguntar sobre **fórmulas de Excel**, **cálculos**, **código**, **dados** ou pedir explicações e resumos!\n\n💡 *Dica:* Se quiser focar em uma fórmula, gráfico ou tabela específica, use o botão **🎯 (Seletor)** no topo para recortar apenas o trecho desejado.`,
     );
-  } catch {
-    currentAttachedWindow = null;
-    if (chatAppIconEl) chatAppIconEl.textContent = "🖥️";
-    if (chatAppNameEl) chatAppNameEl.textContent = "Tela Ativa";
-    if (chatTargetTitleEl) chatTargetTitleEl.textContent = "Visualização da Área de Trabalho";
-    appendChatMessage(
-      "assistant",
-      "👋 Olá! Estou pronto para analisar sua tela. O que você gostaria de tirar dúvidas ou fazer?",
-    );
+  } else {
+    // If not captured beforehand, try once now
+    try {
+      Sound.play("attach");
+      const win = await Bridge.attachActiveWindow();
+      currentAttachedWindow = win;
+      updateChatPreviewUI(win);
+      const { icon, name } = resolveAppPresentation(win.appName, win.title);
+      if (chatAppIconEl) chatAppIconEl.textContent = icon;
+      if (chatAppNameEl) chatAppNameEl.textContent = name;
+      if (chatTargetTitleEl) {
+        chatTargetTitleEl.textContent = win.title ? `Janela: ${win.title}` : `Aplicativo: ${win.appName}`;
+      }
+      void Bridge.chatReset();
+      appendChatMessage(
+        "assistant",
+        `👋 Capturei a tela de **${name}**!\n\nComo posso te ajudar com o que está visível? Pode perguntar sobre fórmulas, números ou usar o **🎯 Seletor** para selecionar um trecho específico!`,
+      );
+    } catch {
+      currentAttachedWindow = null;
+      updateChatPreviewUI(null);
+      if (chatAppIconEl) chatAppIconEl.textContent = "🖥️";
+      if (chatAppNameEl) chatAppNameEl.textContent = "Tela Ativa";
+      if (chatTargetTitleEl) chatTargetTitleEl.textContent = "Visualização da Área de Trabalho";
+      appendChatMessage(
+        "assistant",
+        "👋 Olá! Estou pronto para analisar sua tela. Clique em 📸 **Recapturar** ou 🎯 **Selecionar área** para capturar o que deseja analisar!",
+      );
+    }
   }
 
   if (chatInputEl) {
@@ -1559,6 +1628,7 @@ function closeScreenChat() {
   if (!isChatOpen) return;
   isChatOpen = false;
   if (chatPopupEl) chatPopupEl.hidden = true;
+  if (chatLightboxEl) chatLightboxEl.hidden = true;
   void Bridge.setPalFocus(false);
   pushRect();
   if (pal && pal.pose === "think") {
@@ -1572,18 +1642,118 @@ async function recaptureScreen() {
   try {
     Sound.play("attach");
     triggerEmote("wink");
+    if (chatPopupEl) chatPopupEl.style.opacity = "0.15";
+    await new Promise((r) => setTimeout(r, 60));
+
     const win = await Bridge.attachActiveWindow();
+    if (chatPopupEl) chatPopupEl.style.opacity = "1";
+
     currentAttachedWindow = win;
+    updateChatPreviewUI(win);
+
     const { icon, name } = resolveAppPresentation(win.appName, win.title);
     if (chatAppIconEl) chatAppIconEl.textContent = icon;
     if (chatAppNameEl) chatAppNameEl.textContent = name;
     if (chatTargetTitleEl) {
       chatTargetTitleEl.textContent = win.title ? `Janela: ${win.title}` : `Aplicativo: ${win.appName}`;
     }
-    appendChatMessage("assistant", `📸 *Tela recapturada com sucesso (${name})! As próximas perguntas usarão esta imagem atualizada.*`);
+    void Bridge.chatReset();
+    appendChatMessage("assistant", `📸 *Nova foto capturada (${name})! As próximas perguntas analisarão esta imagem atualizada.*`);
   } catch {
+    if (chatPopupEl) chatPopupEl.style.opacity = "1";
     appendChatMessage("assistant", "⚠️ *Não foi possível recapturar a tela neste momento.*");
   }
+}
+
+let isSelectingRegion = false;
+let selectionStartX = 0;
+let selectionStartY = 0;
+let savedPalX = 0;
+let savedPalY = 0;
+
+async function startRegionSelection() {
+  if (isSelectingRegion || isChatSending) return;
+  isSelectingRegion = true;
+
+  savedPalX = x;
+  savedPalY = y;
+
+  if (chatPopupEl) chatPopupEl.hidden = true;
+  if (chatLightboxEl) chatLightboxEl.hidden = true;
+  if (selectorBoxEl) selectorBoxEl.hidden = true;
+  if (selectorOverlayEl) selectorOverlayEl.hidden = false;
+
+  const sw = screenInfo.width || 1920;
+  const sh = screenInfo.height || 1080;
+  const sx = screenInfo.x || 0;
+  const sy = screenInfo.y || 0;
+
+  await Bridge.movePal(sx, sy);
+  await Bridge.resizePal(sw, sh);
+  await Bridge.setPalRect(0, 0, sw, sh);
+  await Bridge.setPalFocus(true);
+}
+
+async function cancelRegionSelection() {
+  if (!isSelectingRegion) return;
+  isSelectingRegion = false;
+
+  if (selectorOverlayEl) selectorOverlayEl.hidden = true;
+  if (selectorBoxEl) selectorBoxEl.hidden = true;
+
+  await Bridge.resizePal(540, 440);
+  await Bridge.movePal(savedPalX, savedPalY);
+  pushRect();
+
+  if (chatPopupEl) chatPopupEl.hidden = false;
+  if (chatInputEl) chatInputEl.focus();
+}
+
+async function finishRegionSelection(selX: number, selY: number, selW: number, selH: number) {
+  if (!isSelectingRegion) return;
+  isSelectingRegion = false;
+
+  if (selectorOverlayEl) selectorOverlayEl.hidden = true;
+  if (selectorBoxEl) selectorBoxEl.hidden = true;
+
+  await Bridge.resizePal(540, 440);
+  await Bridge.movePal(savedPalX, savedPalY);
+  pushRect();
+
+  if (chatPopupEl) chatPopupEl.hidden = false;
+
+  const scale = screenInfo.scale || 1;
+  const sx = screenInfo.x || 0;
+  const sy = screenInfo.y || 0;
+
+  const physX = Math.round((sx + selX) * scale);
+  const physY = Math.round((sy + selY) * scale);
+  const physW = Math.round(selW * scale);
+  const physH = Math.round(selH * scale);
+
+  try {
+    Sound.play("attach");
+    triggerEmote("star");
+    const win = await Bridge.captureScreenRect(physX, physY, physW, physH);
+    currentAttachedWindow = win;
+    updateChatPreviewUI(win);
+
+    if (chatAppIconEl) chatAppIconEl.textContent = "🎯";
+    if (chatAppNameEl) chatAppNameEl.textContent = "Área Selecionada";
+    if (chatTargetTitleEl) {
+      chatTargetTitleEl.textContent = `Trecho selecionado: ${physW}×${physH} px`;
+    }
+
+    void Bridge.chatReset();
+    appendChatMessage(
+      "assistant",
+      `🎯 *Área selecionada capturada com sucesso (${physW}×${physH} px)!*\n\nComo posso te ajudar com o que está visível neste trecho recortado? Pode perguntar sobre a fórmula, dados da tabela ou explicações!`,
+    );
+  } catch (err) {
+    appendChatMessage("assistant", `⚠️ *Não foi possível recortar a área selecionada: ${err}*`);
+  }
+
+  if (chatInputEl) chatInputEl.focus();
 }
 
 function clearScreenChat() {
@@ -1679,7 +1849,7 @@ async function press(action: string) {
       return;
     case "analyze":
       setCard(false);
-      void openScreenChat();
+      void startScreenAnalysis();
       return;
     case "organize-desktop":
       setCard(false);
@@ -1901,6 +2071,103 @@ async function main() {
     e.stopPropagation();
     void recaptureScreen();
   });
+
+  chatSelectAreaBtn?.addEventListener("click", (e) => {
+    e.stopPropagation();
+    void startRegionSelection();
+  });
+
+  chatThumbWrapEl?.addEventListener("click", (e) => {
+    e.stopPropagation();
+    if (currentAttachedWindow?.dataUrl && chatLightboxEl && chatLightboxImgEl) {
+      chatLightboxImgEl.src = currentAttachedWindow.dataUrl;
+      chatLightboxEl.hidden = false;
+    }
+  });
+
+  chatThumbRetakeBtn?.addEventListener("click", (e) => {
+    e.stopPropagation();
+    void recaptureScreen();
+  });
+
+  chatLightboxCloseBtn?.addEventListener("click", (e) => {
+    e.stopPropagation();
+    if (chatLightboxEl) chatLightboxEl.hidden = true;
+  });
+
+  chatLightboxEl?.addEventListener("click", (e) => {
+    if (e.target === chatLightboxEl) {
+      chatLightboxEl.hidden = true;
+    }
+  });
+
+  // ── Screen Snipping Selector Mouse & Keyboard Events ──
+  if (selectorOverlayEl) {
+    let isMouseDown = false;
+
+    selectorOverlayEl.addEventListener("mousedown", (e) => {
+      if (e.button !== 0) {
+        void cancelRegionSelection();
+        return;
+      }
+      isMouseDown = true;
+      selectionStartX = e.clientX;
+      selectionStartY = e.clientY;
+      if (selectorBoxEl) {
+        selectorBoxEl.hidden = false;
+        selectorBoxEl.style.left = `${selectionStartX}px`;
+        selectorBoxEl.style.top = `${selectionStartY}px`;
+        selectorBoxEl.style.width = "0px";
+        selectorBoxEl.style.height = "0px";
+      }
+      if (selectorSizeBadgeEl) {
+        selectorSizeBadgeEl.textContent = "0 × 0";
+      }
+    });
+
+    window.addEventListener("mousemove", (e) => {
+      if (!isSelectingRegion || !isMouseDown || !selectorBoxEl) return;
+      const curX = e.clientX;
+      const curY = e.clientY;
+      const left = Math.min(selectionStartX, curX);
+      const top = Math.min(selectionStartY, curY);
+      const width = Math.abs(curX - selectionStartX);
+      const height = Math.abs(curY - selectionStartY);
+
+      selectorBoxEl.style.left = `${left}px`;
+      selectorBoxEl.style.top = `${top}px`;
+      selectorBoxEl.style.width = `${width}px`;
+      selectorBoxEl.style.height = `${height}px`;
+
+      if (selectorSizeBadgeEl) {
+        const scale = screenInfo.scale || 1;
+        selectorSizeBadgeEl.textContent = `${Math.round(width * scale)} × ${Math.round(height * scale)}`;
+      }
+    });
+
+    window.addEventListener("mouseup", (e) => {
+      if (!isSelectingRegion || !isMouseDown) return;
+      isMouseDown = false;
+      const curX = e.clientX;
+      const curY = e.clientY;
+      const left = Math.min(selectionStartX, curX);
+      const top = Math.min(selectionStartY, curY);
+      const width = Math.abs(curX - selectionStartX);
+      const height = Math.abs(curY - selectionStartY);
+
+      if (width >= 12 && height >= 12) {
+        void finishRegionSelection(left, top, width, height);
+      } else {
+        void cancelRegionSelection();
+      }
+    });
+
+    window.addEventListener("keydown", (e) => {
+      if (e.key === "Escape" && isSelectingRegion) {
+        void cancelRegionSelection();
+      }
+    });
+  }
 
   chatClearBtn?.addEventListener("click", (e) => {
     e.stopPropagation();

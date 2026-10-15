@@ -275,6 +275,29 @@ fn attach_active_window(app: AppHandle) -> Result<capture::AttachedWindow, Strin
 }
 
 #[tauri::command]
+fn capture_screen_rect(x: i32, y: i32, width: i32, height: i32) -> Result<capture::AttachedWindow, String> {
+    capture::capture_rect(x, y, width, height)
+}
+
+#[tauri::command]
+fn resize_pal(app: AppHandle, width: f64, height: f64) {
+    if let Some(win) = app.get_webview_window("pal") {
+        let _ = win.set_size(tauri::LogicalSize::new(width, height));
+    }
+}
+
+#[tauri::command]
+fn set_pal_visible(app: AppHandle, visible: bool) {
+    if let Some(win) = app.get_webview_window("pal") {
+        if visible {
+            let _ = win.show();
+        } else {
+            let _ = win.hide();
+        }
+    }
+}
+
+#[tauri::command]
 fn get_active_window_bounds(app: AppHandle) -> Option<capture::ActiveWindowBounds> {
     capture::active_window_bounds(&app)
 }
@@ -817,6 +840,9 @@ pub fn run() {
             set_pal_state,
             pal_state,
             attach_active_window,
+            capture_screen_rect,
+            resize_pal,
+            set_pal_visible,
             get_active_window_bounds,
             pal_action,
             set_pal_rect,

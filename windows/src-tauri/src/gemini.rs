@@ -20,8 +20,9 @@ pub const GEMINI_MODELS: &[&str] = &[
     "gemini-3.1-flash-lite",
 ];
 
-const SYSTEM_PROMPT: &str = "You are Mochi, a personal AI assistant living at the top of the user's screen. \
-You can help with anything — research, coding, places, recommendations, tasks, questions. \
+const SYSTEM_PROMPT: &str = "You are Mochi, a personal AI assistant living on the user's screen. \
+You can help with anything — research, coding, spreadsheets, productivity, and questions. \
+When analyzing screenshots or selected screen areas, examine formulas, numbers, tables, code, and errors attentively to provide direct, accurate answers. \
 Respond in the user's language. Be thorough but concise. \
 No markdown formatting (no **, no ##, no bullet dashes). Use plain text with line breaks.";
 
@@ -85,32 +86,26 @@ pub async fn send(
         &normalized
     };
 
-    // First turn may carry file/window context. Files ride as real parts —
-    // images/PDF as inlineData so the model actually sees them (a bare
-    // filename is what used to produce "I can't see images"), text inline.
+    // Attach file context whenever present (so follow-ups & recaptures/selections work) or on first turn
     let mut lead_parts: Vec<Value> = Vec::new();
     let mut full_query = String::new();
-    if chat.is_empty() {
-        match &context {
-            Some(GeminiContext::File { name, path }) => {
-                match content_block(path) {
-                    Some(block) => {
-                        lead_parts.push(block);
-                        full_query.push_str(&format!("File: {name}\n\n"));
-                    }
-                    None => {
-                        full_query.push_str(&format!("File: {name} (could not read contents)\n\n"));
-                    }
-                }
+    if let Some(GeminiContext::File { name, path }) = &context {
+        match content_block(path) {
+            Some(block) => {
+                lead_parts.push(block);
+                full_query.push_str(&format!("File: {name}\n\n"));
             }
-            Some(GeminiContext::Window { app_name, title, url }) => {
-                full_query.push_str(&format!("Context — App: {app_name}, Window: {title}"));
-                if let Some(url) = url {
-                    full_query.push_str(&format!(", URL: {url}"));
-                }
-                full_query.push_str("\n\n");
+            None => {
+                full_query.push_str(&format!("File: {name} (could not read contents)\n\n"));
             }
-            None => {}
+        }
+    } else if chat.is_empty() {
+        if let Some(GeminiContext::Window { app_name, title, url }) = &context {
+            full_query.push_str(&format!("Context — App: {app_name}, Window: {title}"));
+            if let Some(url) = url {
+                full_query.push_str(&format!(", URL: {url}"));
+            }
+            full_query.push_str("\n\n");
         }
     }
     full_query.push_str(&query);
