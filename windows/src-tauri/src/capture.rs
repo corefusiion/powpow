@@ -19,7 +19,8 @@
 
 use serde::Serialize;
 use tauri::{AppHandle, Manager};
-use windows::Win32::Foundation::{HWND, RECT};
+use windows::core::BOOL;
+use windows::Win32::Foundation::{HWND, LPARAM, RECT};
 use windows::Win32::Graphics::Gdi::{
     BitBlt, CreateCompatibleBitmap, CreateCompatibleDC, DeleteDC, DeleteObject, GetDC,
     GetDIBits, ReleaseDC, SelectObject, BITMAPINFO, BITMAPINFOHEADER, BI_RGB, DIB_RGB_COLORS,
@@ -291,8 +292,8 @@ pub fn find_active_target(app: &AppHandle) -> Option<HWND> {
 
     unsafe extern "system" fn enum_proc(
         hwnd: HWND,
-        lparam: windows::Win32::Foundation::LPARAM,
-    ) -> windows::Win32::Foundation::BOOL {
+        lparam: LPARAM,
+    ) -> BOOL {
         let search = &mut *(lparam.0 as *mut Search);
         let mut pid = 0u32;
         GetWindowThreadProcessId(hwnd, Some(&mut pid));
@@ -338,7 +339,7 @@ pub fn find_active_target(app: &AppHandle) -> Option<HWND> {
     unsafe {
         let _ = windows::Win32::UI::WindowsAndMessaging::EnumWindows(
             Some(enum_proc),
-            windows::Win32::Foundation::LPARAM(&mut search as *mut _ as isize),
+            LPARAM(&mut search as *mut _ as isize),
         );
     }
 
