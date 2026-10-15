@@ -360,10 +360,6 @@ pub fn signout() -> Result<(), String> {
     Ok(())
 }
 
-pub fn has_oauth() -> bool {
-    load().is_some()
-}
-
 pub async fn send_reply(to: &str, subject: &str, body: &str) -> Result<(), String> {
     let token = access_token().await?;
     let http = client()?;

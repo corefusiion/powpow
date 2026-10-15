@@ -715,11 +715,11 @@ fn detect_focused_element_name() -> Option<String> {
         let elem = uia.GetFocusedElement().ok()?;
         let mut name = String::new();
         if let Ok(bstr) = elem.CurrentName() {
-            name = String::from_utf16_lossy(bstr.as_wide()).trim().to_string();
+            name = bstr.to_string().trim().to_string();
         }
         if name.is_empty() {
             if let Ok(bstr) = elem.CurrentAriaRole() {
-                name = String::from_utf16_lossy(bstr.as_wide()).trim().to_string();
+                name = bstr.to_string().trim().to_string();
             }
         }
         if !name.is_empty() {
