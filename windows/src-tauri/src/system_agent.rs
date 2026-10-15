@@ -710,16 +710,16 @@ fn detect_focused_element_name() -> Option<String> {
     use windows::Win32::UI::Accessibility::{CUIAutomation, IUIAutomation};
 
     unsafe {
-        let _ = CoInitializeEx(None, COINIT_MULTITHREADED);
-        let uia: IUIAutomation = CoCreateInstance(&CUIAutomation, None, CLSCTX_INPROC_SERVER).ok()?;
+        let _ = CoInitializeEx(None::<*const core::ffi::c_void>, COINIT_MULTITHREADED);
+        let uia: IUIAutomation = CoCreateInstance(&CUIAutomation, None::<&windows_core::IUnknown>, CLSCTX_INPROC_SERVER).ok()?;
         let elem = uia.GetFocusedElement().ok()?;
         let mut name = String::new();
         if let Ok(bstr) = elem.CurrentName() {
-            name = String::from_utf16_lossy(&bstr).trim().to_string();
+            name = String::from_utf16_lossy(bstr.as_wide()).trim().to_string();
         }
         if name.is_empty() {
             if let Ok(bstr) = elem.CurrentAriaRole() {
-                name = String::from_utf16_lossy(&bstr).trim().to_string();
+                name = String::from_utf16_lossy(bstr.as_wide()).trim().to_string();
             }
         }
         if !name.is_empty() {
