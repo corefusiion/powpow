@@ -56,6 +56,47 @@
         </div>
       </div>
 
+      <!-- On-Desktop Screen Analysis & Chat Popup Beside the Avatar -->
+      <div id="pal-chat-popup" class="pal-chat-popup" hidden>
+        <div class="pal-chat-header">
+          <div class="pal-chat-header-info">
+            <div class="pal-chat-title">
+              <span class="pal-chat-sparkle">✨</span>
+              <span class="pal-chat-title-text">Chat da Tela</span>
+            </div>
+            <div id="pal-chat-badge" class="pal-chat-badge" title="Janela analisada">
+              <span id="pal-chat-app-icon" class="pal-chat-app-icon">🖥️</span>
+              <span id="pal-chat-app-name" class="pal-chat-app-name">Tela Ativa</span>
+            </div>
+          </div>
+          <div class="pal-chat-header-actions">
+            <button id="pal-chat-recapture-btn" class="pal-chat-btn-icon" type="button" title="Recapturar tela atual">📸</button>
+            <button id="pal-chat-clear-btn" class="pal-chat-btn-icon" type="button" title="Limpar conversa">🔄</button>
+            <button id="pal-chat-close-btn" class="pal-chat-close-btn" type="button" aria-label="Fechar">✕</button>
+          </div>
+        </div>
+        <div id="pal-chat-target-title" class="pal-chat-target-title"></div>
+
+        <!-- Chat messages history -->
+        <div id="pal-chat-messages" class="pal-chat-messages"></div>
+
+        <!-- Chat input & quick prompt tags -->
+        <div class="pal-chat-input-container">
+          <div class="pal-chat-quick-tags" id="pal-chat-quick-tags">
+            <button class="pal-chat-tag" type="button" data-tag="Como resolver ou aplicar esta fórmula de forma correta?">📐 Explicar fórmula</button>
+            <button class="pal-chat-tag" type="button" data-tag="Faça um resumo claro e objetivo do que está nesta tela.">📋 Resumo da tela</button>
+            <button class="pal-chat-tag" type="button" data-tag="O que significa este erro ou mensagem na tela e como resolver?">⚠️ Explicar erro</button>
+            <button class="pal-chat-tag" type="button" data-tag="Quais sugestões ou melhorias você tem para o que está nesta tela?">💡 Sugestões</button>
+          </div>
+          <div class="pal-chat-input-bar">
+            <textarea id="pal-chat-input" class="pal-chat-input" placeholder="Tire sua dúvida sobre a tela (Enter envia)..." rows="1"></textarea>
+            <button id="pal-chat-send-btn" class="pal-chat-send-btn" type="button" aria-label="Enviar">
+              <span class="pal-chat-send-icon">➤</span>
+            </button>
+          </div>
+        </div>
+      </div>
+
       <!-- Close button bite toy -->
       <div id="pal-close-bite" class="pal-close-bite" hidden>
         <div class="pal-close-icon">✕</div>

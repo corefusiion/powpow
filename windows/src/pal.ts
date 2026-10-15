@@ -7,7 +7,7 @@
 // card of actions — the island owns what each one means.
 
 import "./pal.css";
-import { Bridge, IS_TAURI, onEvent, type BootInfo, type IntegrationUpdate } from "./core/bridge";
+import { Bridge, IS_TAURI, onEvent, type BootInfo, type IntegrationUpdate, type AttachedWindow, type ChatContext } from "./core/bridge";
 import { PANEL_H, PANEL_W, type BotStateName, type BotEmoteName } from "./core/layout";
 import { PAL_EMOTE, PAL_STATE } from "./island/palState";
 import { BotEngine } from "./mochi/engine";
@@ -19,10 +19,12 @@ import { Sound } from "./core/sound";
 
 // Window geometry — mirrors tauri.conf.json's "pal" entry. The body keeps the
 // old 140x250 box at the window's left edge; the remaining width is the room
-// the card opens into, so every position below is still a body position.
-const WIN_W = 360;
+// the card opens into (360px) or the screen chat popup (540x440px).
+const CARD_W = 360;
 const PAL_W = 140;
 const PAL_H = 250;
+const CHAT_W = 540;
+const CHAT_H = 440;
 // Mochi's canvas: the body is 60 % of it, so 130 px of canvas is the 78 px
 // body the dot-pal wears too — both sit on the centre of the body's box.
 const BOT_SIZE = 130;
@@ -92,6 +94,24 @@ const alertReplyInput = document.getElementById("pal-alert-reply-input") as HTML
 const alertReplyCancel = document.getElementById("pal-alert-reply-cancel") as HTMLButtonElement | null;
 const alertReplySend = document.getElementById("pal-alert-reply-send") as HTMLButtonElement | null;
 const alertReplyStatus = document.getElementById("pal-alert-reply-status");
+
+// Screen Analysis & Chat Popup elements
+const chatPopupEl = document.getElementById("pal-chat-popup");
+const chatAppIconEl = document.getElementById("pal-chat-app-icon");
+const chatAppNameEl = document.getElementById("pal-chat-app-name");
+const chatTargetTitleEl = document.getElementById("pal-chat-target-title");
+const chatMessagesEl = document.getElementById("pal-chat-messages");
+const chatInputEl = document.getElementById("pal-chat-input") as HTMLTextAreaElement | null;
+const chatSendBtn = document.getElementById("pal-chat-send-btn") as HTMLButtonElement | null;
+const chatRecaptureBtn = document.getElementById("pal-chat-recapture-btn");
+const chatClearBtn = document.getElementById("pal-chat-clear-btn");
+const chatCloseBtn = document.getElementById("pal-chat-close-btn");
+const chatQuickTagsEl = document.getElementById("pal-chat-quick-tags");
+
+let isChatOpen = false;
+let isChatSending = false;
+let currentAttachedWindow: AttachedWindow | null = null;
+let typingRowEl: HTMLElement | null = null;
 
 let isAlertOpen = false;
 let isReplying = false;
@@ -801,7 +821,7 @@ function screenRect(): Rect {
   return {
     x0: screenInfo.x + PAD_X,
     y0: screenInfo.y + PAD_TOP,
-    x1: screenInfo.x + screenInfo.width - WIN_W - PAD_X,
+    x1: screenInfo.x + screenInfo.width - CARD_W - PAD_X,
     y1: screenInfo.y + screenInfo.height - PAL_H - PAD_BOTTOM,
   };
 }
@@ -823,7 +843,7 @@ function islandRect(): Rect {
  *  window counts — the card must not open over the island either. */
 function standsInBand(px: number, py: number): boolean {
   const k = islandRect();
-  return px < k.x1 && px + WIN_W > k.x0 && py < k.y1 && py + PAL_H > k.y0;
+  return px < k.x1 && px + CARD_W > k.x0 && py < k.y1 && py + PAL_H > k.y0;
 }
 
 /** Does the straight line from a to b cross the rectangle? (Liang–Barsky.) */
@@ -1022,6 +1042,7 @@ function send() {
 
 function step(dt: number, now: number) {
   if (isDragFollower) return;
+  if (isChatOpen) return; // Screen chat in progress: remain beside user
   if (hovered) return; // pointer on the pal: stay put for the click
   if (now < microPauseUntil) return; // natural micro-pause during walk
 
@@ -1313,7 +1334,9 @@ function syncCharacter() {
 /** Tell Rust which part of the window takes the mouse: the body, plus the
  *  card when it is open — the transparent rest stays click-through. */
 function pushRect() {
-  lastRect = { x: 0, y: 0, w: (cardOpen || isAlertOpen) ? WIN_W : PAL_W, h: PAL_H };
+  const w = isChatOpen ? CHAT_W : (cardOpen || isAlertOpen) ? CARD_W : PAL_W;
+  const h = isChatOpen ? CHAT_H : PAL_H;
+  lastRect = { x: 0, y: 0, w, h };
   void Bridge.setPalRect(lastRect.x, lastRect.y, lastRect.w, lastRect.h);
 }
 
@@ -1322,12 +1345,299 @@ function setCard(open: boolean) {
   cardOpen = open;
   cardEl.hidden = !open;
   if (open && isAlertOpen) closeAlertPopup();
+  if (open && isChatOpen) closeScreenChat();
   if (!open) {
     searchWrap.hidden = true;
     searchOpenBtn.hidden = false;
     if (document.activeElement === searchInput) searchInput.blur();
   }
   pushRect();
+}
+
+// ── On-Desktop Screen Chat ──────────────────────────────────────────────────
+function resolveAppPresentation(appName?: string, title?: string): { icon: string; name: string } {
+  const rawApp = (appName || "").toLowerCase();
+  const rawTitle = (title || "").toLowerCase();
+  if (rawApp.includes("excel") || rawTitle.includes("excel") || rawTitle.includes(".xlsx") || rawTitle.includes(".xls")) {
+    return { icon: "📊", name: "Excel" };
+  }
+  if (rawApp.includes("powerpnt") || rawTitle.includes("powerpoint") || rawTitle.includes(".pptx")) {
+    return { icon: "📽️", name: "PowerPoint" };
+  }
+  if (rawApp.includes("winword") || rawTitle.includes("word") || rawTitle.includes(".docx")) {
+    return { icon: "📝", name: "Word" };
+  }
+  if (rawApp.includes("chrome") || rawApp.includes("msedge") || rawApp.includes("firefox") || rawApp.includes("brave")) {
+    return { icon: "🌐", name: "Navegador" };
+  }
+  if (rawApp.includes("code") || rawApp.includes("cursor") || rawApp.includes("sublime") || rawApp.includes("devenv")) {
+    return { icon: "💻", name: "Editor de Código" };
+  }
+  if (rawApp.includes("whatsapp")) {
+    return { icon: "💬", name: "WhatsApp" };
+  }
+  if (rawApp.includes("calc")) {
+    return { icon: "🧮", name: "Calculadora" };
+  }
+  if (rawApp.includes("cmd") || rawApp.includes("powershell") || rawApp.includes("wt") || rawApp.includes("terminal")) {
+    return { icon: "📟", name: "Terminal" };
+  }
+  if (rawApp.includes("notepad")) {
+    return { icon: "📄", name: "Bloco de Notas" };
+  }
+  const cleanName = appName ? appName.replace(/\.exe$/i, "") : "Tela Ativa";
+  return { icon: "🖥️", name: cleanName };
+}
+
+function renderMarkdownSimple(md: string): string {
+  let escaped = md
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;");
+
+  // Code blocks ```lang\n...```
+  escaped = escaped.replace(/```([a-zA-Z0-9_-]*)\n([\s\S]*?)```/g, (_, lang, code) => {
+    return `<pre><code class="lang-${lang}">${code.trim()}</code></pre>`;
+  });
+
+  // Inline code `...`
+  escaped = escaped.replace(/`([^`]+)`/g, "<code>$1</code>");
+
+  // Bold **...**
+  escaped = escaped.replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>");
+
+  // Italic *...*
+  escaped = escaped.replace(/\*([^*]+)\*/g, "<em>$1</em>");
+
+  // Lines and lists
+  const lines = escaped.split("\n");
+  const out: string[] = [];
+  let inList = false;
+
+  for (const line of lines) {
+    const trimmed = line.trim();
+    if (trimmed.startsWith("- ") || trimmed.startsWith("* ")) {
+      if (!inList) {
+        out.push("<ul>");
+        inList = true;
+      }
+      out.push(`<li>${trimmed.slice(2)}</li>`);
+    } else {
+      if (inList) {
+        out.push("</ul>");
+        inList = false;
+      }
+      if (trimmed.length > 0) {
+        out.push(`<p>${line}</p>`);
+      }
+    }
+  }
+  if (inList) out.push("</ul>");
+
+  return out.join("");
+}
+
+function appendChatMessage(role: "user" | "assistant", content: string) {
+  if (!chatMessagesEl) return;
+  const row = document.createElement("div");
+  row.className = `pal-chat-msg-row ${role}`;
+
+  const bubble = document.createElement("div");
+  bubble.className = "pal-chat-msg-bubble";
+
+  if (role === "user") {
+    bubble.textContent = content;
+  } else {
+    bubble.innerHTML = renderMarkdownSimple(content);
+  }
+
+  row.appendChild(bubble);
+  chatMessagesEl.appendChild(row);
+  chatMessagesEl.scrollTop = chatMessagesEl.scrollHeight;
+}
+
+function showChatTyping() {
+  if (!chatMessagesEl) return;
+  removeChatTyping();
+  const row = document.createElement("div");
+  row.className = "pal-chat-msg-row assistant";
+  row.id = "pal-chat-typing-indicator";
+
+  const bubble = document.createElement("div");
+  bubble.className = "pal-chat-msg-bubble";
+
+  const typing = document.createElement("div");
+  typing.className = "pal-chat-typing";
+  typing.innerHTML = "<span></span><span></span><span></span>";
+
+  bubble.appendChild(typing);
+  row.appendChild(bubble);
+  chatMessagesEl.appendChild(row);
+  chatMessagesEl.scrollTop = chatMessagesEl.scrollHeight;
+  typingRowEl = row;
+}
+
+function removeChatTyping() {
+  if (typingRowEl && typingRowEl.parentNode) {
+    typingRowEl.parentNode.removeChild(typingRowEl);
+  }
+  typingRowEl = null;
+}
+
+async function openScreenChat() {
+  if (cardOpen) setCard(false);
+  if (isAlertOpen) closeAlertPopup();
+
+  isChatOpen = true;
+
+  // Stop stroll immediately
+  legs = [];
+  currentVelocity = 0;
+  idleUntil = performance.now() + 999999999;
+
+  // Clamp on screen so the 540x440 chat popup fits safely inside monitor bounds
+  const maxChatX = screenInfo.x + screenInfo.width - CHAT_W - PAD_X;
+  const maxChatY = screenInfo.y + screenInfo.height - CHAT_H - PAD_BOTTOM;
+  let adjusted = false;
+  if (x > maxChatX) {
+    x = Math.max(screenInfo.x + PAD_X, maxChatX);
+    adjusted = true;
+  }
+  if (y > maxChatY) {
+    y = Math.max(screenInfo.y + PAD_TOP, maxChatY);
+    adjusted = true;
+  }
+  if (adjusted) {
+    send();
+  }
+
+  pushRect();
+  void Bridge.setPalFocus(true);
+
+  triggerEmote("surprised");
+  if (pal) pal.setPose("think");
+
+  if (chatPopupEl) chatPopupEl.hidden = false;
+  if (chatMessagesEl) chatMessagesEl.innerHTML = "";
+
+  try {
+    Sound.play("attach");
+    const win = await Bridge.attachActiveWindow();
+    currentAttachedWindow = win;
+    const { icon, name } = resolveAppPresentation(win.appName, win.title);
+    if (chatAppIconEl) chatAppIconEl.textContent = icon;
+    if (chatAppNameEl) chatAppNameEl.textContent = name;
+    if (chatTargetTitleEl) {
+      chatTargetTitleEl.textContent = win.title ? `Janela: ${win.title}` : `Aplicativo: ${win.appName}`;
+    }
+
+    void Bridge.chatReset();
+
+    appendChatMessage(
+      "assistant",
+      `👋 Capturei a tela de **${name}**!\n\nComo posso te ajudar com o que está visível? Pode perguntar sobre **fórmulas de Excel**, **cálculos**, **código**, **dados** ou pedir explicações e resumos!`,
+    );
+  } catch {
+    currentAttachedWindow = null;
+    if (chatAppIconEl) chatAppIconEl.textContent = "🖥️";
+    if (chatAppNameEl) chatAppNameEl.textContent = "Tela Ativa";
+    if (chatTargetTitleEl) chatTargetTitleEl.textContent = "Visualização da Área de Trabalho";
+    appendChatMessage(
+      "assistant",
+      "👋 Olá! Estou pronto para analisar sua tela. O que você gostaria de tirar dúvidas ou fazer?",
+    );
+  }
+
+  if (chatInputEl) {
+    chatInputEl.value = "";
+    chatInputEl.style.height = "auto";
+    chatInputEl.focus();
+  }
+}
+
+function closeScreenChat() {
+  if (!isChatOpen) return;
+  isChatOpen = false;
+  if (chatPopupEl) chatPopupEl.hidden = true;
+  void Bridge.setPalFocus(false);
+  pushRect();
+  if (pal && pal.pose === "think") {
+    pal.setPose("idle");
+  }
+  idleUntil = performance.now() + 5000;
+}
+
+async function recaptureScreen() {
+  if (isChatSending) return;
+  try {
+    Sound.play("attach");
+    triggerEmote("wink");
+    const win = await Bridge.attachActiveWindow();
+    currentAttachedWindow = win;
+    const { icon, name } = resolveAppPresentation(win.appName, win.title);
+    if (chatAppIconEl) chatAppIconEl.textContent = icon;
+    if (chatAppNameEl) chatAppNameEl.textContent = name;
+    if (chatTargetTitleEl) {
+      chatTargetTitleEl.textContent = win.title ? `Janela: ${win.title}` : `Aplicativo: ${win.appName}`;
+    }
+    appendChatMessage("assistant", `📸 *Tela recapturada com sucesso (${name})! As próximas perguntas usarão esta imagem atualizada.*`);
+  } catch {
+    appendChatMessage("assistant", "⚠️ *Não foi possível recapturar a tela neste momento.*");
+  }
+}
+
+function clearScreenChat() {
+  if (isChatSending) return;
+  void Bridge.chatReset();
+  if (chatMessagesEl) chatMessagesEl.innerHTML = "";
+  const name = chatAppNameEl?.textContent || "sua tela";
+  appendChatMessage(
+    "assistant",
+    `🔄 Conversa reiniciada. O que mais você gostaria de saber ou tirar dúvidas sobre **${name}**?`,
+  );
+  if (chatInputEl) chatInputEl.focus();
+}
+
+async function sendScreenChatMessage(explicitQuery?: string) {
+  if (isChatSending) return;
+  const query = (explicitQuery !== undefined ? explicitQuery : (chatInputEl?.value || "")).trim();
+  if (!query) {
+    if (chatInputEl) chatInputEl.focus();
+    return;
+  }
+
+  if (chatInputEl) {
+    chatInputEl.value = "";
+    chatInputEl.style.height = "auto";
+  }
+  isChatSending = true;
+  if (chatSendBtn) chatSendBtn.disabled = true;
+
+  appendChatMessage("user", query);
+  showChatTyping();
+  triggerEmote("star");
+  Sound.play("send");
+
+  try {
+    const context: ChatContext | null = currentAttachedWindow
+      ? { kind: "file", name: currentAttachedWindow.name, path: currentAttachedWindow.path }
+      : null;
+
+    const reply = await Bridge.chatSend(query, context);
+    removeChatTyping();
+    appendChatMessage("assistant", reply.text);
+    triggerEmote("happy");
+    Sound.play("finish");
+  } catch (err) {
+    removeChatTyping();
+    const msg = String(err).replace(/^Error:\s*/, "");
+    appendChatMessage("assistant", `⚠️ Desculpe, ocorreu um erro ao consultar a IA: ${msg}`);
+    triggerEmote("surprised");
+  } finally {
+    isChatSending = false;
+    if (chatSendBtn) chatSendBtn.disabled = false;
+    if (chatInputEl) chatInputEl.focus();
+  }
 }
 
 function callPal(kind: string, query?: string) {
@@ -1369,16 +1679,7 @@ async function press(action: string) {
       return;
     case "analyze":
       setCard(false);
-      if (thoughtEl && thoughtTextEl) {
-        thoughtTextEl.textContent = "📸 Tirando print e analisando a tela...";
-        thoughtEl.hidden = false;
-        Sound.play("attach");
-        if (pal) void pal.emote("wide");
-        window.setTimeout(() => {
-          if (thoughtEl) thoughtEl.hidden = true;
-        }, 3200);
-      }
-      callPal(action);
+      void openScreenChat();
       return;
     case "organize-desktop":
       setCard(false);
@@ -1411,7 +1712,12 @@ async function press(action: string) {
 
 function applyLabels() {
   for (const el of Array.from(document.querySelectorAll<HTMLElement>("[data-label]"))) {
-    el.textContent = t(el.dataset.label ?? "");
+    const key = el.dataset.label ?? "";
+    if (key === "Screen analysis") {
+      el.textContent = "📸 " + t(key);
+      continue;
+    }
+    el.textContent = t(key);
   }
   searchInput.placeholder = t("Search the web…");
 }
@@ -1575,7 +1881,64 @@ async function main() {
     }
     if ((e.target as HTMLElement).closest("#pal-card")) return; // a gap, not a button
     if ((e.target as HTMLElement).closest("#pal-alert-popup")) return;
-    if (e.clientX <= PAL_W) setCard(!cardOpen);
+    if ((e.target as HTMLElement).closest("#pal-chat-popup")) return;
+    if (e.clientX <= PAL_W) {
+      if (isChatOpen) {
+        closeScreenChat();
+      } else {
+        setCard(!cardOpen);
+      }
+    }
+  });
+
+  // ── Screen Chat Event Listeners ──
+  chatCloseBtn?.addEventListener("click", (e) => {
+    e.stopPropagation();
+    closeScreenChat();
+  });
+
+  chatRecaptureBtn?.addEventListener("click", (e) => {
+    e.stopPropagation();
+    void recaptureScreen();
+  });
+
+  chatClearBtn?.addEventListener("click", (e) => {
+    e.stopPropagation();
+    clearScreenChat();
+  });
+
+  chatSendBtn?.addEventListener("click", (e) => {
+    e.stopPropagation();
+    void sendScreenChatMessage();
+  });
+
+  chatInputEl?.addEventListener("keydown", (e) => {
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      void sendScreenChatMessage();
+    } else if (e.key === "Escape") {
+      e.preventDefault();
+      closeScreenChat();
+    }
+    e.stopPropagation();
+  });
+
+  chatInputEl?.addEventListener("input", () => {
+    if (!chatInputEl) return;
+    chatInputEl.style.height = "auto";
+    chatInputEl.style.height = `${Math.min(chatInputEl.scrollHeight, 68)}px`;
+  });
+
+  chatInputEl?.addEventListener("focus", () => void Bridge.setPalFocus(true));
+  chatInputEl?.addEventListener("blur", () => {
+    if (!isChatOpen) void Bridge.setPalFocus(false);
+  });
+
+  chatQuickTagsEl?.addEventListener("click", (e) => {
+    const btn = (e.target as HTMLElement).closest<HTMLButtonElement>(".pal-chat-tag");
+    if (!btn || !btn.dataset.tag) return;
+    e.stopPropagation();
+    void sendScreenChatMessage(btn.dataset.tag);
   });
   searchInput.addEventListener("focus", () => void Bridge.setPalFocus(true));
   searchInput.addEventListener("blur", () => void Bridge.setPalFocus(false));
