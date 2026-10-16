@@ -11,7 +11,7 @@ import { registerAllPageMascots } from "../avatar/registerMascots";
 // Registra todos os mascotes do page-mascot no runtime
 registerAllPageMascots();
 import { Bridge, onEvent, type HookPreview, type HookStatus } from "../core/bridge";
-import { DEFAULT_SETTINGS, type Settings } from "../core/state";
+import { DEFAULT_SETTINGS, type Settings, type PalPersonality } from "../core/state";
 import { t } from "../core/i18n";
 import { h, clear } from "../views/dom";
 import { colorDot } from "./colors";
@@ -1121,6 +1121,35 @@ function characterRow(): HTMLElement {
   );
 }
 
+function personalityRow(): HTMLElement {
+  const select = h("select", {}) as HTMLSelectElement;
+  const options: [PalPersonality, string][] = [
+    ["sarcastic", t("Sarcastic & Witty")],
+    ["friendly", t("Friendly & Caring")],
+    ["coach", t("Focused & Coach")],
+    ["philosophical", t("Wise & Philosophical")],
+    ["chaotic", t("Goofy & Chaotic")],
+  ];
+  for (const [val, label] of options) {
+    const opt = h("option", { value: val, text: label }) as HTMLOptionElement;
+    if (val === (settings.personality ?? "sarcastic")) opt.selected = true;
+    select.append(opt);
+  }
+
+  select.addEventListener("change", () => {
+    settings.personality = select.value as PalPersonality;
+    void save();
+  });
+
+  return h(
+    "div",
+    { class: "row" },
+    h("label", { text: t("Agent Personality") }),
+    select,
+    h("span", { class: "hint", text: t("How the companion behaves, comments and reacts") }),
+  );
+}
+
 // ── Active pills section ──────────────────────────────────────────────────────
 
 function activePillsSection(connected: Record<string, boolean>): HTMLElement {
@@ -1346,6 +1375,7 @@ function generalSection(): HTMLElement {
       themeGrid,
     ),
     characterRow(),
+    personalityRow(),
     h("div", { class: "row" },
       h("label", { text: t("Sound") }),
       toggle(settings.soundEnabled, (v) => { settings.soundEnabled = v; void save(); }),

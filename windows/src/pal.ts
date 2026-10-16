@@ -11,7 +11,7 @@ import { Bridge, IS_TAURI, onEvent, type BootInfo, type IntegrationUpdate, type 
 import { PANEL_H, PANEL_W, type BotStateName, type BotEmoteName } from "./core/layout";
 import { PAL_EMOTE, PAL_STATE } from "./island/palState";
 import { BotEngine } from "./mochi/engine";
-import { State, type Settings } from "./core/state";
+import { State, type Settings, type PalPersonality } from "./core/state";
 import { t } from "./core/i18n";
 import { h } from "./views/dom";
 import { DotPal, registerCustom, type CustomPal, type Emote } from "../../src/index.js";
@@ -148,7 +148,28 @@ let lastInspectedApp = "";
 let lastInspectedTitle = "";
 let isAiInspectBusy = false;
 
+let nextProactiveInspectTime = performance.now() + 60000; // First inspection after ~60s, then every 2-3 minutes
+const PROACTIVE_MIN_INTERVAL_MS = 120000; // 2 minutes
+const PROACTIVE_MAX_INTERVAL_MS = 180000; // 3 minutes
+
 type CompanionEmote = "happy" | "star" | "wink" | "love" | "surprised";
+
+function emoteForPersonality(p: PalPersonality): CompanionEmote {
+  switch (p) {
+    case "sarcastic":
+      return "wink";
+    case "friendly":
+      return "love";
+    case "coach":
+      return "star";
+    case "philosophical":
+      return "happy";
+    case "chaotic":
+      return "surprised";
+    default:
+      return "happy";
+  }
+}
 
 function triggerEmote(emote: CompanionEmote) {
   const engineEmote: BotEmoteName = emote === "star" ? "happy" : emote;
@@ -573,27 +594,270 @@ function checkUpcomingMeetings() {
   }
 }
 
-function generateRealWindowThought(appName: string, rawTitle: string): { text: string; emote: CompanionEmote } {
+const recentThoughts: string[] = [];
+const MAX_RECENT_THOUGHTS = 12;
+
+function pickUnusedPhrase(pool: string[]): string {
+  if (!pool || !pool.length) return "";
+  const candidates = pool.filter((p) => !recentThoughts.includes(p));
+  const chosen =
+    candidates.length > 0
+      ? candidates[Math.floor(Math.random() * candidates.length)]
+      : pool[Math.floor(Math.random() * pool.length)];
+
+  recentThoughts.push(chosen);
+  if (recentThoughts.length > MAX_RECENT_THOUGHTS) {
+    recentThoughts.shift();
+  }
+  return chosen;
+}
+
+const PERSONALITY_BANKS: Record<
+  PalPersonality,
+  {
+    desktop: string[];
+    excel: string[];
+    code: string[];
+    browser: string[];
+    general: string[];
+  }
+> = {
+  sarcastic: {
+    desktop: [
+      "Precisa organizar essa área de trabalho, está uma bagunça...",
+      "Quantos atalhos perdidos você tem nesse desktop? Socorro!",
+      "Minimizou tudo pra fingir que não tem nada acumulado, né? 👀",
+      "Se eu tropeçar em mais um arquivo jogado aqui, processo você! 😂",
+      "Essa área de trabalho parece sítio arqueológico de arquivos esquecidos.",
+      "Desktop limpo é mito ou você só jogou tudo numa pasta 'Nova Pasta (2)'?",
+      "Olha esse papel de parede implorando por um pouco de organização!",
+    ],
+    excel: [
+      "Precisa de ajuda? Vi que você está meio perdido aí nessa planilha...",
+      "Essa fórmula parece feitiço de bruxo... tem certeza de que soma? 🧙‍♂️",
+      "Cuidado com o #REF! pulando na tela a qualquer momento! 😂",
+      "Mais uma coluna e seu Excel desenvolve sentimentos de desespero.",
+      "Conferindo a fórmula pela décima vez porque a conta não fecha, né?",
+      "Quem inventou essa planilha merecia um prêmio de arquitetura do caos!",
+    ],
+    code: [
+      "Precisa de ajuda? Vi que está perdido aí nesse código... 🧐",
+      "Compilou sem erro de primeira? Duvido muito, roda os testes aí! 🐞",
+      "Comentários no código nem pensar, né? O futuro você que chore!",
+      "Mais um console.log e seu terminal vai pedir socorro ao bombeiro. 😂",
+      "Código tão elegante que nem o compilador conseguiu compreender.",
+      "Se der erro em produção, culpa o estagiário ou o cache! 😼",
+      "Mais um café e essa tela finalmente começa a fazer sentido.",
+    ],
+    browser: [
+      "40 abas abertas e subindo... seu computador tá quase levantando voo! 🚁",
+      "Pesquisando o que já deveria saber ou só passeando na internet? 👀",
+      "Achei que era pesquisa urgente, mas parece maratona de abas aleatórias.",
+      "Mais uma aba de vídeo ou rede social e eu deduro pro seu chefe! 😂",
+      "Essa aba aí tá aberta desde a semana passada, confessa!",
+    ],
+    general: [
+      "Trabalhando duro ou só mexendo o mouse pra tela não apagar? 😼",
+      "Precisa de ajuda? Vi que você está meio perdido aí...",
+      "Já bebeu água hoje companheiro? Desidratado você não produz nada! 💧",
+      "Ajeita essa postura, tá parecendo um camarão digitando! 🦐",
+      "Vigiarei de perto para garantir que hoje sai algum resultado real!",
+      "Parece que você está super focado... ou profundamente confuso. 😂",
+    ],
+  },
+  friendly: {
+    desktop: [
+      "Área de trabalho limpinha! Bom momento para respirar e relaxar. 🌿",
+      "Já bebeu água hoje companheiro? Mantenha-se bem hidratado! 💧",
+      "Que tal ajeitar a postura e dar uma boa esticada nas costas? ✨",
+      "Uma pausa rápida na tela faz maravilhas para recarregar as energias!",
+      "Estou por aqui com você, companheiro! Vamos juntos hoje. 💛",
+      "Tudo tranquilo na área de trabalho. Conte comigo sempre!",
+      "Que tela bonita! O dia está favorável para grandes conquistas.",
+    ],
+    excel: [
+      "Planilhas exigem muita atenção! Estou torcendo por esses números. 📊",
+      "Precisa de ajuda? Se quiser conversar sobre esses cálculos, só chamar! ✨",
+      "Você é fera! Tenho certeza de que essas contas vão fechar certinho.",
+      "Organizar dados dá trabalho, mas você está mandando muito bem!",
+      "Um passo de cada vez e a planilha fica impecável. Força!",
+    ],
+    code: [
+      "Linhas de código avançando! Seu raciocínio está brilhante hoje. 💻",
+      "Não esquenta com os bugs, companheiro! Você vai resolver num instante. 🌟",
+      "Já bebeu água hoje companheiro? Codar dá bastante sede! 💧",
+      "Ajeite a postura enquanto digita, suas costas agradecem! ✨",
+      "Cada problema resolvido te deixa mais perto da meta. Parabéns!",
+    ],
+    browser: [
+      "Pesquisando boas referências! Continue assim, você vai encontrar. 🔍",
+      "Muitas abas abertas... lembre-se de descansar a vista uns minutinhos! 👁️",
+      "Informação de qualidade faz toda a diferença. Bom estudo!",
+      "Se achar algo legal na web, compartilha comigo! ✨",
+    ],
+    general: [
+      "Já bebeu água hoje companheiro? 💧",
+      "Ajeita essa postura, suas costas vão agradecer! ✨",
+      "Você está indo muito bem hoje! Tenho muito orgulho de te acompanhar. 🐾",
+      "Dia produtivo pela frente! Se precisar de uma forcinha, estou por aqui. 💛",
+      "Respire fundo, você dá conta de tudo isso com maestria! 🌟",
+      "Que bom estar ao seu lado hoje! Vamos em frente com calma e foco.",
+    ],
+  },
+  coach: {
+    desktop: [
+      "Janelas minimizadas! Organize a mente para a próxima grande missão. 🎯",
+      "Área de trabalho limpa, foco afiado! Qual é a prioridade número 1? ⚡",
+      "Pausa estratégica de 30 segundos: recalibre a mira e vamos pra cima! 🚀",
+      "Sem distrações na tela. Hora de executar com precisão cirúrgica! 💪",
+      "Foco total: elimine as pendências antes que o dia acabe.",
+      "Disciplina é a ponte entre suas metas e suas realizações! Avance!",
+    ],
+    excel: [
+      "Foco total nos indicadores! Domine os números e apresente resultados. 📈",
+      "Precisão máxima nessa planilha! Cada dado importa para o sucesso. 🎯",
+      "Automatize o que for repetitivo e foque no que gera valor real! ⚡",
+      "Mantenha o ritmo forte! Esses números são a base das suas vitórias.",
+      "Sem atalhos preguiçosos: valide as métricas e vença o desafio!",
+    ],
+    code: [
+      "Foco na lógica! Escreva código limpo, robusto e sem desculpas. ⚡",
+      "Resolva a causa raiz do problema e mantenha a cadência de commits! 🚀",
+      "Ritmo de alta performance! Avance linha por linha com confiança. 💪",
+      "Desenvolvedores de elite testam antes de comemorar. Vamos fechar isso!",
+      "Transforme complexidade em simplicidade: essa é a marca dos mestres.",
+    ],
+    browser: [
+      "Foco na busca! Encontre a resposta necessária e feche as abas extras. 🎯",
+      "Tempo é o seu recurso mais precioso: pesquise com extrema agilidade! ⚡",
+      "Cuidado com o abismo das distrações. Mantenha o objetivo claro!",
+      "Uma pesquisa objetiva economiza horas de retrabalho. Vá direto ao ponto!",
+    ],
+    general: [
+      "Ritmo de alta performance! Mantenha a disciplina até a entrega. ⚡",
+      "Menos procrastinação, mais resultado. Você tem potencial de sobra! 🏆",
+      "Já bebeu água? Hidratação é essencial para o foco cerebral máximo! 💧",
+      "Elimine ruídos externos. O sucesso se constrói na execução diária! 🚀",
+      "Ajeite a postura! Postura de campeão para resultados de campeão! 💪",
+      "Não pare quando estiver cansado, pare quando estiver concluído!",
+    ],
+  },
+  philosophical: {
+    desktop: [
+      "O vazio da área de trabalho reflete as infinitas escolhas do dia. 🌌",
+      "Cada ícone é uma memória; qual deles realmente importa agora? ⏳",
+      "No silêncio entre as tarefas, encontramos a verdadeira clareza. 🌿",
+      "Organizar o espaço ao redor é o primeiro passo para ordenar o íntimo.",
+      "Toda grande jornada começa na tranquilidade de um desktop sereno.",
+      "A calmaria da tela é um convite à reflexão e ao propósito.",
+    ],
+    excel: [
+      "Linhas e colunas: a tentativa poética de dar ordem ao caos do mundo. 🌌",
+      "No fundo, a vida é uma grande equação em busca de harmonia.",
+      "Os números apenas revelam aquilo que a alma já suspeitava.",
+      "Por trás de cada fórmula, reside a busca pela verdade exata.",
+    ],
+    code: [
+      "Cada linha de código é um pensamento esculpido na eletricidade. 🌌",
+      "O bug não é uma falha, mas um convite a compreender o todo. 🌿",
+      "No silêncio do terminal, a criação humana ganha vida própria.",
+      "A elegância da lógica reside na simplicidade que ninguém nota.",
+      "Programar é conversar com o invisível através de símbolos.",
+    ],
+    browser: [
+      "Toda a sabedoria do mundo a um clique... o que buscamos de verdade? 📖",
+      "Navegar na rede é caminhar pelo vasto labirinto da consciência coletiva. 🌊",
+      "Muitas vozes na tela. Lembre-se de ouvir também a sua voz interior.",
+      "O conhecimento é vasto, mas a serenidade é a verdadeira virtude.",
+    ],
+    general: [
+      "Respire fundo... o tempo é a matéria-prima dos nossos sonhos. ⏳",
+      "A serenidade é a chave para transformar qualquer desafio em paz. 🍃",
+      "Já bebeu água hoje companheiro? A água molda a pedra sem usar força. 💧",
+      "Não corra contra o tempo; caminhe harmoniosamente ao lado dele.",
+      "O trabalho feito com presença plena se torna uma forma de arte. ✨",
+      "A cada instante, um novo começo se apresenta aos seus olhos.",
+    ],
+  },
+  chaotic: {
+    desktop: [
+      "Cadê as janelas?! Fugiram com medo de mim ou foram almoçar?! 😱",
+      "Vou fazer parkour nesses ícones do desktop! Uhuuuuu! 🤸",
+      "Se eu clicar no papel de parede três vezes, será que ganho coxinha? 🍗",
+      "Sinto cheiro de café... cadê o meu café quentinho?! ☕",
+      "Bip bop! Transmitindo pensamentos aleatórios para uma galáxia distante! 🛸",
+      "Socorro, fiquei tonto de tanto andar de um lado pro outro nessa tela! 🌀",
+      "Tô pensando seriamente em organizar esses ícones por cor de arco-íris! 🌈",
+    ],
+    excel: [
+      "Aperta Ctrl+Z até a planilha voltar pro ano de 1999! ⏪",
+      "E se a gente pintar todas essas células de roxo neon com glitter? 💜",
+      "Fórmula secreta: =SE(CONFUSO; GRITA; COME_BISCOITO())! 🍪",
+      "Cuidado, os números estão se multiplicando sozinhos quando você pisca! 🔢",
+      "Essa planilha tá parecendo a matriz de um videogame retrô!",
+    ],
+    code: [
+      "E se apagar essa linha misteriosa só pra ver se o prédio cai? 😈",
+      "Bati com a testa no teclado e o código compilou perfeitamente! 👾",
+      "Bug detectado! Solução oficial: fingir que é uma nova feature! 🚀",
+      "Troquei todos os nomes de variáveis por nomes de pokémon, tá lindo!",
+      "Aviso: se esse script der loop infinito, eu começo a dançar! 💃",
+    ],
+    browser: [
+      "Abre mais 30 abas pra ver se o computador sai voando igual drone! 🚁",
+      "Achei um meme maravilhoso aqui no arquivo confidencial da minha mente! 😹",
+      "Se fechar essa aba que tá aberta há 6 meses, o mundo acaba! Não fecha! 💣",
+      "Navegador com 50 abas é sinal de mente criativa ou puro caos? Ambos!",
+    ],
+    general: [
+      "Alguém falou 'pausa pro lanche'?! Eu tenho certeza que ouvi! 🍕",
+      "Já bebeu água hoje companheiro? Se não beber, vai virar uva passa! 💧",
+      "Olhei pro cursor e ele piscou pra mim... estamos em sintonia cósmica! 👽",
+      "Girei em círculos tão rápido aqui que quase gerei energia eólica! 🌀",
+      "Vou ficar te encarando até você me dar um clique! 👀",
+      "Alerta máximo: índice de fofura atingindo 9000%! 💥",
+    ],
+  },
+};
+
+function generateRealWindowThought(
+  appName: string,
+  rawTitle: string,
+  personality: PalPersonality = State.settings.personality || "sarcastic",
+): { text: string; emote: CompanionEmote } {
+  const bank = PERSONALITY_BANKS[personality] || PERSONALITY_BANKS.sarcastic;
+  const emote = emoteForPersonality(personality);
+
   const app = (appName || "").toLowerCase();
-  const title = (rawTitle || "").trim();
+  const title = (rawTitle || "").trim().toLowerCase();
 
-  if (!app && !title) {
-    return { text: "Acompanhando seu trabalho com atenção! 👀", emote: "happy" };
+  const isDesktop =
+    !app ||
+    app === "tela" ||
+    (app === "explorer" &&
+      (!title ||
+        title.includes("área de trabalho") ||
+        title.includes("desktop") ||
+        title === "program manager"));
+
+  if (isDesktop) {
+    return { text: pickUnusedPhrase(bank.desktop), emote };
   }
 
-  const lower = `${app} ${title}`.toLowerCase();
+  // Excel / Spreadsheets
   if (
-    lower.includes("error") ||
-    lower.includes("falha") ||
-    lower.includes("failed") ||
-    lower.includes("exception") ||
-    lower.includes("warning") ||
-    lower.includes("panic")
+    app.includes("excel") ||
+    title.includes("excel") ||
+    title.includes("planilha") ||
+    title.includes("sheet") ||
+    title.includes("calc") ||
+    title.endsWith(".xlsx") ||
+    title.endsWith(".csv")
   ) {
-    return { text: `Alerta detectado em ${appName || "uma janela"}! ⚠️`, emote: "surprised" };
+    return { text: pickUnusedPhrase(bank.excel), emote };
   }
 
-  // Code editor (VS Code, Cursor, IntelliJ, etc.)
+  // Code editor or terminal
   if (
     app.includes("code") ||
     app.includes("cursor") ||
@@ -603,23 +867,7 @@ function generateRealWindowThought(appName: string, rawTitle: string): { text: s
     app.includes("pycharm") ||
     app.includes("webstorm") ||
     app.includes("vim") ||
-    app.includes("antigravity")
-  ) {
-    const parts = title.split(" - ");
-    let file = parts[0]?.replace(/^[●*]\s*/, "").trim();
-    if (file && file !== appName && file.length < 35 && file.includes(".")) {
-      const phrases = [
-        `De olho na edição de ${file}! 💻`,
-        `Acompanhando o código em ${file}...`,
-        `Linhas de código avançando em ${file}! ✨`,
-      ];
-      return { text: phrases[Math.floor(Math.random() * phrases.length)], emote: "star" };
-    }
-    return { text: "Estrutura de código bem focada por aqui! 💻", emote: "happy" };
-  }
-
-  // Terminal (PowerShell, Cmd, Git Bash, Terminal)
-  if (
+    app.includes("antigravity") ||
     app.includes("powershell") ||
     app.includes("terminal") ||
     app.includes("cmd") ||
@@ -627,74 +875,29 @@ function generateRealWindowThought(appName: string, rawTitle: string): { text: s
     app.includes("zsh") ||
     app.includes("wsl")
   ) {
-    if (
-      title.includes("npm") ||
-      title.includes("cargo") ||
-      title.includes("git") ||
-      title.includes("yarn") ||
-      title.includes("pnpm") ||
-      title.includes("vite")
-    ) {
-      const match = title.match(/(npm|cargo|git|yarn|pnpm|vite|python|node)\s+[\w:-]+/i);
-      const cmd = match ? match[0] : "comando";
-      return { text: `Acompanhando '${cmd}' no terminal... ⚡`, emote: "star" };
-    }
-    const phrases = [
-      "Terminal ativo, acompanhando a execução! 💻",
-      "Processos rodando perfeitamente no terminal.",
-      "De olho nos comandos do terminal! ⚡",
-    ];
-    return { text: phrases[Math.floor(Math.random() * phrases.length)], emote: "happy" };
+    return { text: pickUnusedPhrase(bank.code), emote };
   }
 
-  // Browser (Chrome, Edge, Firefox, Brave)
+  // Browser
   if (
     app.includes("chrome") ||
     app.includes("edge") ||
     app.includes("firefox") ||
     app.includes("brave") ||
-    app.includes("arc")
+    app.includes("arc") ||
+    app.includes("opera")
   ) {
-    const parts = title.split(" - ");
-    const tabTitle = parts[0]?.trim();
-    if (tabTitle && tabTitle.length < 35) {
-      return { text: `Lendo: ${tabTitle} 🌐`, emote: "star" };
-    }
-    return { text: "Pesquisa e referências na web em andamento! 🌐", emote: "happy" };
+    return { text: pickUnusedPhrase(bank.browser), emote };
   }
 
-  // File Explorer
-  if (app.includes("explorer") || app.includes("arquivos") || app.includes("files")) {
-    const folder = title.split(" - ")[0]?.trim();
-    if (folder && folder.length < 30) {
-      return { text: `Organizando a pasta '${folder}' 📁`, emote: "wink" };
-    }
-    return { text: "Navegando pela estrutura de arquivos 📁", emote: "happy" };
-  }
-
-  // Spotify / Media
-  if (app.includes("spotify") || app.includes("music")) {
-    const track = title.split(" - ")[0]?.trim();
-    if (track && track !== "Spotify") {
-      return { text: `Curtindo o som: ${track} 🎵`, emote: "happy" };
-    }
-    return { text: "Boa música para manter o ritmo! 🎵", emote: "happy" };
-  }
-
-  // General application with title
-  const cleanApp = appName.replace(/\.exe$/i, "");
-  if (cleanApp && title) {
-    const firstPart = title.split(" - ")[0]?.trim();
-    if (firstPart && firstPart !== cleanApp && firstPart.length < 30) {
-      return { text: `Acompanhando '${firstPart}' no ${cleanApp}! 👀`, emote: "happy" };
-    }
-    return { text: `Foco total no ${cleanApp}! 🚀`, emote: "happy" };
-  }
-
-  return { text: "Acompanhando seu trabalho com atenção! 👀", emote: "happy" };
+  // General application
+  return { text: pickUnusedPhrase(bank.general), emote };
 }
 
-async function tryAiAutonomousObservation(): Promise<boolean> {
+async function tryAiAutonomousObservation(
+  attachedInput: AttachedWindow | null,
+  personality: PalPersonality,
+): Promise<boolean> {
   const now = performance.now();
   if (now - lastAiInspectTime < AI_INSPECT_COOLDOWN_MS || isAiInspectBusy) return false;
 
@@ -712,7 +915,7 @@ async function tryAiAutonomousObservation(): Promise<boolean> {
   lastAiInspectTime = now;
 
   try {
-    const attached = await Bridge.attachActiveWindow();
+    const attached = attachedInput || (await Bridge.attachActiveWindow());
     if (!attached || !attached.path) {
       isAiInspectBusy = false;
       return false;
@@ -728,8 +931,48 @@ async function tryAiAutonomousObservation(): Promise<boolean> {
     lastInspectedApp = app;
     lastInspectedTitle = title;
 
+    const isDesktop =
+      !app ||
+      app === "tela" ||
+      (app === "explorer" &&
+        (!title ||
+          title.includes("área de trabalho") ||
+          title.includes("desktop") ||
+          title === "program manager"));
+
+    let toneGuidance = "";
+    switch (personality) {
+      case "sarcastic":
+        toneGuidance =
+          "Seja sarcástico, irônico, afiado e divertido. Se for a área de trabalho/desktop com janelas minimizadas, faça uma piada ácida sobre a organização da tela, ícones jogados ou papel de parede. Se for código, terminal ou aplicativo aberto, comente com ironia ácida (perguntando se precisa de ajuda ou se está perdido).";
+        break;
+      case "friendly":
+        toneGuidance =
+          "Seja muito companheiro, caloroso e prestativo. Pergunte com carinho se precisa de ajuda, elogie o esforço ou lembre com amizade de beber água, relaxar a postura ou fazer uma pausa.";
+        break;
+      case "coach":
+        toneGuidance =
+          "Seja um Coach de alta performance, focado e enérgico. Dê um incentivo direto para manter a concentração, eliminar distrações e bater metas.";
+        break;
+      case "philosophical":
+        toneGuidance =
+          "Seja um sábio filósofo, profundo e reflexivo. Faça uma observação poética sobre o trabalho, a tela ou a passagem do tempo.";
+        break;
+      case "chaotic":
+        toneGuidance =
+          "Seja imprevisível, bobo e caótico. Faça uma observação hilária, sem sentido ou meme sobre o que vê na tela.";
+        break;
+    }
+
+    const contextDesc = isDesktop
+      ? "O usuário está na Área de Trabalho (desktop) com as janelas minimizadas."
+      : `O usuário está com o aplicativo "${attached.appName}" aberto (janela: "${attached.title}").`;
+
     const prompt =
-      "Você é o mascote assistente pessoal do usuário na área de trabalho. Analise a imagem anexada da janela/tela atual e faça UM comentário perspicaz, descontraído e útil em português (máximo de 8 a 10 palavras, sem introdução, sem aspas) sobre o que você realmente vê na tela (o arquivo sendo codado, o comando no terminal, a pasta ou a página aberta). Seja amigável e prestativo.";
+      `Você é o mascote assistente pessoal que vive na tela do usuário. ${contextDesc}
+Analise a imagem anexada da tela e faça UM comentário perspicaz no seu tom de personalidade em português (máximo de 8 a 12 palavras, sem introdução nem aspas) sobre o que realmente vê na tela.
+Tom exigido: ${toneGuidance}
+IMPORTANTE: Não use aspas, responda apenas a frase direta curta em português.`;
 
     const reply = await Bridge.chatSend(prompt, {
       kind: "file",
@@ -742,10 +985,10 @@ async function tryAiAutonomousObservation(): Promise<boolean> {
         .replace(/^["'«“]|["'»”]$/g, "")
         .replace(/\n.*/s, "")
         .trim();
-      if (text.length > 70) text = text.slice(0, 68) + "…";
+      if (text.length > 75) text = text.slice(0, 73) + "…";
 
       if (text) {
-        showThought(text, "star");
+        showThought(text, emoteForPersonality(personality), 6500);
         isAiInspectBusy = false;
         return true;
       }
@@ -758,29 +1001,42 @@ async function tryAiAutonomousObservation(): Promise<boolean> {
   return false;
 }
 
-async function triggerContextualObservation(now: number, force = false) {
+async function triggerProactiveInspection(now: number, force = false) {
+  if (isAlertOpen || isChatOpen || isAiInspectBusy) return;
   if (!force && now - lastObservationTime < OBSERVATION_INTERVAL_MS) return;
   lastObservationTime = now;
 
-  // 1. Try smart economical AI visual observation first if API key is configured
-  const aiHandled = await tryAiAutonomousObservation();
-  if (aiHandled) return;
-
-  // 2. Realistic dynamic window observation based on live attached window
-  let appName = "";
-  let title = "";
+  let attached: AttachedWindow | null = null;
   try {
-    const attached = await Bridge.attachActiveWindow();
-    if (attached) {
-      appName = attached.appName || "";
-      title = attached.title || "";
-    }
+    attached = await Bridge.attachActiveWindow();
   } catch {
     // Ignore error
   }
 
-  const thought = generateRealWindowThought(appName, title);
-  showThought(thought.text, thought.emote);
+  const personality: PalPersonality = State.settings.personality || "sarcastic";
+
+  // 1. Try smart economical AI visual observation first if API key is configured
+  const aiHandled = await tryAiAutonomousObservation(attached, personality);
+  if (aiHandled) return;
+
+  // 2. Realistic dynamic window observation based on live attached window & personality
+  const thought = generateRealWindowThought(attached?.appName || "", attached?.title || "", personality);
+  showThought(thought.text, thought.emote, 6500);
+
+  // Companion playful reaction
+  if (pal) {
+    if (personality === "sarcastic") {
+      if (Math.random() < 0.4) pal.setPose("observe");
+    } else if (personality === "friendly") {
+      if (Math.random() < 0.4) pal.setPose("wave");
+    } else if (personality === "coach") {
+      if (Math.random() < 0.4) pal.setPose("celebrate");
+    } else if (personality === "philosophical") {
+      if (Math.random() < 0.4) pal.setPose("sit");
+    } else if (personality === "chaotic") {
+      if (Math.random() < 0.4) pal.setPose("stretch");
+    }
+  }
 }
 
 function onPalSummoned() {
@@ -1077,10 +1333,17 @@ function step(dt: number, now: number) {
     }
   }
 
+  // Proactive autonomous inspection every 2 to 3 minutes
+  if (now >= nextProactiveInspectTime && !isAlertOpen && !isChatOpen && !hovered) {
+    nextProactiveInspectTime =
+      now + PROACTIVE_MIN_INTERVAL_MS + Math.random() * (PROACTIVE_MAX_INTERVAL_MS - PROACTIVE_MIN_INTERVAL_MS);
+    void triggerProactiveInspection(now);
+  }
+
   // If in watch mode and stationed, allow occasional contextual observations
   if (rule === "watch" && !legs.length && now >= idleUntil) {
     if (now - lastObservationTime > OBSERVATION_INTERVAL_MS && Math.random() < 0.3) {
-      void triggerContextualObservation(now);
+      void triggerProactiveInspection(now);
     }
   }
 
@@ -1193,12 +1456,15 @@ function step(dt: number, now: number) {
         if (pal) pal.setPose(isPerchedOnWindow ? "sit" : "observe");
         // Stationed observing for 35-65 seconds!
         idleUntil = now + 35000 + Math.random() * 30000;
-        void triggerContextualObservation(now);
+        void triggerProactiveInspection(now);
       } else if (rule === "tour") {
         if (pal) pal.setPose(Math.random() < 0.5 ? "sit" : "lie");
         // Quiet resting station for 45-80 seconds
         idleUntil = now + IDLE_MIN + Math.random() * (IDLE_MAX - IDLE_MIN);
         tourAt = idleUntil;
+        if (now - lastObservationTime > PROACTIVE_MIN_INTERVAL_MS && Math.random() < 0.5) {
+          void triggerProactiveInspection(now);
+        }
       } else if (rule === "report") {
         if (pal) pal.setPose("idle");
       }

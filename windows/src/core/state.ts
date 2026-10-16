@@ -95,6 +95,8 @@ export interface IntegrationInfo {
   configured: boolean;
 }
 
+export type PalPersonality = "sarcastic" | "friendly" | "coach" | "philosophical" | "chaotic";
+
 export interface Settings {
   soundEnabled: boolean;
   soundVolume: number;
@@ -102,6 +104,8 @@ export interface Settings {
   voiceEnabled: boolean;
   /** The pal strolls to random corners of the screen while the island is compact. */
   wander: boolean;
+  /** Avatar agent personality tone ("sarcastic" | "friendly" | "coach" | "philosophical" | "chaotic"). */
+  personality: PalPersonality;
   autoCloseInterval: number;
   absenceInterval: number;
   activeIntegrations: string[];
@@ -112,7 +116,6 @@ export interface Settings {
   model: string;
   /** Chat provider: "claude" | "gemini". */
   chatProvider: string;
-  /** Gemini model used when chatProvider == "gemini". */
   geminiModel: string;
   /** UI language: "en" | "pt-BR". */
   language: Lang;
@@ -152,6 +155,7 @@ export const DEFAULT_SETTINGS: Settings = {
   // Off until asked for: a voice that starts talking on its own is a surprise.
   voiceEnabled: false,
   wander: false,
+  personality: "sarcastic",
   autoCloseInterval: 15,
   absenceInterval: 180,
   activeIntegrations: [

@@ -16,6 +16,9 @@ pub struct Settings {
     /// The pal strolls across the screen while the island is compact.
     #[serde(default = "default_wander")]
     pub wander: bool,
+    /// Avatar agent personality tone: "sarcastic" | "friendly" | "coach" | "philosophical" | "chaotic".
+    #[serde(default = "default_personality")]
+    pub personality: String,
     pub auto_close_interval: f64,
     pub absence_interval: f64,
     pub active_integrations: Vec<String>,
@@ -85,6 +88,10 @@ fn default_wander() -> bool {
     false
 }
 
+fn default_personality() -> String {
+    "sarcastic".to_string()
+}
+
 fn default_theme() -> String {
     "onyx".to_string()
 }
@@ -120,6 +127,7 @@ impl Default for Settings {
             sound_volume: 0.12,
             voice_enabled: default_voice(),
             wander: default_wander(),
+            personality: default_personality(),
             auto_close_interval: 15.0,
             absence_interval: 180.0,
             active_integrations: vec![
