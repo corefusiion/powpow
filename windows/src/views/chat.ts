@@ -5,6 +5,7 @@ import { h, svg, clear } from "./dom";
 import { ICONS } from "./icons";
 import { Bridge, type ChatContext } from "../core/bridge";
 import { t } from "../core/i18n";
+import { recordTokenUsage } from "../core/plan";
 import { Sound } from "../core/sound";
 import { State, type ChatMessage } from "../core/state";
 import type { ViewActions, ViewHost } from "./views";
@@ -269,6 +270,7 @@ export function buildPrompt(actions: ViewActions, onHeightChange: () => void): V
               window.setTimeout(() => reject(new Error(t("Timed out talking to the model — try again."))), 25_000),
             ),
           ]);
+          recordTokenUsage(reply);
           generatedText = reply.text;
         } catch {
           if (/e-?mail|formal/i.test(promptInstruction)) {
@@ -309,6 +311,7 @@ export function buildPrompt(actions: ViewActions, onHeightChange: () => void): V
           window.setTimeout(() => reject(new Error(t("Timed out talking to the model — try again."))), 60_000),
         ),
       ]);
+      recordTokenUsage(reply);
       State.chatHistory.push({ id: nextId++, role: "assistant", content: reply.text });
       State.stateOverride = null;
       Sound.play("finish");

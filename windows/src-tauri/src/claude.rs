@@ -63,10 +63,15 @@ pub enum ChatContext {
     Window { app_name: String, title: String, url: Option<String> },
 }
 
-#[derive(Serialize)]
+#[derive(Serialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct ChatReply {
     pub text: String,
+    pub input_tokens: Option<u32>,
+    pub output_tokens: Option<u32>,
+    pub total_tokens: Option<u32>,
+    pub model: Option<String>,
+    pub provider: Option<String>,
 }
 
 /// One chat turn. Returns the assistant's text, or a message the island shows
@@ -150,7 +155,30 @@ pub async fn send(
     if text.is_empty() {
         return Err("No response text.".into());
     }
-    Ok(ChatReply { text })
+
+    let input_tokens = response
+        .get("usage")
+        .and_then(|u| u.get("input_tokens"))
+        .and_then(Value::as_u64)
+        .map(|v| v as u32);
+    let output_tokens = response
+        .get("usage")
+        .and_then(|u| u.get("output_tokens"))
+        .and_then(Value::as_u64)
+        .map(|v| v as u32);
+    let total_tokens = match (input_tokens, output_tokens) {
+        (Some(i), Some(o)) => Some(i + o),
+        _ => None,
+    };
+
+    Ok(ChatReply {
+        text,
+        input_tokens,
+        output_tokens,
+        total_tokens,
+        model: Some(model.to_string()),
+        provider: Some("Claude".to_string()),
+    })
 }
 
 async fn call(key: &str, body: &Value) -> Result<Value, String> {

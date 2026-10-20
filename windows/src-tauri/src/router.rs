@@ -49,10 +49,13 @@ pub enum RouterContext {
     Window { app_name: String, title: String, url: Option<String> },
 }
 
-#[derive(Serialize)]
+#[derive(Serialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct RouterReply {
     pub text: String,
+    pub input_tokens: Option<u32>,
+    pub output_tokens: Option<u32>,
+    pub total_tokens: Option<u32>,
 }
 
 pub struct ProviderConfig {
@@ -228,12 +231,37 @@ pub async fn send(
         return Err(format!("{} returned empty response.", cfg.name));
     }
 
+    let input_tokens = json_res
+        .get("usage")
+        .and_then(|u| u.get("prompt_tokens"))
+        .and_then(Value::as_u64)
+        .map(|v| v as u32);
+    let output_tokens = json_res
+        .get("usage")
+        .and_then(|u| u.get("completion_tokens"))
+        .and_then(Value::as_u64)
+        .map(|v| v as u32);
+    let total_tokens = json_res
+        .get("usage")
+        .and_then(|u| u.get("total_tokens"))
+        .and_then(Value::as_u64)
+        .map(|v| v as u32)
+        .or_else(|| match (input_tokens, output_tokens) {
+            (Some(i), Some(o)) => Some(i + o),
+            _ => None,
+        });
+
     chat.push(json!({
         "role": "assistant",
         "content": reply_text.clone(),
     }));
 
-    Ok(RouterReply { text: reply_text })
+    Ok(RouterReply {
+        text: reply_text,
+        input_tokens,
+        output_tokens,
+        total_tokens,
+    })
 }
 
 fn image_block(path: &str) -> Option<Value> {

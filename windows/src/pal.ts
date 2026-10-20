@@ -12,6 +12,7 @@ import { PANEL_H, PANEL_W, type BotStateName, type BotEmoteName } from "./core/l
 import { PAL_EMOTE, PAL_STATE } from "./island/palState";
 import { BotEngine } from "./mochi/engine";
 import { State, type Settings, type PalPersonality } from "./core/state";
+import { recordTokenUsage } from "./core/plan";
 import { t } from "./core/i18n";
 import { h } from "./views/dom";
 import { DotPal, registerCustom, type CustomPal, type Emote } from "../../src/index.js";
@@ -987,6 +988,7 @@ IMPORTANTE: Não use aspas, responda apenas a frase direta curta em português.`
       name: attached.name,
       path: attached.path,
     });
+    if (reply) recordTokenUsage(reply);
 
     if (reply?.text) {
       let text = reply.text
@@ -2068,6 +2070,7 @@ async function sendScreenChatMessage(explicitQuery?: string) {
       : null;
 
     const reply = await Bridge.chatSend(query, context);
+    if (reply) recordTokenUsage(reply);
     removeChatTyping();
     appendChatMessage("assistant", reply.text);
     triggerEmote("happy");
@@ -2221,7 +2224,19 @@ async function main() {
     }
   });
   // Global summon hotkey: jumps to cursor, gives friendly greeting and opens quick command card!
-  await onEvent<null>("pal-summon", () => {
+  await onEvent<{ x?: number; y?: number } | null>("pal-summon", (pt) => {
+    setWander(true);
+    const targetCursorX = pt && typeof pt.x === "number" ? pt.x : cursorPos.x;
+    const targetCursorY = pt && typeof pt.y === "number" ? pt.y : cursorPos.y;
+    if (targetCursorX !== 0 || targetCursorY !== 0) {
+      const b = screenRect();
+      const rightSpace = b.x1 - (targetCursorX + 110 + PAL_W);
+      let targetX = rightSpace >= 0 ? targetCursorX + 110 : targetCursorX - 110 - PAL_W;
+      let targetY = targetCursorY - 30;
+      const spot = clampTo({ x: targetX, y: targetY });
+      x = spot.x;
+      y = spot.y;
+    }
     legs = [];
     currentVelocity = 0;
     idleUntil = performance.now() + 15000;
@@ -2232,6 +2247,7 @@ async function main() {
     searchOpenBtn.hidden = true;
     searchWrap.hidden = false;
     searchInput.focus();
+    pushRect();
   });
   // Pointer over the character or its card: stand still while it is there,
   // and close the card when it leaves (unless the user is typing in it).

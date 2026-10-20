@@ -26,9 +26,16 @@ export interface CodexPlanUsage extends PlanUsage {
 export interface GeminiPlanUsage extends PlanUsage {
   planType?: string;
   tier?: string;
+  provider?: string;
   model?: string;
   rpm?: PlanWindow;
   rpd?: PlanWindow;
+  inputTokens?: number;
+  outputTokens?: number;
+  totalTokens?: number;
+  sessionTokens?: number;
+  requestsCount?: number;
+  contextWindow?: number;
 }
 
 import { t } from "./i18n";
@@ -183,26 +190,133 @@ export function codexSubtitle(u: CodexPlanUsage | null, now = Date.now()): strin
   return (u.planType ? `${u.planType} · ` : "") + ageLabel(u.updatedAt, now);
 }
 
-export function geminiSubtitle(u: GeminiPlanUsage | null, now = Date.now()): string {
-  const model = u?.model || State.settings.geminiModel || "gemini-3.5-flash";
-  if (!u) return `${model} · ${PLAN_TEXT.justNow}`;
-  return `${model} · ` + ageLabel(u.updatedAt, now);
+const TOKEN_USAGE_KEY = "powpow.llmTokenUsage";
+
+interface StoredTokenStats {
+  updatedAt: number;
+  model: string;
+  provider: string;
+  lastInputTokens: number;
+  lastOutputTokens: number;
+  lastTotalTokens: number;
+  sessionTokens: number;
+  requestsCount: number;
+  dayStart: number;
 }
 
-export function getGeminiPlanUsage(now = Date.now()): GeminiPlanUsage {
+function loadTokenStats(): StoredTokenStats {
+  const todayStart = new Date().setHours(0, 0, 0, 0);
+  try {
+    const raw = localStorage.getItem(TOKEN_USAGE_KEY);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (parsed && typeof parsed.sessionTokens === "number") {
+        if (parsed.dayStart && parsed.dayStart === todayStart) {
+          return parsed;
+        }
+        return {
+          ...parsed,
+          requestsCount: 0,
+          sessionTokens: 0,
+          lastTotalTokens: 0,
+          lastInputTokens: 0,
+          lastOutputTokens: 0,
+          dayStart: todayStart,
+        };
+      }
+    }
+  } catch {}
+  return {
+    updatedAt: Date.now(),
+    model: State.settings.geminiModel || "gemini-2.5-flash",
+    provider: "Gemini",
+    lastInputTokens: 0,
+    lastOutputTokens: 0,
+    lastTotalTokens: 0,
+    sessionTokens: 0,
+    requestsCount: 0,
+    dayStart: todayStart,
+  };
+}
+
+function saveTokenStats(s: StoredTokenStats) {
+  try {
+    localStorage.setItem(TOKEN_USAGE_KEY, JSON.stringify(s));
+  } catch {}
+}
+
+export function recordTokenUsage(info: {
+  inputTokens?: number;
+  outputTokens?: number;
+  totalTokens?: number;
+  model?: string;
+  provider?: string;
+}) {
+  const now = Date.now();
+  const stats = loadTokenStats();
+
+  const inTok = info.inputTokens ?? 0;
+  const outTok = info.outputTokens ?? 0;
+  const totTok = info.totalTokens ?? (inTok + outTok);
+
+  stats.updatedAt = now;
+  stats.lastInputTokens = inTok;
+  stats.lastOutputTokens = outTok;
+  stats.lastTotalTokens = totTok;
+  stats.sessionTokens += totTok;
+  stats.requestsCount += 1;
+  if (info.model) stats.model = info.model;
+  if (info.provider) stats.provider = info.provider;
+
+  saveTokenStats(stats);
+  buildUsageFromStats(stats, now);
+  State.notify();
+}
+
+function buildUsageFromStats(s: StoredTokenStats, now = Date.now()): GeminiPlanUsage {
   const midnightUtc = new Date();
   midnightUtc.setUTCHours(24, 0, 0, 0);
   const oneHourLater = now + 3600_000;
 
-  return State.geminiPlanUsage ?? {
-    updatedAt: now,
-    model: State.settings.geminiModel || "gemini-3.5-flash",
-    tier: "Google AI",
-    fiveHour: { usedPct: 14, resetsAt: oneHourLater },
-    sevenDay: { usedPct: 10, resetsAt: midnightUtc.getTime() },
-    rpm: { usedPct: 14, resetsAt: now + 60_000 },
-    rpd: { usedPct: 10, resetsAt: midnightUtc.getTime() },
+  // Context window capacity: 1,000,000 for Gemini Flash, 128,000 for standard LLMs
+  const isGemini = (s.provider || "").toLowerCase().includes("gemini");
+  const contextWindow = isGemini ? 1_000_000 : 128_000;
+
+  const activeTokens = s.lastTotalTokens > 0 ? s.lastTotalTokens : s.sessionTokens;
+  const usedPct = activeTokens === 0 ? 0 : Math.min(100, Math.max(1, Math.round((activeTokens / contextWindow) * 100)));
+  const dailyPct = Math.min(100, Math.round((s.requestsCount / 1500) * 100));
+
+  const usage: GeminiPlanUsage = {
+    updatedAt: s.updatedAt,
+    model: s.model || State.settings.geminiModel || "gemini-2.5-flash",
+    provider: s.provider || "Gemini",
+    tier: s.provider || "Google AI",
+    fiveHour: { usedPct, resetsAt: oneHourLater },
+    sevenDay: { usedPct: dailyPct, resetsAt: midnightUtc.getTime() },
+    rpm: { usedPct, resetsAt: now + 60_000 },
+    rpd: { usedPct: dailyPct, resetsAt: midnightUtc.getTime() },
+    inputTokens: s.lastInputTokens,
+    outputTokens: s.lastOutputTokens,
+    totalTokens: s.lastTotalTokens,
+    sessionTokens: s.sessionTokens,
+    requestsCount: s.requestsCount,
+    contextWindow,
   };
+
+  State.geminiPlanUsage = usage;
+  return usage;
+}
+
+export function geminiSubtitle(u: GeminiPlanUsage | null, now = Date.now()): string {
+  const model = u?.model || State.settings.geminiModel || "gemini-2.5-flash";
+  const prov = u?.provider || "Gemini";
+  if (!u) return `${prov} (${model}) · ${PLAN_TEXT.justNow}`;
+  return `${prov} (${model}) · ` + ageLabel(u.updatedAt, now);
+}
+
+export function getGeminiPlanUsage(now = Date.now()): GeminiPlanUsage {
+  if (State.geminiPlanUsage) return State.geminiPlanUsage;
+  return buildUsageFromStats(loadTokenStats(), now);
 }
 
 export function codexResetsLabel(u: CodexPlanUsage | null): string {

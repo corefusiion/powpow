@@ -22,6 +22,7 @@ mod settings;
 mod tray;
 mod win_user;
 mod system_agent;
+mod hotkey;
 
 use std::os::windows::process::CommandExt;
 use std::process::Command;
@@ -481,13 +482,26 @@ async fn chat_send(
             }
         });
         let reply = gemini::send(&gchat, &gemini_model, query, gctx).await?;
-        Ok(ChatReply { text: reply.text })
+        Ok(ChatReply {
+            text: reply.text,
+            input_tokens: reply.input_tokens,
+            output_tokens: reply.output_tokens,
+            total_tokens: reply.total_tokens,
+            model: Some(gemini_model),
+            provider: Some("Gemini".to_string()),
+        })
     } else if provider == "openrouter" || provider == "orcarouter" || provider == "tokenrouter" {
         let chosen_model = match provider.as_str() {
             "openrouter" => openrouter_model,
             "orcarouter" => orcarouter_model,
             "tokenrouter" => tokenrouter_model,
             _ => String::new(),
+        };
+        let prov_name = match provider.as_str() {
+            "openrouter" => "OpenRouter",
+            "orcarouter" => "OrcaRouter",
+            "tokenrouter" => "TokenRouter",
+            _ => "Router",
         };
         let rctx = context.map(|c| match c {
             ChatContext::File { name, path } => router::RouterContext::File { name, path },
@@ -496,7 +510,14 @@ async fn chat_send(
             }
         });
         let reply = router::send(&rchat, &provider, &chosen_model, query, rctx).await?;
-        Ok(ChatReply { text: reply.text })
+        Ok(ChatReply {
+            text: reply.text,
+            input_tokens: reply.input_tokens,
+            output_tokens: reply.output_tokens,
+            total_tokens: reply.total_tokens,
+            model: Some(chosen_model),
+            provider: Some(prov_name.to_string()),
+        })
     } else {
         claude::send(&chat, &model, query, context).await
     }
@@ -919,6 +940,7 @@ pub fn run() {
             crate::droptarget::ensure_all(&handle);
             pipe::start(handle.clone());
             integrations::start(handle.clone());
+            hotkey::spawn(handle.clone());
 
 
 

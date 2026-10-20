@@ -136,7 +136,14 @@ export function buildPlanPill(kind: PlanKind | boolean): PlanPill {
       el.classList.toggle("active", isOpen());
       dotEl.style.background = color;
       if (planKind === "gemini") {
-        label.textContent = pillLabel("Gemini", getGeminiPlanUsage());
+        const u = getGeminiPlanUsage();
+        const prov = u.provider || (
+          State.settings.chatProvider === "openrouter" ? "OpenRouter" :
+          State.settings.chatProvider === "orcarouter" ? "OrcaRouter" :
+          State.settings.chatProvider === "tokenrouter" ? "TokenRouter" :
+          State.settings.chatProvider === "claude" ? "Claude" : "Gemini"
+        );
+        label.textContent = pillLabel(prov, u);
       } else if (planKind === "codex") {
         label.textContent = pillLabel("Codex", State.codexPlanUsage);
       } else {
@@ -220,10 +227,32 @@ export class PlanCard {
 
   private drawGemini(u: GeminiPlanUsage | null, now: number) {
     const rows = h("div", { class: "plan-rows" });
+    const prov = u?.provider || (
+      State.settings.chatProvider === "openrouter" ? "OpenRouter" :
+      State.settings.chatProvider === "orcarouter" ? "OrcaRouter" :
+      State.settings.chatProvider === "tokenrouter" ? "TokenRouter" :
+      State.settings.chatProvider === "claude" ? "Claude" : "Gemini"
+    );
+    const model = u?.model || State.settings.geminiModel || "gemini-2.5-flash";
+    const lastTot = u?.totalTokens ?? 0;
+    const inTok = u?.inputTokens ?? 0;
+    const outTok = u?.outputTokens ?? 0;
+    const sessTot = u?.sessionTokens ?? 0;
+    const reqCount = u?.requestsCount ?? 0;
+    const tokenFmt = (n: number) => n >= 1000 ? `${(n / 1000).toFixed(1)}k` : `${n}`;
+
     rows.append(
-      gaugeRow(PLAN_TEXT.requestsPerMin, u?.rpm, false, now),
+      h("div", { class: "plan-row" },
+        h("span", { class: "plan-label", text: "Última Resposta" }),
+        h("span", { class: "plan-credits", text: lastTot > 0 ? `${tokenFmt(lastTot)} tok (${tokenFmt(inTok)} in / ${tokenFmt(outTok)} out)` : "Aguardando consulta" }),
+      ),
+      h("div", { class: "plan-row" },
+        h("span", { class: "plan-label", text: "Total da Sessão" }),
+        h("span", { class: "plan-credits", text: `${tokenFmt(sessTot)} tokens (${reqCount} reqs)` }),
+      ),
+      gaugeRow("Cota / Janela", u?.fiveHour, false, now),
       gaugeRow(PLAN_TEXT.dailyQuota, u?.rpd ?? u?.sevenDay, true, now),
     );
-    this.el.append(head(geminiColor(now), PLAN_TEXT.geminiTitle, geminiSubtitle(u, now)), rows);
+    this.el.append(head(geminiColor(now), `${prov} · ${model}`, geminiSubtitle(u, now)), rows);
   }
 }
