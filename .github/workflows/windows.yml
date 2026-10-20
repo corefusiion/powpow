@@ -97,7 +97,7 @@ jobs:
         with:
           name: Powpow-Windows-setup
           path: windows/release/Powpow-Windows-${{ steps.pack.outputs.version }}-setup.exe
-          retention-days: 3
+          retention-days: 30
 
       # The unsigned NSIS installer is what Defender false-positives on, so the
       # bare binaries go up as well. hooks.rs already falls back to looking for
@@ -109,7 +109,7 @@ jobs:
           path: |
             windows/target/release/powpow.exe
             windows/target/release/powpow-hook.exe
-          retention-days: 3
+          retention-days: 30
 
       - name: Publish the release
         if: env.PUBLISH == 'true' && startsWith(github.ref, 'refs/tags/windows-v')
