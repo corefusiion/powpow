@@ -395,7 +395,8 @@ pub fn whatsapp() -> WhatsAppState {
     // If WhatsApp is not detected on top-level titles, or unread is 0,
     // inspect browser tabs (handles background tabs in Firefox, Chrome, Edge, Brave, Opera, etc.)
     if (!found.present || found.unread == 0) && !found.browser_hwnds.is_empty() {
-        inspect_browser_tabs(&found.browser_hwnds, &mut found);
+        let browser_hwnds = std::mem::take(&mut found.browser_hwnds);
+        inspect_browser_tabs(&browser_hwnds, &mut found);
     }
 
     WhatsAppState {
