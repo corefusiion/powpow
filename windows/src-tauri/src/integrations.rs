@@ -204,7 +204,12 @@ async fn poll_whatsapp(app: AppHandle) {
     };
     emit(&app, IntegrationUpdate {
         id: "integration_whatsapp",
-        data: json!({ "present": wa.present, "unread": wa.unread, "contact": wa.contact }),
+        data: json!({
+            "present": wa.present,
+            "unread": wa.unread,
+            "contact": wa.contact,
+            "browser": wa.browser,
+        }),
         error: None,
         event,
     });

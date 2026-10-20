@@ -488,6 +488,7 @@ async function handlePalIntegrationAlert(update: IntegrationUpdate) {
   if (update.id === "integration_whatsapp") {
     const unread = Number(update.data?.unread ?? 0);
     const contact = (update.data?.contact as string | undefined)?.trim() || "";
+    const browser = (update.data?.browser as string | undefined)?.trim() || "";
 
     if (!isWhatsAppInitialPollDone) {
       isWhatsAppInitialPollDone = true;
@@ -510,9 +511,13 @@ async function handlePalIntegrationAlert(update: IntegrationUpdate) {
         theme: "theme-whatsapp",
         icon: "💬",
         typeLabel: "WhatsApp",
-        sender: contact || "WhatsApp Web",
+        sender: contact || (browser ? `${browser} · WhatsApp` : "WhatsApp Web"),
         subject: unread === 1 ? "1 nova mensagem não lida" : `${unread} novas mensagens não lidas`,
-        snippet: contact ? `Mensagem recente recebida de ${contact}.` : "Mensagem recebida no WhatsApp.",
+        snippet: contact
+          ? `Mensagem recente recebida de ${contact}.`
+          : browser
+            ? `Mensagem recebida no WhatsApp (${browser}).`
+            : "Mensagem recebida no WhatsApp.",
         durationMs: 8000,
       });
     } else {

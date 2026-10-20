@@ -52,6 +52,7 @@ const OPEN_URLS: Record<string, string> = {
   integration_stripe: "https://dashboard.stripe.com/payments",
   integration_notion: "https://notion.so",
   integration_calcom: "https://app.cal.com/bookings",
+  integration_whatsapp: "https://web.whatsapp.com",
 };
 
 function idleCard(task: AgentTask, openSettings: () => void): HTMLElement {
@@ -284,10 +285,12 @@ function whatsappCard(task: AgentTask, openSettings: () => void): HTMLElement {
   const d = get("integration_whatsapp");
   const present = d.present === true;
   const unread = Number(d.unread ?? 0);
+  const browser = (d.browser as string | undefined)?.trim();
   if (!present) return idleCard(task, openSettings);
   const label = unread === 0
     ? t("No unread messages")
     : unread === 1 ? t("1 unread message") : t("{n} unread messages").replace("{n}", String(unread));
+  const subLabel = browser ? `${browser} · WhatsApp Web` : "WhatsApp Web";
   return h(
     "div",
     { class: "int-card" },
@@ -297,6 +300,10 @@ function whatsappCard(task: AgentTask, openSettings: () => void): HTMLElement {
       { class: "int-rows tight" },
       listRow(unread > 0 ? "#25D366" : "#6B7079", true,
         h("span", { class: "int-name", text: label }),
+      ),
+      h("div", { class: "int-row" },
+        dot("#25D366", 5),
+        h("span", { class: "int-name", style: "font-size:11px;opacity:0.75", text: subLabel }),
       ),
     ),
     h("div", { class: "int-actions" },
