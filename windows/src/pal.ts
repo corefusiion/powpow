@@ -905,7 +905,10 @@ async function tryAiAutonomousObservation(
   try {
     const hasGemini = (await Bridge.secretPresent("gemini-api-key")) ?? false;
     const hasClaude = (await Bridge.secretPresent("anthropic-api-key")) ?? false;
-    hasKey = hasGemini || hasClaude;
+    const hasOpenRouter = (await Bridge.secretPresent("openrouter-api-key")) ?? false;
+    const hasOrcaRouter = (await Bridge.secretPresent("orcarouter-api-key")) ?? false;
+    const hasTokenRouter = (await Bridge.secretPresent("tokenrouter-api-key")) ?? false;
+    hasKey = hasGemini || hasClaude || hasOpenRouter || hasOrcaRouter || hasTokenRouter;
   } catch {
     return false;
   }

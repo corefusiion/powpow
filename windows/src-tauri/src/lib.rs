@@ -16,6 +16,7 @@ mod integrations;
 mod island;
 mod log;
 mod pipe;
+mod router;
 mod secrets;
 mod settings;
 mod tray;
@@ -33,6 +34,7 @@ use tauri_plugin_autostart::{ManagerExt, MacosLauncher};
 
 use claude::{Chat, ChatContext, ChatReply};
 use gemini::GeminiChat;
+use router::RouterChat;
 use files::DroppedFile;
 use hooks::{HookPreview, HookStatus};
 use island::{PollGate, ScreenInfo};
@@ -450,18 +452,26 @@ fn approval_decline(app: AppHandle, request_id: String) {
 // ── Chat, files and secrets ───────────────────────────────────────────────────
 
 /// One chat turn. The API key and any file bytes stay on the Rust side.
-/// Routes to Claude or Gemini based on settings.chat_provider.
+/// Routes to Claude, Gemini, OpenRouter, OrcaRouter, or TokenRouter based on settings.chat_provider.
 #[tauri::command]
 async fn chat_send(
     shared: State<'_, Shared>,
     chat: State<'_, Chat>,
     gchat: State<'_, GeminiChat>,
+    rchat: State<'_, RouterChat>,
     query: String,
     context: Option<ChatContext>,
 ) -> Result<ChatReply, String> {
-    let (provider, model, gemini_model) = {
+    let (provider, model, gemini_model, openrouter_model, orcarouter_model, tokenrouter_model) = {
         let s = shared.settings.lock().unwrap();
-        (s.chat_provider.clone(), s.model.clone(), s.gemini_model.clone())
+        (
+            s.chat_provider.clone(),
+            s.model.clone(),
+            s.gemini_model.clone(),
+            s.openrouter_model.clone(),
+            s.orcarouter_model.clone(),
+            s.tokenrouter_model.clone(),
+        )
     };
     if provider == "gemini" {
         let gctx = context.map(|c| match c {
@@ -472,15 +482,31 @@ async fn chat_send(
         });
         let reply = gemini::send(&gchat, &gemini_model, query, gctx).await?;
         Ok(ChatReply { text: reply.text })
+    } else if provider == "openrouter" || provider == "orcarouter" || provider == "tokenrouter" {
+        let chosen_model = match provider.as_str() {
+            "openrouter" => openrouter_model,
+            "orcarouter" => orcarouter_model,
+            "tokenrouter" => tokenrouter_model,
+            _ => String::new(),
+        };
+        let rctx = context.map(|c| match c {
+            ChatContext::File { name, path } => router::RouterContext::File { name, path },
+            ChatContext::Window { app_name, title, url } => {
+                router::RouterContext::Window { app_name, title, url }
+            }
+        });
+        let reply = router::send(&rchat, &provider, &chosen_model, query, rctx).await?;
+        Ok(ChatReply { text: reply.text })
     } else {
         claude::send(&chat, &model, query, context).await
     }
 }
 
 #[tauri::command]
-fn chat_reset(chat: State<Chat>, gchat: State<GeminiChat>) {
+fn chat_reset(chat: State<Chat>, gchat: State<GeminiChat>, rchat: State<RouterChat>) {
     chat.reset();
     gchat.reset();
+    rchat.reset();
 }
 
 /// Gmail OAuth sign-in: opens the browser, waits for consent, stores tokens.
@@ -792,6 +818,7 @@ pub fn run() {
         .manage(Pending::default())
         .manage(Chat::default())
         .manage(GeminiChat::default())
+        .manage(RouterChat::default())
         .invoke_handler(tauri::generate_handler![
             boot,
             save_settings,

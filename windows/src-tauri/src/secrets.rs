@@ -9,6 +9,9 @@ const SERVICE: &str = "com.corefusiion.powpow";
 pub const KNOWN_KEYS: &[&str] = &[
     "anthropic-api-key",
     "gemini-api-key",
+    "openrouter-api-key",
+    "orcarouter-api-key",
+    "tokenrouter-api-key",
     "gmail-email",
     "gmail-app-password",
     "gmail-client-id",

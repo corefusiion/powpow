@@ -210,147 +210,280 @@ const MODELS: [string, string][] = [
 ];
 
 const GEMINI_MODELS: [string, string][] = [
-  ["gemini-3.5-flash", "Gemini 3.5 Flash"],
-  ["gemini-3.5-flash-lite", "Gemini 3.5 Flash-Lite"],
-  ["gemini-3.1-flash-lite", "Gemini 3.1 Flash-Lite"],
+  ["gemini-2.5-flash", "Gemini 2.5 Flash (Recomendado)"],
+  ["gemini-2.0-flash", "Gemini 2.0 Flash"],
+  ["gemini-1.5-flash", "Gemini 1.5 Flash"],
 ];
 
-function apiSection(hasKey: boolean, hasGeminiKey: boolean): HTMLElement {
-  const dot = statusDot(hasKey || hasGeminiKey);
+const OPENROUTER_MODELS: [string, string][] = [
+  ["google/gemini-2.5-flash", "Gemini 2.5 Flash ($0.075/M)"],
+  ["google/gemini-2.5-flash:nitro", "Gemini 2.5 Flash :nitro (Mais Rápido)"],
+  ["deepseek/deepseek-chat", "DeepSeek V3 / V4.1 ($0.035/M)"],
+  ["qwen/qwen-2.5-vl-72b-instruct", "Qwen 2.5 VL 72B (Visão & Excel)"],
+  ["meta-llama/llama-3.2-11b-vision-instruct", "Llama 3.2 11B Vision ($0.05/M)"],
+  ["openai/gpt-4o-mini", "GPT-4o mini ($0.15/M)"],
+];
+
+const ORCAROUTER_MODELS: [string, string][] = [
+  ["google/gemini-2.5-flash", "Gemini 2.5 Flash"],
+  ["deepseek/deepseek-chat", "DeepSeek Flash / V3 ($0.035/M)"],
+  ["openai/gpt-4o-mini", "GPT-4o mini ($0.15/M)"],
+  ["orcarouter/auto", "Orca Auto (Roteador Dinâmico)"],
+];
+
+const TOKENROUTER_MODELS: [string, string][] = [
+  ["deepseek/deepseek-chat", "DeepSeek Chat ($0 / Promocional)"],
+  ["qwen/qwen-2.5-vl-72b-instruct", "Qwen 2.5 VL 72B (Visão)"],
+  ["meta-llama/llama-3.2-11b-vision-instruct", "Llama 3.2 11B Vision"],
+  ["openai/gpt-4o-mini", "GPT-4o mini"],
+];
+
+function apiSection(
+  hasKey: boolean,
+  hasGeminiKey: boolean,
+  hasOpenRouterKey = false,
+  hasOrcaRouterKey = false,
+  hasTokenRouterKey = false,
+): HTMLElement {
+  const dot = statusDot(false);
   const state = h("span", {
     class: "hint",
-    text: (hasKey || hasGeminiKey)
-      ? t("Key saved in the Windows Credential Manager.")
-      : t("No key yet — the chat needs one."),
+    text: t("No key yet — the chat needs one."),
   });
-
-  const field = h("input", {
-    type: "password",
-    placeholder: hasKey ? "••••••••••••  (stored)" : "sk-ant-...",
-    style: "flex:1 1 auto;min-width:0",
-    autocomplete: "off",
-    spellcheck: "false",
-  }) as HTMLInputElement;
-
-  const saveBtn = h("button", { class: "primary", text: t("Save key") });
-  const clearBtn = h("button", { class: "danger", text: t("Remove") });
   const feedback = h("div", {});
 
+  const currentProviderKey = (): string => {
+    switch (settings.chatProvider) {
+      case "gemini":
+        return "gemini-api-key";
+      case "openrouter":
+        return "openrouter-api-key";
+      case "orcarouter":
+        return "orcarouter-api-key";
+      case "tokenrouter":
+        return "tokenrouter-api-key";
+      default:
+        return "anthropic-api-key";
+    }
+  };
+
   async function refresh() {
-    const present = (await Bridge.secretPresent("anthropic-api-key")) ?? false;
+    const keyName = currentProviderKey();
+    const present = (await Bridge.secretPresent(keyName)) ?? false;
     dot.style.background = present ? "#22c55e" : "#f4505e";
     state.textContent = present
-      ? "Key saved in the Windows Credential Manager."
-      : "No key yet — the chat needs one.";
-    field.placeholder = present ? "••••••••••••  (stored)" : "sk-ant-...";
-    clearBtn.style.display = present ? "" : "none";
+      ? t("Key saved in the Windows Credential Manager.")
+      : t("No key yet — the chat needs one.");
   }
 
-  saveBtn.addEventListener("click", async () => {
-    const value = field.value.trim();
-    if (!value) return;
-    clear(feedback);
-    try {
-      await Bridge.secretSet("anthropic-api-key", value);
-      field.value = "";
-      feedback.append(h("div", { class: "notice ok", text: t("Saved. It never touches disk.") }));
-      await refresh();
-    } catch (err) {
-      feedback.append(h("div", { class: "notice err", text: `${t("Could not save")}: ${String(err)}` }));
+  // Model builder with preset selector + custom input
+  function buildModelRow(
+    label: string,
+    presets: [string, string][],
+    currentValue: string,
+    onSave: (val: string) => void,
+  ) {
+    const wrap = h("div", { style: "display:flex;flex-direction:column;gap:6px;flex:1 1 auto" });
+    const select = h("select", {}) as HTMLSelectElement;
+    for (const [id, name] of presets) {
+      select.append(h("option", { value: id, text: name }));
     }
-  });
+    select.append(h("option", { value: "__custom__", text: `✎ ${t("Custom model ID")}...` }));
 
-  clearBtn.addEventListener("click", async () => {
-    clear(feedback);
-    try {
-      await Bridge.secretClear("anthropic-api-key");
-      feedback.append(h("div", { class: "notice ok", text: t("Key removed.") }));
-      await refresh();
-    } catch (err) {
-      feedback.append(h("div", { class: "notice err", text: `${t("Could not remove")}: ${String(err)}` }));
+    const customInput = h("input", {
+      type: "text",
+      placeholder: "ID do modelo (ex: google/gemini-2.5-flash)",
+      style: "flex:1 1 auto;min-width:0;display:none;margin-top:4px",
+      value: currentValue,
+    }) as HTMLInputElement;
+
+    const isPreset = presets.some(([id]) => id === currentValue);
+    if (isPreset) {
+      select.value = currentValue;
+      customInput.style.display = "none";
+    } else {
+      select.value = "__custom__";
+      customInput.style.display = "";
+      customInput.value = currentValue;
     }
-  });
 
-  const model = h("select", {}) as HTMLSelectElement;
-  for (const [id, label] of MODELS) model.append(h("option", { value: id, text: label }));
-  if (!MODELS.some(([id]) => id === settings.model)) {
-    model.append(h("option", { value: settings.model, text: settings.model }));
+    select.addEventListener("change", () => {
+      if (select.value === "__custom__") {
+        customInput.style.display = "";
+        customInput.focus();
+      } else {
+        customInput.style.display = "none";
+        onSave(select.value);
+      }
+    });
+
+    customInput.addEventListener("change", () => {
+      const v = customInput.value.trim();
+      if (v) onSave(v);
+    });
+    customInput.addEventListener("blur", () => {
+      const v = customInput.value.trim();
+      if (v) onSave(v);
+    });
+
+    wrap.append(select, customInput);
+    return h("div", { class: "row" }, h("label", { text: label }), wrap);
   }
-  model.value = settings.model;
-  model.addEventListener("change", () => {
-    settings.model = model.value;
+
+  // Key row builder
+  function buildKeyRow(secretKey: string, label: string, placeholder: string, isStored: boolean) {
+    const field = h("input", {
+      type: "password",
+      placeholder: isStored ? "••••••••••••  (stored)" : placeholder,
+      style: "flex:1 1 auto;min-width:0",
+      autocomplete: "off",
+      spellcheck: "false",
+    }) as HTMLInputElement;
+
+    const saveBtn = h("button", { class: "primary", text: t("Save key") });
+    const clearBtn = h("button", { class: "danger", text: t("Remove") });
+    clearBtn.style.display = isStored ? "" : "none";
+
+    saveBtn.addEventListener("click", async () => {
+      const val = field.value.trim();
+      if (!val) return;
+      clear(feedback);
+      try {
+        await Bridge.secretSet(secretKey, val);
+        field.value = "";
+        field.placeholder = "••••••••••••  (stored)";
+        clearBtn.style.display = "";
+        feedback.append(h("div", { class: "notice ok", text: t("Saved. It never touches disk.") }));
+        await refresh();
+      } catch (err) {
+        feedback.append(h("div", { class: "notice err", text: `${t("Could not save")}: ${String(err)}` }));
+      }
+    });
+
+    clearBtn.addEventListener("click", async () => {
+      clear(feedback);
+      try {
+        await Bridge.secretClear(secretKey);
+        field.value = "";
+        field.placeholder = placeholder;
+        clearBtn.style.display = "none";
+        feedback.append(h("div", { class: "notice ok", text: t("Key removed.") }));
+        await refresh();
+      } catch (err) {
+        feedback.append(h("div", { class: "notice err", text: `${t("Could not remove")}: ${String(err)}` }));
+      }
+    });
+
+    return h("div", { class: "row" }, h("label", { text: label }), field, saveBtn, clearBtn);
+  }
+
+  // 1. Claude
+  const claudeModelRow = buildModelRow(t("Model"), MODELS, settings.model ?? "claude-opus-5", (v) => {
+    settings.model = v;
     void save();
   });
+  const claudeKeyRow = buildKeyRow("anthropic-api-key", t("Claude key"), "sk-ant-...", hasKey);
+  const claudeRows = h("div", { style: "display:flex;flex-direction:column;gap:12px" }, claudeModelRow, claudeKeyRow);
 
-  clearBtn.style.display = hasKey ? "" : "none";
+  // 2. Gemini
+  const geminiModelRow = buildModelRow(t("Gemini model"), GEMINI_MODELS, settings.geminiModel ?? "gemini-2.5-flash", (v) => {
+    settings.geminiModel = v;
+    void save();
+  });
+  const geminiKeyRow = buildKeyRow("gemini-api-key", t("Gemini key"), "AIza…", hasGeminiKey);
+  const geminiRows = h("div", { style: "display:flex;flex-direction:column;gap:12px" }, geminiModelRow, geminiKeyRow);
 
-  // Provider + Gemini model
+  // 3. OpenRouter
+  const openrouterModelRow = buildModelRow(
+    t("OpenRouter model"),
+    OPENROUTER_MODELS,
+    settings.openrouterModel ?? "google/gemini-2.5-flash",
+    (v) => {
+      settings.openrouterModel = v;
+      void save();
+    },
+  );
+  const openrouterKeyRow = buildKeyRow("openrouter-api-key", t("OpenRouter key"), "sk-or-v1-...", hasOpenRouterKey);
+  const openrouterRows = h(
+    "div",
+    { style: "display:flex;flex-direction:column;gap:12px" },
+    h("div", {
+      class: "hint",
+      text: t("OpenRouter permite usar Gemini Flash, DeepSeek e Qwen com preços ultra-baixos (< $1/1M tokens) e tag :nitro."),
+    }),
+    openrouterModelRow,
+    openrouterKeyRow,
+  );
+
+  // 4. OrcaRouter
+  const orcarouterModelRow = buildModelRow(
+    t("OrcaRouter model"),
+    ORCAROUTER_MODELS,
+    settings.orcarouterModel ?? "google/gemini-2.5-flash",
+    (v) => {
+      settings.orcarouterModel = v;
+      void save();
+    },
+  );
+  const orcarouterKeyRow = buildKeyRow("orcarouter-api-key", t("OrcaRouter key"), "sk-orca-...", hasOrcaRouterKey);
+  const orcarouterRows = h(
+    "div",
+    { style: "display:flex;flex-direction:column;gap:12px" },
+    h("div", {
+      class: "hint",
+      text: t("OrcaRouter oferece Zero Token Markup (preço de custo original) e roteador dinâmico de prompts."),
+    }),
+    orcarouterModelRow,
+    orcarouterKeyRow,
+  );
+
+  // 5. TokenRouter
+  const tokenrouterModelRow = buildModelRow(
+    t("TokenRouter model"),
+    TOKENROUTER_MODELS,
+    settings.tokenrouterModel ?? "deepseek/deepseek-chat",
+    (v) => {
+      settings.tokenrouterModel = v;
+      void save();
+    },
+  );
+  const tokenrouterKeyRow = buildKeyRow("tokenrouter-api-key", t("TokenRouter key"), "sk-token-...", hasTokenRouterKey);
+  const tokenrouterRows = h(
+    "div",
+    { style: "display:flex;flex-direction:column;gap:12px" },
+    h("div", {
+      class: "hint",
+      text: t("TokenRouter reúne modelos abertos com preços promocionais e tiers gratuitos para DeepSeek e Qwen."),
+    }),
+    tokenrouterModelRow,
+    tokenrouterKeyRow,
+  );
+
+  // Provider selector
   const provider = h("select", {}) as HTMLSelectElement;
   provider.append(h("option", { value: "claude", text: t("Claude (Anthropic)") }));
   provider.append(h("option", { value: "gemini", text: t("Gemini (Google)") }));
+  provider.append(h("option", { value: "openrouter", text: t("OpenRouter (openrouter.ai)") }));
+  provider.append(h("option", { value: "orcarouter", text: t("OrcaRouter (orcarouter.ai)") }));
+  provider.append(h("option", { value: "tokenrouter", text: t("TokenRouter (tokenrouter.com)") }));
   provider.value = settings.chatProvider ?? "claude";
+
   const applyProvider = () => {
-    const isGemini = provider.value === "gemini";
-    claudeRows.style.display = isGemini ? "none" : "";
-    geminiRows.style.display = isGemini ? "" : "none";
-    geminiModelRow.style.display = isGemini ? "" : "none";
+    const val = provider.value;
+    claudeRows.style.display = val === "claude" ? "" : "none";
+    geminiRows.style.display = val === "gemini" ? "" : "none";
+    openrouterRows.style.display = val === "openrouter" ? "" : "none";
+    orcarouterRows.style.display = val === "orcarouter" ? "" : "none";
+    tokenrouterRows.style.display = val === "tokenrouter" ? "" : "none";
+    void refresh();
   };
+
   provider.addEventListener("change", () => {
     settings.chatProvider = provider.value;
     void save();
     applyProvider();
   });
 
-  const geminiField = h("input", {
-    type: "password",
-    placeholder: hasGeminiKey ? "••••••••••••  (stored)" : "AIza…",
-    style: "flex:1 1 auto;min-width:0",
-    autocomplete: "off",
-    spellcheck: "false",
-  }) as HTMLInputElement;
-  const geminiSave = h("button", { class: "primary", text: t("Save") });
-  const geminiClear = h("button", { class: "danger", text: t("Remove") });
-  geminiSave.addEventListener("click", async () => {
-    const value = geminiField.value.trim();
-    if (!value) return;
-    try {
-      await Bridge.secretSet("gemini-api-key", value);
-      geminiField.value = "";
-      feedback.append(h("div", { class: "notice ok", text: t("Gemini key saved.") }));
-    } catch (err) {
-      feedback.append(h("div", { class: "notice err", text: `${t("Could not save")}: ${String(err)}` }));
-    }
-  });
-  geminiClear.addEventListener("click", async () => {
-    try {
-      await Bridge.secretClear("gemini-api-key");
-      feedback.append(h("div", { class: "notice ok", text: t("Gemini key removed.") }));
-    } catch (err) {
-      feedback.append(h("div", { class: "notice err", text: `${t("Could not remove")}: ${String(err)}` }));
-    }
-  });
-
-  const geminiModel = h("select", {}) as HTMLSelectElement;
-  for (const [id, label] of GEMINI_MODELS) geminiModel.append(h("option", { value: id, text: label }));
-  if (!GEMINI_MODELS.some(([id]) => id === settings.geminiModel)) {
-    geminiModel.append(h("option", { value: settings.geminiModel, text: settings.geminiModel }));
-  }
-  geminiModel.value = settings.geminiModel ?? "gemini-3.5-flash";
-  geminiModel.addEventListener("change", () => {
-    settings.geminiModel = geminiModel.value;
-    void save();
-  });
-  const geminiModelRow = h("div", { class: "row" }, h("label", { text: t("Gemini model") }), geminiModel);
-
-  // Provider → model → key, one provider visible at a time.
-  const claudeRows = h("div", { style: "display:flex;flex-direction:column;gap:12px" },
-    h("div", { class: "row" }, h("label", { text: t("Model") }), model),
-    h("div", { class: "row" }, h("label", { text: t("Claude key") }), field, saveBtn, clearBtn),
-  );
-  const geminiRows = h("div", { style: "display:flex;flex-direction:column;gap:12px" },
-    geminiModelRow,
-    h("div", { class: "row" }, h("label", { text: t("Gemini key") }), geminiField, geminiSave, geminiClear),
-  );
   applyProvider();
 
   return h(
@@ -361,6 +494,9 @@ function apiSection(hasKey: boolean, hasGeminiKey: boolean): HTMLElement {
     h("div", { class: "row" }, h("label", { text: t("Provider") }), provider),
     claudeRows,
     geminiRows,
+    openrouterRows,
+    orcarouterRows,
+    tokenrouterRows,
     feedback,
   );
 }
@@ -1460,6 +1596,9 @@ async function main() {
 
   const hasKey = (await Bridge.secretPresent("anthropic-api-key")) ?? false;
   const hasGeminiKey = (await Bridge.secretPresent("gemini-api-key")) ?? false;
+  const hasOpenRouterKey = (await Bridge.secretPresent("openrouter-api-key")) ?? false;
+  const hasOrcaRouterKey = (await Bridge.secretPresent("orcarouter-api-key")) ?? false;
+  const hasTokenRouterKey = (await Bridge.secretPresent("tokenrouter-api-key")) ?? false;
   const geminiStatus = (await Bridge.geminiHooksStatus()) ?? {
     installed: false, settingsPath: "", hookPath: "", hookReady: false,
   };
@@ -1493,7 +1632,7 @@ async function main() {
     agySection(agyStatus),
     agentsSection(agents),
     activePillsSection(connected),
-    apiSection(hasKey, hasGeminiKey),
+    apiSection(hasKey, hasGeminiKey, hasOpenRouterKey, hasOrcaRouterKey, hasTokenRouterKey),
     gmailSection(present),
     outlookSection(present),
     integrationsSection(present),

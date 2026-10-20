@@ -36,6 +36,15 @@ pub struct Settings {
     /// Gemini model used when chat_provider == "gemini".
     #[serde(default = "default_gemini_model")]
     pub gemini_model: String,
+    /// OpenRouter model used when chat_provider == "openrouter".
+    #[serde(default = "default_openrouter_model")]
+    pub openrouter_model: String,
+    /// OrcaRouter model used when chat_provider == "orcarouter".
+    #[serde(default = "default_orcarouter_model")]
+    pub orcarouter_model: String,
+    /// TokenRouter model used when chat_provider == "tokenrouter".
+    #[serde(default = "default_tokenrouter_model")]
+    pub tokenrouter_model: String,
     /// UI language: "en" | "pt-BR".
     #[serde(default = "default_language")]
     pub language: String,
@@ -101,7 +110,19 @@ fn default_chat_provider() -> String {
 }
 
 fn default_gemini_model() -> String {
-    "gemini-3.5-flash".to_string()
+    "gemini-2.5-flash".to_string()
+}
+
+fn default_openrouter_model() -> String {
+    "google/gemini-2.5-flash".to_string()
+}
+
+fn default_orcarouter_model() -> String {
+    "google/gemini-2.5-flash".to_string()
+}
+
+fn default_tokenrouter_model() -> String {
+    "deepseek/deepseek-chat".to_string()
 }
 
 fn default_model() -> String {
@@ -142,6 +163,9 @@ impl Default for Settings {
             model: default_model(),
             chat_provider: default_chat_provider(),
             gemini_model: default_gemini_model(),
+            openrouter_model: default_openrouter_model(),
+            orcarouter_model: default_orcarouter_model(),
+            tokenrouter_model: default_tokenrouter_model(),
             language: default_language(),
             theme: default_theme(),
             approved_tools: Vec::new(),

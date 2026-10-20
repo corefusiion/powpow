@@ -114,9 +114,12 @@ export interface Settings {
   hooksInstalled: boolean;
   /** Claude model used by the chat. */
   model: string;
-  /** Chat provider: "claude" | "gemini". */
+  /** Chat provider: "claude" | "gemini" | "openrouter" | "orcarouter" | "tokenrouter". */
   chatProvider: string;
   geminiModel: string;
+  openrouterModel: string;
+  orcarouterModel: string;
+  tokenrouterModel: string;
   /** UI language: "en" | "pt-BR". */
   language: Lang;
   /** Island theme: "onyx" | "ice" | "frost". */
@@ -166,7 +169,10 @@ export const DEFAULT_SETTINGS: Settings = {
   hooksInstalled: false,
   model: "claude-opus-5",
   chatProvider: "claude",
-  geminiModel: "gemini-3.5-flash",
+  geminiModel: "gemini-2.5-flash",
+  openrouterModel: "google/gemini-2.5-flash",
+  orcarouterModel: "google/gemini-2.5-flash",
+  tokenrouterModel: "deepseek/deepseek-chat",
   language: "pt-BR",
   theme: "onyx",
   approvedTools: [],
