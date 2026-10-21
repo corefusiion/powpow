@@ -55,6 +55,16 @@ async function main() {
     }
   });
 
+  await onEvent<null>("pal-unpause", () => {
+    if (State.paused) {
+      setPaused(false);
+      island.reveal();
+    }
+    State.settings.wander = true;
+    void Bridge.saveSettings(State.settings);
+    island.syncPalWander();
+  });
+
   await onEvent<null>("screen-changed", () => void Bridge.reposition());
 
   // The settings window writes preferences; apply them here without a restart.

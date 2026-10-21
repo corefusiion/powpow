@@ -954,6 +954,11 @@ export class Island {
    * chat waiting, a drag owning the screen, pause, or reduced motion.
    */
   togglePalWander() {
+    if (State.paused) {
+      State.paused = false;
+      void Bridge.setPaused(false);
+      this.reveal();
+    }
     State.settings.wander = !State.settings.wander;
     void Bridge.saveSettings(State.settings);
     this.syncPalWander();
@@ -986,7 +991,7 @@ export class Island {
     }, 19000);
   }
 
-  private syncPalWander() {
+  syncPalWander() {
     const on =
       State.settings.wander &&
       State.mode === "compact" &&
@@ -1034,7 +1039,14 @@ export class Island {
     window.addEventListener("keydown", (e) => {
       if (e.ctrlKey && (e.key === "8" || e.code === "Digit8")) {
         e.preventDefault();
-        this.togglePalWander();
+        if (State.paused) {
+          State.paused = false;
+          void Bridge.setPaused(false);
+          this.reveal();
+        }
+        State.settings.wander = true;
+        void Bridge.saveSettings(State.settings);
+        void Bridge.setPalWander(true);
       }
       // Esc always collapses except while an approval decision is pending —
       // drop/chat pins must never trap the user (collapse() clears them).
@@ -1043,10 +1055,26 @@ export class Island {
     });
 
     void onEvent<boolean>("pal-wander-toggle", (on) => {
+      if (on && State.paused) {
+        State.paused = false;
+        void Bridge.setPaused(false);
+        this.reveal();
+      }
       State.settings.wander = on;
       void Bridge.saveSettings(State.settings);
       this.syncPalWander();
       Sound.play(on ? "attach" : "pop");
+    });
+
+    void onEvent<null>("pal-unpause", () => {
+      if (State.paused) {
+        State.paused = false;
+        void Bridge.setPaused(false);
+        this.reveal();
+      }
+      State.settings.wander = true;
+      void Bridge.saveSettings(State.settings);
+      this.syncPalWander();
     });
 
     this.startCompactPlayfulness();

@@ -209,7 +209,7 @@ fn quit_app(app: AppHandle) {
 /// Tray → Pause. Paused means paused: the pollers stop talking to the network,
 /// not just the island stopping showing things.
 #[tauri::command]
-fn set_paused(paused: bool) {
+pub fn set_paused(paused: bool) {
     integrations::set_paused(paused);
 }
 
@@ -223,11 +223,12 @@ static PAL_WANDER: AtomicBool = AtomicBool::new(false);
 static PAL_FACE: Mutex<String> = Mutex::new(String::new());
 
 #[tauri::command]
-fn set_pal_wander(app: AppHandle, on: bool) {
+pub fn set_pal_wander(app: AppHandle, on: bool) {
     PAL_WANDER.store(on, Ordering::Relaxed);
     if let Some(win) = app.get_webview_window("pal") {
         if on {
             let _ = win.show();
+            let _ = win.unminimize();
         } else {
             let _ = win.hide();
         }

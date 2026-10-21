@@ -1550,12 +1550,13 @@ function tick(t: number) {
 
 /** Show the pal and let it walk, or park it and stop costing anything. */
 function setWander(on: boolean) {
-  if (on === running) return;
   const wasRunning = running;
   running = on;
   if (on) {
-    lastT = performance.now();
-    raf = requestAnimationFrame(tick);
+    if (!raf) {
+      lastT = performance.now();
+      raf = requestAnimationFrame(tick);
+    }
     if (!wasRunning) onPalSummoned();
   } else if (raf) {
     cancelAnimationFrame(raf);
@@ -2226,6 +2227,7 @@ async function main() {
   // Global summon hotkey: jumps to cursor, gives friendly greeting and opens quick command card!
   await onEvent<{ x?: number; y?: number } | null>("pal-summon", (pt) => {
     setWander(true);
+    void Bridge.setPalWander(true);
     const targetCursorX = pt && typeof pt.x === "number" ? pt.x : cursorPos.x;
     const targetCursorY = pt && typeof pt.y === "number" ? pt.y : cursorPos.y;
     if (targetCursorX !== 0 || targetCursorY !== 0) {

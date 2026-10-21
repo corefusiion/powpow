@@ -28,6 +28,12 @@ pub fn spawn(app: AppHandle) {
                 if msg.message == WM_HOTKEY && msg.wParam.0 as i32 == HOTKEY_SUMMON_PAL {
                     crate::log::line("Global hotkey Ctrl+8 triggered: summoning avatar!");
 
+                    // 1. Unpause backend state
+                    crate::set_paused(false);
+
+                    // 2. Mark PAL_WANDER as true and show window
+                    crate::set_pal_wander(app.clone(), true);
+
                     let mut point = POINT::default();
                     let _ = GetCursorPos(&mut point);
 
@@ -36,14 +42,16 @@ pub fn spawn(app: AppHandle) {
                         y: point.y,
                     };
 
-                    // 1. Show and unminimize pal window
+                    // 3. Show, unminimize, focus, and emit to pal window
                     if let Some(pal) = app.get_webview_window("pal") {
                         let _ = pal.show();
                         let _ = pal.unminimize();
                         let _ = pal.set_focus();
                         let _ = pal.emit("pal-summon", payload);
                     }
-                    // 2. Also notify island and pal about wander state
+
+                    // 4. Also notify island and pal about unpause and wander state
+                    let _ = app.emit("pal-unpause", ());
                     let _ = app.emit("pal-wander", true);
                     let _ = app.emit("pal-wander-toggle", true);
                 }
