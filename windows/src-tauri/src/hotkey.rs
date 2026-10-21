@@ -29,10 +29,10 @@ pub fn spawn(app: AppHandle) {
                     crate::log::line("Global hotkey Ctrl+8 triggered: summoning avatar!");
 
                     // 1. Unpause backend state
-                    crate::set_paused(false);
+                    crate::integrations::set_paused(false);
 
                     // 2. Mark PAL_WANDER as true and show window
-                    crate::set_pal_wander(app.clone(), true);
+                    crate::apply_pal_wander(&app, true);
 
                     let mut point = POINT::default();
                     let _ = GetCursorPos(&mut point);
