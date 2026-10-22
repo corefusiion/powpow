@@ -50,6 +50,8 @@ dot-pal {
   left: 156px;
   top: 10px;
   width: 196px;
+  max-height: 400px;
+  overflow-y: auto;
   box-sizing: border-box;
   display: flex;
   flex-direction: column;

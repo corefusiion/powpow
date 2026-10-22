@@ -2149,6 +2149,31 @@ async function press(action: string) {
       showThought("✍️ O que deseja escrever para o aplicativo ativo?", "star");
       callPal(action);
       return;
+    case "pomodoro":
+      setCard(false);
+      showThought("🍅 Abrindo Foco Ágil & Pomodoro...", "happy");
+      callPal(action);
+      return;
+    case "clipboard":
+      setCard(false);
+      showThought("📋 Abrindo Área de Transferência...", "star");
+      callPal(action);
+      return;
+    case "wellness":
+      setCard(false);
+      showThought("💧 Cuidando da sua saúde e hidratação!", "love");
+      callPal(action);
+      return;
+    case "soundscape":
+      setCard(false);
+      showThought("🎧 Abrindo Soundscape Lo-Fi...", "happy");
+      callPal(action);
+      return;
+    case "recap":
+      setCard(false);
+      showThought("📔 Gerando seu Diário de Bordo...", "star");
+      callPal(action);
+      return;
     case "pause":
     case "new-chat":
     case "settings":
@@ -2175,7 +2200,7 @@ async function main() {
   if (info) {
     screenInfo = info.screen;
     State.settings = { ...State.settings, ...info.settings };
-    charName = info.settings.character || "mochi";
+    charName = info.settings.character || "embasa";
     customSpec = (info.settings.custom as CustomPal | null) ?? null;
   } else {
     const s = window.screen as Screen & { availLeft?: number; availTop?: number };
@@ -2514,6 +2539,79 @@ async function main() {
       sendSearch();
     }
     e.stopPropagation();
+  });
+
+  // ── Pro Features Event Listeners (Pomodoro, Water, Ergonomics) ──────
+  window.addEventListener("powpow-pomodoro-finished", (e: Event) => {
+    const detail = (e as CustomEvent).detail;
+    triggerVisualAlert({ emote: "star", pose: "celebrate" });
+    showAlertPopup({
+      theme: "theme-calendar",
+      icon: "🍅",
+      typeLabel: "Ciclo de Foco Concluído",
+      sender: "Foco & Pomodoro",
+      subject: `Ciclo #${detail.cycles} finalizado!`,
+      snippet: "Excelente produtividade! Aproveite para respirar fundo, tomar uma água e esticar as pernas durante a pausa.",
+      durationMs: 15000,
+    });
+  });
+
+  window.addEventListener("powpow-water-reminder", () => {
+    triggerVisualAlert({ emote: "love", pose: "wave" });
+    showAlertPopup({
+      theme: "theme-email",
+      icon: "💧",
+      typeLabel: "Hora de Beber Água",
+      sender: "Mascote Embasa",
+      subject: "Hidratação & Postura",
+      snippet: "Hora de beber 1 copo d'água para hidratar o cérebro e alinhar sua coluna na cadeira!",
+      durationMs: 15000,
+    });
+  });
+
+  window.addEventListener("powpow-water-drank", (e: Event) => {
+    const detail = (e as CustomEvent).detail;
+    triggerVisualAlert({ emote: "happy", pose: "celebrate" });
+    showThought(`💧 Glup, glup! Copo registrado (${detail.total}/${detail.goal})!`, "happy");
+  });
+
+  window.addEventListener("powpow-eye-rest-started", () => {
+    triggerVisualAlert({ emote: "wink", pose: "observe" });
+    showAlertPopup({
+      theme: "theme-calendar",
+      icon: "👀",
+      typeLabel: "Regra 20-20-20",
+      sender: "Descanso Ocular Anti-Fadiga",
+      subject: "Pausa de 20 segundos",
+      snippet: "Olhe para um objeto distante (a cerca de 6 metros) por 20 segundos para relaxar a musculatura dos olhos.",
+      durationMs: 20000,
+    });
+  });
+
+  window.addEventListener("powpow-stretch-started", () => {
+    triggerVisualAlert({ emote: "happy", pose: "celebrate" });
+    showAlertPopup({
+      theme: "theme-calendar",
+      icon: "🧘",
+      typeLabel: "Micro-Alongamento Guiado (30s)",
+      sender: "Ergonomia no Trabalho",
+      subject: "Alívio de Tensão Muscular",
+      snippet: "Gire suavemente o pescoço (10s), eleve os ombros (10s) e estique os punhos para frente (10s).",
+      durationMs: 30000,
+    });
+  });
+
+  window.addEventListener("powpow-workday-end", () => {
+    triggerVisualAlert({ emote: "star", pose: "wave" });
+    showAlertPopup({
+      theme: "theme-calendar",
+      icon: "🌙",
+      typeLabel: "Fim do Expediente",
+      sender: "Anti-Burnout",
+      subject: "Hora de Desconectar!",
+      snippet: "Horário de encerramento do expediente atingido. Salve seus arquivos, descanse a mente e curta sua noite!",
+      durationMs: 30000,
+    });
   });
 
   if (import.meta.env.DEV && !IS_TAURI) {

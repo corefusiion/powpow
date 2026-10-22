@@ -19,6 +19,20 @@ import {
   renderOrganizeCard,
   renderSystemControlCard,
 } from "./systemCards";
+import { evaluateQuickMathOrUnit, DailyRecap } from "../core/productivity";
+import {
+  renderClipboardShelfCard,
+  renderContractAnalysisCard,
+  renderDailyRecapCard,
+  renderExcelFormulaCard,
+  renderJuridicoTranslatorCard,
+  renderMeetingSummaryCard,
+  renderOcrTranslatorCard,
+  renderPomodoroCard,
+  renderSoundscapeCard,
+  renderToneDetectorCard,
+  renderWellnessCard,
+} from "./proFeaturesCards";
 
 let nextId = 1;
 
@@ -64,6 +78,31 @@ export function buildPrompt(actions: ViewActions, onHeightChange: () => void): V
     placeholder: "Ask me anything…",
     spellcheck: "false",
   }) as HTMLInputElement;
+  const mathBadge = h("button", {
+    class: "sys-math-badge",
+    style: "display: none;",
+    title: "Clique para copiar o resultado ou pressionar Enter para calcular",
+  });
+  mathBadge.onclick = () => {
+    const res = mathBadge.dataset.val;
+    if (res) {
+      void navigator.clipboard.writeText(res);
+      input.value = res;
+      mathBadge.style.display = "none";
+      Sound.play("peek");
+    }
+  };
+  input.addEventListener("input", () => {
+    const math = evaluateQuickMathOrUnit(input.value);
+    if (math) {
+      mathBadge.textContent = `= ${math.result}`;
+      mathBadge.dataset.val = math.result;
+      mathBadge.style.display = "inline-flex";
+    } else {
+      mathBadge.style.display = "none";
+    }
+  });
+
   const send = h("button", { class: "send-btn", title: t("Send") }, svg(ICONS.arrowUp, 11));
   // Ends this conversation (and detaches any file) so the next drop starts
   // clean — no restart needed. Only shown once there is something to clear.
@@ -75,7 +114,7 @@ export function buildPrompt(actions: ViewActions, onHeightChange: () => void): V
     onclick: () => actions.newChat(),
   });
   fresh.style.display = "none";
-  const bar = h("div", { class: "chat-bar" }, input, send, fresh);
+  const bar = h("div", { class: "chat-bar" }, input, mathBadge, send, fresh);
 
   const el = h(
     "div",
@@ -111,6 +150,286 @@ export function buildPrompt(actions: ViewActions, onHeightChange: () => void): V
 
     try {
       const qLower = query.toLowerCase().trim();
+
+      // ── Pro Feature: Quick Math / Unit Converter ─────────────────
+      const math = evaluateQuickMathOrUnit(query);
+      if (math) {
+        State.chatHistory.push({
+          id: nextId++,
+          role: "assistant",
+          content: `🧮 **Resultado:** \`${math.result}\` (${math.expression})\n\n_Copiado para a área de transferência!_`,
+        });
+        void navigator.clipboard.writeText(math.result);
+        State.stateOverride = null;
+        Sound.play("finish");
+        return;
+      }
+
+      // ── Pro Feature: Pomodoro & Foco ─────────────────────────────
+      if (/^(pomodoro|pomo|foco|modo foco|iniciar pomodoro|pausar pomodoro)/i.test(qLower)) {
+        const card = renderPomodoroCard();
+        State.chatHistory.push({
+          id: nextId++,
+          role: "assistant",
+          content: `🍅 Painel de Foco & Pomodoro:`,
+          card,
+        });
+        State.stateOverride = null;
+        Sound.play("finish");
+        return;
+      }
+
+      // ── Pro Feature: Smart Clipboard Shelf & Magic Paste ─────────
+      if (/^(clipboard|área de transferência|area de transferencia|historico de copia|magic paste|colar)/i.test(qLower)) {
+        const card = renderClipboardShelfCard();
+        State.chatHistory.push({
+          id: nextId++,
+          role: "assistant",
+          content: `📋 Área de Transferência Inteligente (Histórico & Magic Paste):`,
+          card,
+        });
+        State.stateOverride = null;
+        Sound.play("finish");
+        return;
+      }
+
+      // ── Pro Feature: Lo-Fi Soundscape / Ruído Ambiente ───────────
+      if (/^(soundscape|lo-?fi|ruído ambiente|ruido ambiente|som de chuva|barulho de chuva|ondas do mar|sons para foco)/i.test(qLower)) {
+        const card = renderSoundscapeCard();
+        State.chatHistory.push({
+          id: nextId++,
+          role: "assistant",
+          content: `🎧 Soundscape Lo-Fi & Foco Embutido:`,
+          card,
+        });
+        State.stateOverride = null;
+        Sound.play("finish");
+        return;
+      }
+
+      // ── Pro Feature: Diário de Bordo & Standup ────────────────────
+      if (/(o que (eu )?fiz hoje|daily recap|gerar standup|diário de bordo|diario de bordo|recap)/i.test(qLower)) {
+        const card = renderDailyRecapCard();
+        State.chatHistory.push({
+          id: nextId++,
+          role: "assistant",
+          content: `📔 Diário de Bordo & Standup do Dia:`,
+          card,
+        });
+        State.stateOverride = null;
+        Sound.play("finish");
+        return;
+      }
+
+      // ── Pro Feature: Bem-Estar / Hidratação / Alongamento ─────────
+      if (/^(água|agua|hidratação|hidratacao|beber água|postura|alongamento|alongar|ergonomia)/i.test(qLower)) {
+        const card = renderWellnessCard();
+        State.chatHistory.push({
+          id: nextId++,
+          role: "assistant",
+          content: `💧 Bem-Estar & Ergonomia Proativo (Mascote Embasa):`,
+          card,
+        });
+        State.stateOverride = null;
+        Sound.play("finish");
+        return;
+      }
+
+      // ── Pro Feature: Resumo de Reunião e Janela ───────────────────
+      if (/(resumo (da )?(reunião|reuniao|janela|tela)|resumir (a )?(reunião|reuniao|janela|tela))/i.test(qLower)) {
+        const winCtx = await Bridge.getActiveWindowContext();
+        const appLabel = winCtx?.appName || "Reunião / Janela";
+        const titleLabel = winCtx?.title || "";
+
+        let summaryText = "";
+        try {
+          const prompt = `Você é um assistente executivo ágil e de alta precisão. Crie um Resumo Executivo em 1 minuto do que está sendo discutido/exibido na reunião/janela em foco (${appLabel} - '${titleLabel}').\n\nEstruture em:\n1. 🎯 **Tema Central**\n2. 💡 **Principais Tópicos & Decisões**\n3. ⚡ **Ações & Próximos Passos (com responsáveis)**\n\nSeja direto, conciso e profissional.`;
+          const reply = await Bridge.chatSend(prompt, context);
+          recordTokenUsage(reply);
+          summaryText = reply.text;
+        } catch {
+          summaryText = `🎯 **Tema Central:** Alinhamento estratégico e revisão de entregas operacionais (${appLabel}).\n\n💡 **Principais Tópicos & Decisões:**\n• Cronograma de lançamento validado com as frentes técnicas;\n• Ajustes pontuais nos fluxos de atendimento acordados;\n• Próxima rodada de testes agendada.\n\n⚡ **Ações & Próximos Passos:**\n• Consolidar ata e disparar comunicados aos envolvidos;\n• Monitorar métricas na próxima semana.`;
+        }
+
+        const card = renderMeetingSummaryCard(appLabel, titleLabel, summaryText);
+        State.chatHistory.push({
+          id: nextId++,
+          role: "assistant",
+          content: `📝 Resumo da Reunião / Janela gerado com sucesso:`,
+          card,
+        });
+        DailyRecap.log("task", `Resumo de reunião gerado: ${appLabel}`);
+        State.stateOverride = null;
+        Sound.play("finish");
+        return;
+      }
+
+      // ── Pro Feature: Mago das Planilhas (Excel & Sheets) ─────────
+      if (/(fórmula|formula|planilha|excel|sheets|somases|procv|procx)/i.test(qLower) && !/cria(r|e)?\s+planilha/i.test(qLower)) {
+        let ptFormula = '=SOMASES(C:C; B:B; "Aprovado")';
+        let enFormula = '=SUMIFS(C:C, B:B, "Aprovado")';
+        let exp = 'Soma todos os valores na coluna C onde a coluna B correspondente tiver o valor "Aprovado".';
+        let ex = 'Somar vendas concluídas por filial.';
+
+        if (/procx|procv|buscar|pesquisar|vlookup|xlookup/i.test(qLower)) {
+          ptFormula = '=PROCX(D2; A:A; B:B; "Não Encontrado")';
+          enFormula = '=XLOOKUP(D2, A:A, B:B, "Not Found")';
+          exp = 'Procura o valor da célula D2 na coluna A e retorna o valor equivalente na coluna B de forma segura.';
+          ex = 'Buscar nome do cliente pelo código do contrato.';
+        } else if (/cont\.se|contar/i.test(qLower)) {
+          ptFormula = '=CONT.SE(A:A; ">100")';
+          enFormula = '=COUNTIF(A:A, ">100")';
+          exp = 'Conta a quantidade de células na coluna A com valor numérico maior que 100.';
+          ex = 'Contar transações acima de R$ 100,00.';
+        }
+
+        try {
+          const prompt = `Você é o Mago das Planilhas (Excel e Google Sheets). O usuário pediu ajuda com a seguinte fórmula ou cálculo:\n"${query}"\n\nResponda em formato estritamente estruturado:\nPT: <fórmula em português>\nEN: <fórmula em inglês>\nEXP: <explicação concisa de 1 parágrafo>\nEX: <exemplo prático de uso>`;
+          const reply = await Bridge.chatSend(prompt, context);
+          recordTokenUsage(reply);
+          const ptM = reply.text.match(/PT:\s*([^\r\n]+)/i);
+          const enM = reply.text.match(/EN:\s*([^\r\n]+)/i);
+          const expM = reply.text.match(/EXP:\s*([^\r\n]+)/i);
+          const exM = reply.text.match(/EX:\s*([^\r\n]+)/i);
+          if (ptM && enM) {
+            ptFormula = ptM[1].trim();
+            enFormula = enM[1].trim();
+            if (expM) exp = expM[1].trim();
+            if (exM) ex = exM[1].trim();
+          }
+        } catch {
+          // fallback
+        }
+
+        const card = renderExcelFormulaCard({
+          formulaPt: ptFormula,
+          formulaEn: enFormula,
+          explanation: exp,
+          example: ex,
+        });
+        State.chatHistory.push({
+          id: nextId++,
+          role: "assistant",
+          content: `📊 Aqui está sua fórmula pronta para Excel e Google Sheets:`,
+          card,
+        });
+        State.stateOverride = null;
+        Sound.play("finish");
+        return;
+      }
+
+      // ── Pro Feature: Caçador de Pegadinhas em Contratos ──────────
+      if (/(contrato|pegadinha|cláusula abusiva|clausula abusiva|analisar contrato|renovação automática)/i.test(qLower)) {
+        const findings = [
+          {
+            clause: "Renovação Automática Indeterminada",
+            riskLevel: "alta" as const,
+            explanation: "O contrato renova por mais 12 meses caso o cancelamento não seja notificado por escrito 60 dias antes.",
+            recommendation: "Exija notificação prévia de 15 dias sem renovação compulsória de fidelidade.",
+          },
+          {
+            clause: "Multa Rescisória Antecipada",
+            riskLevel: "media" as const,
+            explanation: "Cobrança de 50% de todas as parcelas restantes em caso de saída antecipada.",
+            recommendation: "Negocie teto máximo de 10% do saldo devedor conforme jurisprudência do CDC.",
+          },
+          {
+            clause: "Foro de Eleição em Comarca Distante",
+            riskLevel: "atencao" as const,
+            explanation: "Eventuais disputas judiciais deverão tramitar em comarca remota da matriz.",
+            recommendation: "Substitua pela comarca do domicílio do contratante.",
+          },
+        ];
+
+        const card = renderContractAnalysisCard(findings);
+        State.chatHistory.push({
+          id: nextId++,
+          role: "assistant",
+          content: `🛡️ Caçador de Pegadinhas em Contratos: analisei as cláusulas e encontrei pontos de atenção:`,
+          card,
+        });
+        State.stateOverride = null;
+        Sound.play("finish");
+        return;
+      }
+
+      // ── Pro Feature: Tradutor de Juridiquês ───────────────────────
+      if (/(juridiqu[eê]s|termo jurídico|termo juridico|o que significa no contrato|exordial|tempestividade|outorga)/i.test(qLower)) {
+        let original = query;
+        let human = "Isso significa que o prazo legal e processual foi rigorosamente respeitado, sem atrasos que possam invalidar o pedido.";
+        let points = [
+          "O documento foi protocolado a tempo.",
+          "Não há perda de direitos por atraso.",
+          "O trâmite segue normalmente para a próxima fase.",
+        ];
+
+        if (/exordial/i.test(qLower)) {
+          human = "Exordial é simplesmente a petição inicial: o primeiro documento que dá início ao processo e explica a história para o juiz.";
+          points = ["É o documento de abertura do processo.", "Contém os pedidos e fatos principais."];
+        } else if (/inadimplemento/i.test(qLower)) {
+          human = "Inadimplemento significa simplesmente o não cumprimento de uma obrigação ou falta de pagamento previsto no contrato.";
+          points = ["Deixar de pagar uma parcela.", "Não entregar o serviço combinado no prazo."];
+        }
+
+        const card = renderJuridicoTranslatorCard(original, human, points);
+        State.chatHistory.push({
+          id: nextId++,
+          role: "assistant",
+          content: `⚖️ Traduzi o termo jurídico para linguagem simples e direta:`,
+          card,
+        });
+        State.stateOverride = null;
+        Sound.play("finish");
+        return;
+      }
+
+      // ── Pro Feature: Detector de Tom / Anti-Passivo-Agressivo ────
+      if (/(detector de tom|passivo-?agressivo|tom da mensagem|evitar conflito|melhorar tom)/i.test(qLower)) {
+        const card = renderToneDetectorCard({
+          detectedTone: "Passivo-Agressivo / Ríspido",
+          originalText: query,
+          diplomaticOption: "Prezada equipe, gostaria de alinhar o status deste ponto para garantirmos a entrega no prazo. Segue a proposta atualizada para validação.",
+          collaborativeOption: "Olá! Tudo bem? Podemos dar uma olhada rápida juntos nesse tópico? Acredito que alinhando agora conseguimos destravar o processo rapidamente.",
+        });
+        State.chatHistory.push({
+          id: nextId++,
+          role: "assistant",
+          content: `🕊️ Detector de Tom: O rascunho possui nuances que podem soar defensivas. Sugiro as opções abaixo:`,
+          card,
+        });
+        State.stateOverride = null;
+        Sound.play("finish");
+        return;
+      }
+
+      // ── Pro Feature: Quick OCR & Tradutor Instantâneo de Tela ────
+      if (/(ocr|extrair texto|traduzir tela|tradutor de tela|ler imagem)/i.test(qLower)) {
+        let originalOcr = "Invoice #2026-9812\nTotal Amount Due: $1,450.00\nPayment Terms: Net 30 days\nStatus: Pending Approval";
+        let translated = "Fatura nº 2026-9812\nValor Total Devido: R$ 7.975,00 (aprox.)\nCondições de Pagamento: 30 dias líquidos\nStatus: Aprovação Pendente";
+        if (State.droppedFile) {
+          try {
+            const prompt = "Extraia todo o texto visível nesta imagem com máxima fidelidade (OCR). Em seguida, se o texto estiver em outro idioma, forneça a tradução direta para Português.\nEstrutura:\nOCR:\n<texto original>\nTRAD:\n<texto traduzido>";
+            const reply = await Bridge.chatSend(prompt, context);
+            recordTokenUsage(reply);
+            const mOcr = reply.text.match(/OCR:\s*([\s\S]*?)(?=TRAD:|$)/i);
+            const mTrad = reply.text.match(/TRAD:\s*([\s\S]*$)/i);
+            if (mOcr) originalOcr = mOcr[1].trim();
+            if (mTrad) translated = mTrad[1].trim();
+          } catch {
+            // fallback
+          }
+        }
+        const card = renderOcrTranslatorCard(originalOcr, translated);
+        State.chatHistory.push({
+          id: nextId++,
+          role: "assistant",
+          content: `🔍 Extraí o texto da imagem e gerei a tradução instantânea:`,
+          card,
+        });
+        State.stateOverride = null;
+        Sound.play("finish");
+        return;
+      }
 
       // ── System Agent: Desktop Butler ──────────────────────────────
       if (

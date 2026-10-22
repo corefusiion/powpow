@@ -3,6 +3,7 @@
 
 import { Sound } from "../core/sound";
 import { COMPACT_W, NOTCH_H, NOTCH_W } from "../core/layout";
+import { State } from "../core/state";
 
 // ── Timing (mirrors greeting-v2.html `T`) ─────────────────────────────────────
 
@@ -327,6 +328,231 @@ function drawHandR(x: CanvasRenderingContext2D, hw: number, hh: number, p: Pose)
   x.restore();
 }
 
+function dropletPath(hw: number, hh: number): Path2D {
+  const p = new Path2D();
+  p.moveTo(0, -hh * 1.08);
+  p.bezierCurveTo(hw * 0.45, -hh * 0.45, hw * 1.05, hh * 0.18, hw * 0.88, hh * 0.76);
+  p.bezierCurveTo(hw * 0.70, hh * 1.08, -hw * 0.70, hh * 1.08, -hw * 0.88, hh * 0.76);
+  p.bezierCurveTo(-hw * 1.05, hh * 0.18, -hw * 0.45, -hh * 0.45, 0, -hh * 1.08);
+  p.closePath();
+  return p;
+}
+
+function drawEmbasaHands(x: CanvasRenderingContext2D, hw: number, hh: number, p: Pose) {
+  const kL = p.handL;
+  if (kL > 0.01) {
+    const r = hh * 0.22 * kL;
+    const rx = lerp(-hw * 0.35, -hw * 1.08, kL);
+    let ry = lerp(hh * 0.5, hh * 0.35, kL);
+    if (p.wave >= 0) ry += Math.sin(p.wave * 6) * hh * 0.05;
+    x.save();
+    x.translate(rx, ry);
+    const grad = x.createRadialGradient(0, 0, 0, 0, 0, r);
+    grad.addColorStop(0, "#38bdf8");
+    grad.addColorStop(1, "#0284c7");
+    x.fillStyle = grad;
+    x.beginPath();
+    x.arc(0, 0, r, 0, Math.PI * 2);
+    x.fill();
+    x.restore();
+  }
+
+  const kR = p.handR;
+  if (kR > 0.01) {
+    const r = hh * 0.24 * kR;
+    let rx = lerp(hw * 0.35, hw * 1.12, kR);
+    let ry = lerp(hh * 0.5, hh * 0.1, kR);
+    let ang = -0.4;
+    if (p.wave >= 0) {
+      const w = p.wave * 2 * Math.PI * 2.5;
+      ang += Math.sin(w) * 0.35;
+      ry += Math.sin(w + 0.8) * hh * 0.08;
+      rx += Math.cos(w) * hh * 0.03;
+    }
+    x.save();
+    x.translate(rx, ry);
+    x.rotate(ang);
+    const grad = x.createRadialGradient(-r * 0.2, -r * 0.2, 0, 0, 0, r);
+    grad.addColorStop(0, "#7dd3fc");
+    grad.addColorStop(0.6, "#0284c7");
+    grad.addColorStop(1, "#0369a1");
+    x.fillStyle = grad;
+    x.beginPath();
+    x.ellipse(0, 0, r * 1.15, r * 0.85, 0, 0, Math.PI * 2);
+    x.fill();
+    x.restore();
+  }
+}
+
+function drawEmbasa(x: CanvasRenderingContext2D, p: Pose) {
+  const hh = p.hb / 2;
+  const hw = hh * 0.96;
+  if (hh <= 0.4) return;
+
+  // Aqua water aura
+  if (p.halo > 0) {
+    for (const [R, alpha] of [[hw * 2.8, 0.26], [hw * 4.6, 0.10]] as const) {
+      const g = x.createRadialGradient(p.x, p.y, 0, p.x, p.y, R);
+      g.addColorStop(0, `rgba(56, 189, 248, ${alpha * p.halo})`);
+      g.addColorStop(0.65, `rgba(2, 132, 199, ${alpha * 0.45 * p.halo})`);
+      g.addColorStop(1, "rgba(2, 132, 199, 0)");
+      x.fillStyle = g;
+      x.beginPath();
+      x.arc(p.x, p.y, R, 0, Math.PI * 2);
+      x.fill();
+    }
+  }
+
+  x.save();
+  x.translate(p.x, p.y);
+  x.rotate(p.tilt);
+  x.scale(p.sx, p.sy);
+
+  // Hands behind droplet
+  drawEmbasaHands(x, hw, hh, p);
+
+  // Droplet Body
+  const body = dropletPath(hw, hh);
+  const bodyGrad = x.createLinearGradient(-hw * 0.4, -hh * 1.1, hw * 0.4, hh * 1.1);
+  bodyGrad.addColorStop(0, "#38bdf8");
+  bodyGrad.addColorStop(0.35, "#0284c7");
+  bodyGrad.addColorStop(0.85, "#0369a1");
+  bodyGrad.addColorStop(1, "#0c4a6e");
+
+  x.save();
+  x.fillStyle = bodyGrad;
+  x.fill(body);
+
+  // Soft gloss specular highlight on top-left of droplet
+  const specGrad = x.createRadialGradient(-hw * 0.28, -hh * 0.48, 0, -hw * 0.28, -hh * 0.48, hw * 0.65);
+  specGrad.addColorStop(0, "rgba(255, 255, 255, 0.70)");
+  specGrad.addColorStop(0.45, "rgba(255, 255, 255, 0.18)");
+  specGrad.addColorStop(1, "rgba(255, 255, 255, 0)");
+  x.fillStyle = specGrad;
+  x.beginPath();
+  x.ellipse(-hw * 0.28, -hh * 0.45, hw * 0.32, hh * 0.26, -Math.PI / 6, 0, Math.PI * 2);
+  x.fill();
+  x.restore();
+
+  // Official Embasa Ribbon across lower torso (Clipped to body)
+  x.save();
+  x.clip(body);
+  const ribbonY = hh * 0.42;
+  const ribbonH = hh * 0.055;
+  const ribbonCols = ["#8be22e", "#ffdd00", "#ff7700", "#00d4ff", "#0055ff"];
+  for (let i = 0; i < ribbonCols.length; i++) {
+    const curY = ribbonY + i * ribbonH;
+    x.fillStyle = ribbonCols[i];
+    x.beginPath();
+    x.moveTo(-hw * 1.2, curY);
+    x.quadraticCurveTo(0, curY + hh * 0.16, hw * 1.2, curY - hh * 0.06);
+    x.lineTo(hw * 1.2, curY - hh * 0.06 + ribbonH + 0.8);
+    x.quadraticCurveTo(0, curY + hh * 0.16 + ribbonH + 0.8, -hw * 1.2, curY + ribbonH + 0.8);
+    x.closePath();
+    x.fill();
+  }
+  x.restore();
+
+  // Soft cyan blush cheeks
+  const cheekY = hh * 0.18;
+  const cheekSp = hw * 0.52;
+  for (const s of [-1, 1]) {
+    x.save();
+    x.translate(s * cheekSp, cheekY);
+    const chkGrad = x.createRadialGradient(0, 0, 0, 0, 0, hw * 0.2);
+    chkGrad.addColorStop(0, "rgba(56, 189, 248, 0.55)");
+    chkGrad.addColorStop(1, "rgba(56, 189, 248, 0)");
+    x.fillStyle = chkGrad;
+    x.beginPath();
+    x.ellipse(0, 0, hw * 0.2, hh * 0.12, 0, 0, Math.PI * 2);
+    x.fill();
+    x.restore();
+  }
+
+  // Large expressive cute eyes
+  const eyeR_x = hw * 0.22;
+  const eyeR_y = hh * 0.30;
+  const eyeSp = hw * 0.34;
+  const eyeBaseY = hh * 0.05;
+  const lx = p.lookX * hw * 0.16;
+  const ly = p.lookY * hh * 0.14;
+
+  for (const sd of [-1, 1]) {
+    x.save();
+    x.translate(sd * eyeSp, eyeBaseY);
+
+    if (p.eye === "happy") {
+      x.strokeStyle = "#082f49";
+      x.lineWidth = eyeR_x * 0.45;
+      x.lineCap = "round";
+      x.beginPath();
+      x.arc(0, eyeR_y * 0.2, eyeR_x * 0.9, Math.PI * 1.15, Math.PI * 1.85);
+      x.stroke();
+    } else {
+      x.scale(1, Math.max(0.12, p.open));
+      x.fillStyle = "#ffffff";
+      x.beginPath();
+      x.ellipse(0, 0, eyeR_x, eyeR_y, 0, 0, Math.PI * 2);
+      x.fill();
+
+      // Blue Iris
+      const irisR = eyeR_x * 0.72;
+      x.save();
+      x.beginPath();
+      x.ellipse(0, 0, eyeR_x, eyeR_y, 0, 0, Math.PI * 2);
+      x.clip();
+
+      const irisGrad = x.createRadialGradient(lx, ly, 0, lx, ly, irisR);
+      irisGrad.addColorStop(0, "#0284c7");
+      irisGrad.addColorStop(0.7, "#0369a1");
+      irisGrad.addColorStop(1, "#082f49");
+      x.fillStyle = irisGrad;
+      x.beginPath();
+      x.arc(lx, ly, irisR, 0, Math.PI * 2);
+      x.fill();
+
+      // Dark pupil
+      x.fillStyle = "#0c1726";
+      x.beginPath();
+      x.arc(lx, ly, irisR * 0.58, 0, Math.PI * 2);
+      x.fill();
+
+      // Catchlight Sparkles
+      x.fillStyle = "#ffffff";
+      x.beginPath();
+      x.arc(lx - irisR * 0.32, ly - irisR * 0.32, irisR * 0.28, 0, Math.PI * 2);
+      x.fill();
+
+      x.beginPath();
+      x.arc(lx + irisR * 0.35, ly + irisR * 0.25, irisR * 0.15, 0, Math.PI * 2);
+      x.fill();
+      x.restore();
+    }
+    x.restore();
+  }
+
+  // Cute Smile Mouth
+  x.save();
+  x.translate(0, hh * 0.24);
+  x.fillStyle = "#0f172a";
+  x.beginPath();
+  x.arc(0, -hh * 0.02, hw * 0.18, 0.15 * Math.PI, 0.85 * Math.PI);
+  x.closePath();
+  x.fill();
+  x.save();
+  x.beginPath();
+  x.arc(0, -hh * 0.02, hw * 0.18, 0.15 * Math.PI, 0.85 * Math.PI);
+  x.clip();
+  x.fillStyle = "#fb7185";
+  x.beginPath();
+  x.arc(0, hh * 0.08, hw * 0.12, 0, Math.PI * 2);
+  x.fill();
+  x.restore();
+  x.restore();
+
+  x.restore();
+}
+
 function drawMochi(x: CanvasRenderingContext2D, p: Pose) {
   const hh = p.hb / 2;
   const hw = hh * ASP;
@@ -561,6 +787,10 @@ export class Greeting {
     }
 
     drawMinis(x, p.minis);
-    drawMochi(x, p);
+    if (State.settings.character === "mochi") {
+      drawMochi(x, p);
+    } else {
+      drawEmbasa(x, p);
+    }
   }
 }

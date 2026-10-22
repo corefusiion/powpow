@@ -176,7 +176,7 @@ export const DEFAULT_SETTINGS: Settings = {
   language: "pt-BR",
   theme: "onyx",
   approvedTools: [],
-  character: "mochi",
+  character: "embasa",
   storyView: "simple",
   openOnHover: false,
   pillColors: {},

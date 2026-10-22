@@ -17,6 +17,8 @@ import { buildChoose, buildUpload, buildUploading } from "./upload";
 import { renderIntegrationCard, type IntegrationCardHooks } from "./integrations";
 import { pillColor } from "../core/pill-colors";
 import { buildPlanPill, claudePillVisible, codexPillVisible, geminiPillVisible, planCardOpen, PlanCard } from "./usage";
+import { Pomodoro } from "../core/productivity";
+import { SysMonitor } from "../core/sysMonitor";
 
 export interface ViewActions {
   setView(v: IslandViewName): void;
@@ -117,11 +119,47 @@ export function buildHeader(actions: ViewActions): ViewHost {
     actions.setView(v);
   }
 
+  const pomoPill = h("button", {
+    class: "tab pomo-pill",
+    title: "Pomodoro Foco Ágil",
+    style: "display:none;font-weight:600;font-size:11px;color:#f87171;",
+    onclick: () => {
+      actions.setView("prompt");
+    },
+  });
+
+  const weatherPill = h("button", {
+    class: "tab weather-pill",
+    title: "Clima atual",
+    style: "font-weight:500;font-size:11px;color:#38bdf8;",
+    onclick: () => {
+      actions.setView("prompt");
+    },
+  });
+
+  const resourcePill = h("span", {
+    class: "tab resource-pill",
+    title: "Monitor de Recursos",
+    style: "font-size:10px;color:#94a3b8;cursor:default;",
+  });
+
   const el = h(
     "div",
     { id: "header" },
     h("div", { class: "tabs" }, tabHome, tabStory, tabChat, tabDrop),
-    h("div", { class: "header-actions" }, claudePill.el, codexPill.el, geminiPill.el, langBtn, gearBtn, soundBtn),
+    h(
+      "div",
+      { class: "header-actions" },
+      pomoPill,
+      weatherPill,
+      resourcePill,
+      claudePill.el,
+      codexPill.el,
+      geminiPill.el,
+      langBtn,
+      gearBtn,
+      soundBtn,
+    ),
   );
 
   return {
@@ -137,6 +175,30 @@ export function buildHeader(actions: ViewActions): ViewHost {
       gearBtn.append(svg(v === "settings" ? ICONS.gearFill : ICONS.gear, 14));
       clear(soundBtn);
       soundBtn.append(svg(State.settings.soundEnabled ? ICONS.speakerOn : ICONS.speakerOff, 14));
+
+      // Pomodoro pill sync
+      const pomoState = Pomodoro.getState();
+      if (pomoState.isRunning || pomoState.remainingSeconds < pomoState.totalSeconds) {
+        pomoPill.style.display = "";
+        pomoPill.textContent = `${pomoState.mode === "focus" ? "🍅" : "☕"} ${Pomodoro.formatTime()}`;
+      } else {
+        pomoPill.style.display = "none";
+      }
+
+      // Weather pill sync
+      const w = SysMonitor.getWeather();
+      const weatherIcon = w.condition === "rainy" || w.condition === "storm" ? "🌧️" : w.condition === "cloudy" ? "⛅" : "☀️";
+      weatherPill.textContent = `${weatherIcon} ${w.temperatureC}°`;
+      weatherPill.title = `${w.city}: ${w.conditionText} (${w.temperatureC}°C)`;
+
+      // Resource pill sync
+      const stats = SysMonitor.getStats();
+      if (stats.batteryLevelPercent != null) {
+        resourcePill.textContent = `⚡ ${stats.memoryUsagePercent}% · 🔋 ${stats.batteryLevelPercent}%`;
+      } else {
+        resourcePill.textContent = `⚡ ${stats.memoryUsagePercent}% RAM`;
+      }
+
       claudePill.el.style.display = claudePillVisible() ? "" : "none";
       if (claudePillVisible()) claudePill.sync();
       codexPill.el.style.display = codexPillVisible() ? "" : "none";

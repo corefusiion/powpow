@@ -105,10 +105,12 @@
         <!-- Chat input & quick prompt tags -->
         <div class="pal-chat-input-container">
           <div class="pal-chat-quick-tags" id="pal-chat-quick-tags">
-            <button class="pal-chat-tag" type="button" data-tag="Como resolver ou aplicar esta fórmula de forma correta?">📐 Explicar fórmula</button>
-            <button class="pal-chat-tag" type="button" data-tag="Faça um resumo claro e objetivo do que está nesta tela.">📋 Resumo da tela</button>
-            <button class="pal-chat-tag" type="button" data-tag="O que significa este erro ou mensagem na tela e como resolver?">⚠️ Explicar erro</button>
-            <button class="pal-chat-tag" type="button" data-tag="Quais sugestões ou melhorias você tem para o que está nesta tela?">💡 Sugestões</button>
+            <button class="pal-chat-tag" type="button" data-tag="Como resolver ou aplicar esta fórmula de forma correta?">📐 Mago das Fórmulas</button>
+            <button class="pal-chat-tag" type="button" data-tag="Faça um resumo executivo claro e objetivo do que está nesta tela ou reunião.">📝 Resumo de Reunião</button>
+            <button class="pal-chat-tag" type="button" data-tag="Extraia todo o texto visível nesta imagem com precisão (OCR) e forneça a tradução imediata para Português se estiver em outro idioma.">🔍 OCR & Tradutor</button>
+            <button class="pal-chat-tag" type="button" data-tag="Analise esta tela ou cláusula contratual e aponte eventuais pegadinhas, riscos de renovação automática ou multas rescisórias.">🛡️ Caçar Pegadinhas</button>
+            <button class="pal-chat-tag" type="button" data-tag="Traduza o juridiquês desta tela para uma linguagem simples e humana que qualquer pessoa compreenda.">⚖️ Traduzir Juridiquês</button>
+            <button class="pal-chat-tag" type="button" data-tag="Analise o tom deste texto e sugira versões diplomáticas e colaborativas sem soar passivo-agressivo.">🕊️ Detector de Tom</button>
           </div>
           <div class="pal-chat-input-bar">
             <textarea id="pal-chat-input" class="pal-chat-input" placeholder="Tire sua dúvida sobre a tela (Enter envia)..." rows="1"></textarea>
@@ -147,6 +149,12 @@
           <input id="pal-search-input" type="text" />
           <button id="pal-search-go" data-action="search-send" aria-label="Search">→</button>
         </div>
+        <div class="pal-sep"></div>
+        <button class="pal-item" data-action="pomodoro" data-label="Pomodoro">🍅 Modo Foco (Pomodoro)</button>
+        <button class="pal-item" data-action="clipboard" data-label="Clipboard">📋 Área de Transferência</button>
+        <button class="pal-item" data-action="wellness" data-label="Wellness">💧 Hidratação & Bem-Estar</button>
+        <button class="pal-item" data-action="soundscape" data-label="Soundscape">🎧 Lo-Fi Soundscape</button>
+        <button class="pal-item" data-action="recap" data-label="Daily recap">📔 Diário de Bordo (Daily)</button>
         <div class="pal-sep"></div>
         <button class="pal-item" data-action="organize-desktop" data-label="Organize desktop">🗂️ Organizar Desktop</button>
         <button class="pal-item" data-action="create-doc" data-label="Create document">📄 Criar Documento</button>

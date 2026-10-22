@@ -248,6 +248,13 @@ function spotifyCard(): HTMLElement {
       text: label,
       onclick: () => void Bridge.mediaKey(action),
     });
+  const equalizer = h("div", { class: `music-equalizer ${playing ? "" : "paused"}` },
+    h("span", { class: "eq-bar" }),
+    h("span", { class: "eq-bar" }),
+    h("span", { class: "eq-bar" }),
+    h("span", { class: "eq-bar" }),
+  );
+
   return h(
     "div",
     { class: "int-card" },
@@ -257,6 +264,7 @@ function spotifyCard(): HTMLElement {
       { class: "int-rows tight" },
       listRow("#1DB954", true,
         h("span", { class: "int-name", text: title || "—" }),
+        equalizer,
       ),
       h(
         "div",

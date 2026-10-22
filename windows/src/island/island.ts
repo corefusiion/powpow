@@ -595,6 +595,31 @@ export class Island {
         await this.views.get("prompt")?.promptInit?.("ghostwriter");
         break;
       }
+      case "pomodoro": {
+        this.alert("prompt");
+        await this.sendPrompt("pomodoro");
+        break;
+      }
+      case "clipboard": {
+        this.alert("prompt");
+        await this.sendPrompt("clipboard");
+        break;
+      }
+      case "wellness": {
+        this.alert("prompt");
+        await this.sendPrompt("água");
+        break;
+      }
+      case "soundscape": {
+        this.alert("prompt");
+        await this.sendPrompt("soundscape");
+        break;
+      }
+      case "recap": {
+        this.alert("prompt");
+        await this.sendPrompt("daily recap");
+        break;
+      }
       case "pause":
         State.settings.wander = false;
         void Bridge.saveSettings(State.settings);
