@@ -44,72 +44,181 @@ dot-pal {
   transition: transform 0.12s ease;
 }
 
-/* The card: to the right of the character, in the window's spare width. */
+/* The card: to the right of the character, compact tabbed card with NO scroll */
 #pal-card {
   position: absolute;
-  left: 156px;
+  left: 148px;
   top: 10px;
-  width: 196px;
-  max-height: 400px;
-  overflow-y: auto;
+  width: 270px;
   box-sizing: border-box;
   display: flex;
   flex-direction: column;
-  gap: 4px;
-  padding: 7px;
-  background: rgba(18, 18, 22, 0.94);
-  border: 1px solid rgba(255, 255, 255, 0.14);
-  border-radius: 14px;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
-  font: 500 12px/1.3 system-ui, "Segoe UI", sans-serif;
+  gap: 6px;
+  padding: 8px 10px 10px 10px;
+  background: rgba(15, 17, 23, 0.96);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 16px;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.45), 0 0 1px rgba(255, 255, 255, 0.2);
+  font: 500 12px/1.35 system-ui, "Segoe UI", -apple-system, sans-serif;
+  z-index: 100;
+  user-select: none;
 }
 
 #pal-card[hidden] {
-  display: none;
+  display: none !important;
 }
 
+/* Card Header with Tab Switcher & Close Button */
+.pal-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  padding-bottom: 5px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.pal-card-tabs {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  background: rgba(255, 255, 255, 0.06);
+  padding: 2px;
+  border-radius: 8px;
+}
+
+.pal-tab-btn {
+  padding: 4px 8px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: #94a3b8;
+  font-size: 11px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.pal-tab-btn:hover {
+  color: #fff;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.pal-tab-btn.active {
+  background: #3b82f6;
+  color: #fff;
+  font-weight: 600;
+  box-shadow: 0 1px 4px rgba(59, 130, 246, 0.4);
+}
+
+.pal-card-close-btn {
+  width: 22px;
+  height: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.06);
+  color: #94a3b8;
+  font-size: 11px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.pal-card-close-btn:hover {
+  background: rgba(239, 68, 68, 0.25);
+  color: #f87171;
+}
+
+/* Tab Panes */
+.pal-tab-pane {
+  display: none;
+  flex-direction: column;
+  gap: 4px;
+  animation: pal-pane-fade 0.18s ease;
+}
+
+@keyframes pal-pane-fade {
+  from { opacity: 0; transform: translateY(-2px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.pal-tab-pane.active {
+  display: flex;
+}
+
+/* Common Pal Items */
 .pal-item {
   margin: 0;
-  padding: 6px 10px;
+  padding: 6px 9px;
   border: 0;
   border-radius: 8px;
   background: transparent;
-  color: #ececf1;
+  color: #f1f5f9;
   font: inherit;
+  font-size: 11.5px;
   text-align: left;
   cursor: pointer;
+  transition: background 0.12s ease, transform 0.08s ease;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .pal-item:hover {
   background: rgba(255, 255, 255, 0.12);
+  transform: translateX(1px);
 }
 
-.pal-sep {
-  height: 1px;
-  margin: 2px;
-  background: rgba(255, 255, 255, 0.12);
+.pal-item:active {
+  transform: scale(0.98);
 }
 
-#pal-search {
+/* 2-Column Grid for Tools/Tasks */
+.pal-tools-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4px;
+}
+
+.pal-grid-item {
+  padding: 6px 7px;
+  font-size: 11px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.pal-grid-span2 {
+  grid-column: span 2;
+  text-align: center;
+}
+
+/* Search Row in Tab 1 */
+.pal-search-row {
   display: flex;
   gap: 4px;
   align-items: center;
-}
-
-#pal-search[hidden] {
-  display: none;
+  padding: 2px 0;
 }
 
 #pal-search-input {
   flex: 1;
   min-width: 0;
-  padding: 6px 8px;
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  border-radius: 8px;
-  background: rgba(255, 255, 255, 0.08);
+  padding: 5px 8px;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 7px;
+  background: rgba(255, 255, 255, 0.07);
   color: #fff;
-  font: inherit;
+  font-size: 11.5px;
   outline: none;
+}
+
+#pal-search-input:focus {
+  border-color: #3b82f6;
+  background: rgba(59, 130, 246, 0.12);
 }
 
 #pal-search-input::placeholder {
@@ -117,13 +226,93 @@ dot-pal {
 }
 
 #pal-search-go {
-  padding: 6px 9px;
+  padding: 5px 9px;
   border: 0;
-  border-radius: 8px;
-  background: rgba(255, 255, 255, 0.16);
+  border-radius: 7px;
+  background: #3b82f6;
   color: #fff;
-  font: inherit;
+  font-size: 12px;
   cursor: pointer;
+  transition: background 0.12s ease;
+}
+
+#pal-search-go:hover {
+  background: #2563eb;
+}
+
+/* Tab 3: Mascot Selection & Adjustments */
+.pal-mascot-section-title {
+  font-size: 10.5px;
+  font-weight: 600;
+  color: #94a3b8;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  padding: 2px 2px 0 2px;
+}
+
+.pal-mascots-row {
+  display: flex;
+  gap: 3px;
+  flex-wrap: wrap;
+}
+
+.pal-mascot-btn {
+  flex: 1 1 calc(33% - 4px);
+  padding: 5px 4px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 7px;
+  background: rgba(255, 255, 255, 0.06);
+  color: #e2e8f0;
+  font-size: 10.5px;
+  cursor: pointer;
+  text-align: center;
+  transition: all 0.15s ease;
+}
+
+.pal-mascot-btn:hover {
+  background: rgba(255, 255, 255, 0.14);
+  color: #fff;
+}
+
+.pal-mascot-btn.active {
+  background: #2563eb;
+  border-color: #60a5fa;
+  color: #fff;
+  font-weight: 600;
+  box-shadow: 0 1px 4px rgba(37, 99, 235, 0.4);
+}
+
+.pal-actions-row {
+  display: flex;
+  gap: 4px;
+}
+
+.pal-btn-sub {
+  flex: 1;
+  font-size: 11px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  text-align: center;
+}
+
+.pal-btn-primary {
+  background: rgba(59, 130, 246, 0.2);
+  border: 1px solid rgba(59, 130, 246, 0.4);
+  color: #93c5fd;
+  text-align: center;
+  font-weight: 600;
+  margin-top: 2px;
+}
+
+.pal-btn-primary:hover {
+  background: #3b82f6;
+  color: #fff;
+}
+
+.pal-sep {
+  height: 1px;
+  margin: 3px 0;
+  background: rgba(255, 255, 255, 0.1);
 }
 
 /* ── Attentive Thought Bubble ── */

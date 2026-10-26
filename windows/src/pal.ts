@@ -29,7 +29,8 @@ registerAllPageMascots();
 // old 140x250 box at the window's left edge; the remaining width is the room
 // the card opens into (360px), the floating soundscape popup (420x340px) or
 // the screen chat popup (540x440px).
-const CARD_W = 360;
+const CARD_W = 430;
+const CARD_H = 340;
 const PAL_W = 140;
 const PAL_H = 250;
 const CHAT_W = 540;
@@ -78,9 +79,10 @@ type Rule = "report" | "watch" | "tour";
 
 const root = document.getElementById("pal-root")!;
 const cardEl = document.getElementById("pal-card")!;
-const searchWrap = document.getElementById("pal-search")!;
-const searchOpenBtn = cardEl.querySelector<HTMLElement>('[data-action="search-open"]')!;
+const searchWrap = document.getElementById("pal-search");
+const searchOpenBtn = cardEl?.querySelector<HTMLElement>('[data-action="search-open"]');
 const searchInput = document.getElementById("pal-search-input") as HTMLInputElement;
+const cardCloseBtn = document.getElementById("pal-card-close");
 const engine = new BotEngine();
 
 // Attentive desktop companion thoughts and observation system
@@ -1696,7 +1698,10 @@ function pushRect() {
   } else if (isSoundscapeOpen) {
     w = SOUNDSCAPE_W;
     h = SOUNDSCAPE_H;
-  } else if (cardOpen || isAlertOpen) {
+  } else if (cardOpen) {
+    w = CARD_W;
+    h = CARD_H;
+  } else if (isAlertOpen) {
     w = CARD_W;
     h = PAL_H;
   }
@@ -1711,9 +1716,11 @@ function setCard(open: boolean) {
   if (open && isAlertOpen) closeAlertPopup();
   if (open && isChatOpen) closeScreenChat();
   if (open && isSoundscapeOpen) closeSoundscapePopup();
-  if (!open) {
-    searchWrap.hidden = true;
-    searchOpenBtn.hidden = false;
+  if (open) {
+    syncMascotButtons();
+  } else {
+    if (searchWrap) searchWrap.hidden = true;
+    if (searchOpenBtn) searchOpenBtn.hidden = false;
     if (document.activeElement === searchInput) searchInput.blur();
   }
   pushRect();
@@ -2226,18 +2233,39 @@ function sendSearch() {
   callPal("search", q);
 }
 
+let cardCloseTimer: number | null = null;
+
 /** Pointer arrived or left: freeze for the click, close the card on leaving
- *  (unless the user is typing a search in it). */
+ *  (with grace period so moving the mouse down does not abruptly close options). */
 function setHovered(on: boolean) {
   hovered = on;
-  if (!hovered && document.activeElement !== searchInput) setCard(false);
+  if (cardCloseTimer != null) {
+    window.clearTimeout(cardCloseTimer);
+    cardCloseTimer = null;
+  }
+  if (!hovered && cardOpen && document.activeElement !== searchInput) {
+    cardCloseTimer = window.setTimeout(() => {
+      if (!hovered && document.activeElement !== searchInput) {
+        setCard(false);
+      }
+      cardCloseTimer = null;
+    }, 600);
+  }
+}
+
+function syncMascotButtons() {
+  const cur = charName || "embasa";
+  const mascotButtons = cardEl.querySelectorAll<HTMLButtonElement>(".pal-mascot-btn");
+  mascotButtons.forEach((b) => {
+    b.classList.toggle("active", b.dataset.mascot === cur);
+  });
 }
 
 async function press(action: string) {
   switch (action) {
     case "search-open":
-      searchOpenBtn.hidden = true;
-      searchWrap.hidden = false;
+      if (searchOpenBtn) searchOpenBtn.hidden = true;
+      if (searchWrap) searchWrap.hidden = false;
       void Bridge.setPalFocus(true);
       searchInput.focus();
       return;
@@ -2246,6 +2274,7 @@ async function press(action: string) {
       return;
     case "home":
       setCard(false);
+      callPal(action);
       escortUntil = performance.now() + ESCORT_MS;
       legs = [];
       idleUntil = 0;
@@ -2300,6 +2329,7 @@ async function press(action: string) {
       return;
     case "settings":
       setCard(false);
+      callPal("settings");
       void Bridge.openSettingsWindow();
       return;
   }
@@ -2393,8 +2423,8 @@ async function main() {
     showThought("✨ Estou aqui! O que posso fazer por você?", "star");
     setCard(true);
     void Bridge.setPalFocus(true);
-    searchOpenBtn.hidden = true;
-    searchWrap.hidden = false;
+    if (searchOpenBtn) searchOpenBtn.hidden = true;
+    if (searchWrap) searchWrap.hidden = false;
     searchInput.focus();
     pushRect();
   });
@@ -2789,6 +2819,41 @@ async function main() {
     e.stopPropagation();
     void sendScreenChatMessage(btn.dataset.tag);
   });
+  // ── Compact Pal Card Tabs & Mascot Switcher ──────────────────────────
+  cardCloseBtn?.addEventListener("click", (e) => {
+    e.stopPropagation();
+    setCard(false);
+  });
+
+  const tabButtons = cardEl.querySelectorAll<HTMLButtonElement>(".pal-tab-btn");
+  const tabPanes = cardEl.querySelectorAll<HTMLElement>(".pal-tab-pane");
+
+  tabButtons.forEach((btn) => {
+    btn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      const tab = btn.dataset.tab;
+      tabButtons.forEach((b) => b.classList.toggle("active", b === btn));
+      tabPanes.forEach((p) => p.classList.toggle("active", p.id === `pal-pane-${tab}`));
+      Sound.play("tap");
+    });
+  });
+
+  const mascotButtons = cardEl.querySelectorAll<HTMLButtonElement>(".pal-mascot-btn");
+  mascotButtons.forEach((btn) => {
+    btn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      const mascot = btn.dataset.mascot;
+      if (!mascot) return;
+      charName = mascot;
+      syncCharacter();
+      syncMascotButtons();
+      Sound.play("peek");
+      showThought(`Mascote: ${btn.textContent}!`, "happy", 2600);
+      State.settings.character = mascot;
+      void Bridge.saveSettings(State.settings);
+    });
+  });
+
   searchInput.addEventListener("focus", () => void Bridge.setPalFocus(true));
   searchInput.addEventListener("blur", () => void Bridge.setPalFocus(false));
   window.addEventListener("keydown", (e) => {

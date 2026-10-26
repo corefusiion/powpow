@@ -198,29 +198,59 @@
       <!-- Mud and water splatters container -->
       <div id="pal-splatters"></div>
 
-      <!-- The card: clicked off the character, its meaning belongs to the island -->
+      <!-- The card: compact tabbed card with NO scroll -->
       <div id="pal-card" hidden>
-        <button class="pal-item" data-action="analyze" data-label="Screen analysis"></button>
-        <button class="pal-item" data-action="search-open" data-label="Web search"></button>
-        <div id="pal-search" hidden>
-          <input id="pal-search-input" type="text" />
-          <button id="pal-search-go" data-action="search-send" aria-label="Search">→</button>
+        <!-- Card Header with Navigation Tabs & Close Button -->
+        <div class="pal-card-header">
+          <div class="pal-card-tabs">
+            <button type="button" class="pal-tab-btn active" data-tab="ia" title="IA e Ações Rápidas">⚡ Ações</button>
+            <button type="button" class="pal-tab-btn" data-tab="tools" title="Ferramentas e Arquivos">💼 Tarefas</button>
+            <button type="button" class="pal-tab-btn" data-tab="config" title="Mascotes e Configurações">⚙️ Ajustes</button>
+          </div>
+          <button type="button" id="pal-card-close" class="pal-card-close-btn" aria-label="Fechar" title="Fechar menu">✕</button>
         </div>
-        <div class="pal-sep"></div>
-        <button class="pal-item" data-action="pomodoro" data-label="Pomodoro">🍅 Modo Foco (Pomodoro)</button>
-        <button class="pal-item" data-action="clipboard" data-label="Clipboard">📋 Área de Transferência</button>
-        <button class="pal-item" data-action="soundscape" data-label="Soundscape">🎧 Lo-Fi Soundscape</button>
-        <button class="pal-item" data-action="recap" data-label="Daily recap">📔 Diário de Bordo (Daily)</button>
-        <div class="pal-sep"></div>
-        <button class="pal-item" data-action="organize-desktop" data-label="Organize desktop">🗂️ Organizar Desktop</button>
-        <button class="pal-item" data-action="create-doc" data-label="Create document">📄 Criar Documento</button>
-        <button class="pal-item" data-action="find-files" data-label="Find files">🔎 Localizar Arquivos</button>
-        <button class="pal-item" data-action="ghostwriter" data-label="Ghostwriter">✍️ Escrever no App Ativo</button>
-        <div class="pal-sep"></div>
-        <button class="pal-item" data-action="pause" data-label="Pause stroll"></button>
-        <button class="pal-item" data-action="new-chat" data-label="New chat"></button>
-        <button class="pal-item" data-action="settings" data-label="Settings"></button>
-        <button class="pal-item" data-action="home" data-label="Back to the island"></button>
+
+        <!-- Tab 1: IA & Ações Rápidas -->
+        <div class="pal-tab-pane active" id="pal-pane-ia">
+          <button class="pal-item" data-action="analyze">📸 Analisar Janela Ativa</button>
+          <div class="pal-search-row">
+            <input id="pal-search-input" type="text" placeholder="Pergunte ou pesquise na web..." />
+            <button id="pal-search-go" data-action="search-send" aria-label="Buscar" title="Enviar busca">➔</button>
+          </div>
+          <button class="pal-item" data-action="ghostwriter">✍️ Escrever no App Ativo</button>
+          <button class="pal-item" data-action="new-chat">💬 Nova Conversa com IA</button>
+        </div>
+
+        <!-- Tab 2: Ferramentas & Produtividade (2 colunas compactas, zero scroll) -->
+        <div class="pal-tab-pane" id="pal-pane-tools">
+          <div class="pal-tools-grid">
+            <button class="pal-item pal-grid-item" data-action="pomodoro">🍅 Pomodoro</button>
+            <button class="pal-item pal-grid-item" data-action="clipboard">📋 Transferência</button>
+            <button class="pal-item pal-grid-item" data-action="soundscape">🎧 Soundscape</button>
+            <button class="pal-item pal-grid-item" data-action="recap">📔 Diário Bordo</button>
+            <button class="pal-item pal-grid-item" data-action="organize-desktop">🗂️ Organizar Desk</button>
+            <button class="pal-item pal-grid-item" data-action="create-doc">📄 Novo Documento</button>
+            <button class="pal-item pal-grid-item pal-grid-span2" data-action="find-files">🔎 Localizar Arquivos</button>
+          </div>
+        </div>
+
+        <!-- Tab 3: Ajustes & Seletor de Mascotes -->
+        <div class="pal-tab-pane" id="pal-pane-config">
+          <div class="pal-mascot-section-title">🎭 Escolher Mascote:</div>
+          <div class="pal-mascots-row" id="pal-mascots-quick-row">
+            <button type="button" class="pal-mascot-btn active" data-mascot="embasa" title="Mascote Embasa 2D">💧 Embasa</button>
+            <button type="button" class="pal-mascot-btn" data-mascot="doraemon" title="Doraemon">🐱 Doraemon</button>
+            <button type="button" class="pal-mascot-btn" data-mascot="vault" title="Vault Boy">⚡ Vault</button>
+            <button type="button" class="pal-mascot-btn" data-mascot="shimeji" title="Shimeji">🍄 Shimeji</button>
+            <button type="button" class="pal-mascot-btn" data-mascot="mochi" title="Mochi Original">🥟 Mochi</button>
+          </div>
+          <div class="pal-sep"></div>
+          <div class="pal-actions-row">
+            <button class="pal-item pal-btn-sub" data-action="pause" id="pal-pause-btn">⏸️ Pausar Passeio</button>
+            <button class="pal-item pal-btn-sub" data-action="home">🏝️ Voltar p/ Ilha</button>
+          </div>
+          <button class="pal-item pal-btn-primary" data-action="settings">⚙️ Abrir Configurações Completas</button>
+        </div>
       </div>
     </div>
     <script type="module" src="/src/pal.ts"></script>

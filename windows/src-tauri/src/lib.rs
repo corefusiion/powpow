@@ -789,18 +789,37 @@ fn settings_page_url(app: &AppHandle) -> WebviewUrl {
 /// one that exists before the island's webview does.
 fn create_settings_window(app: &AppHandle) {
     let url = settings_page_url(app);
-    match WebviewWindowBuilder::new(app, "settings", url)
+    let res = WebviewWindowBuilder::new(app, "settings", url.clone())
         .additional_browser_args(BROWSER_ARGS)
         .title("Settings — Powpow")
         .inner_size(560.0, 680.0)
         .min_inner_size(460.0, 480.0)
-        .transparent(true)
-        .decorations(false)
+        .transparent(false)
+        .decorations(true)
         .resizable(true)
         .visible(false)
         .center()
-        .build()
-    {
+        .build();
+
+    let win_res = match res {
+        Ok(win) => Ok(win),
+        Err(err) => {
+            log::line(format!("settings standard window failed ({err}), trying transparent fallback"));
+            WebviewWindowBuilder::new(app, "settings", url)
+                .additional_browser_args(BROWSER_ARGS)
+                .title("Settings — Powpow")
+                .inner_size(560.0, 680.0)
+                .min_inner_size(460.0, 480.0)
+                .transparent(true)
+                .decorations(true)
+                .resizable(true)
+                .visible(false)
+                .center()
+                .build()
+        }
+    };
+
+    match win_res {
         Ok(win) => {
             // Closing it must only hide it, or it could never be reopened.
             let hidden = win.clone();
@@ -811,7 +830,7 @@ fn create_settings_window(app: &AppHandle) {
                 }
             });
         }
-        Err(err) => log::line(format!("settings window failed: {err}")),
+        Err(err) => log::line(format!("settings window build failed: {err}")),
     }
 }
 
@@ -824,6 +843,9 @@ pub fn show_settings_window(app: &AppHandle) {
         let _ = win.set_always_on_top(false);
     };
 
+    // Always alert the island to open in-island settings as well
+    let _ = app.emit_to(island::WINDOW_LABEL, "tray", "settings".to_string());
+
     if let Some(win) = app.get_webview_window("settings") {
         focus_win(&win);
         log::line("settings window displayed");
@@ -834,14 +856,16 @@ pub fn show_settings_window(app: &AppHandle) {
             log::line("settings window created and displayed");
         } else {
             log::line("settings window fallback to in-island settings view");
-            let _ = app.emit_to(island::WINDOW_LABEL, "tray", "settings".to_string());
         }
     }
 }
 
 #[tauri::command]
 fn open_settings_window(app: AppHandle) {
-    show_settings_window(&app);
+    let handle = app.clone();
+    let _ = app.run_on_main_thread(move || {
+        show_settings_window(&handle);
+    });
 }
 
 pub fn run() {
