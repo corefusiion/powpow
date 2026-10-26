@@ -824,10 +824,12 @@ pub fn show_settings_window(app: &AppHandle) {
 
     if let Some(win) = app.get_webview_window("settings") {
         focus_win(&win);
+        log::line("settings window displayed");
     } else {
         create_settings_window(app);
         if let Some(win) = app.get_webview_window("settings") {
             focus_win(&win);
+            log::line("settings window created and displayed");
         } else {
             log::line("settings window missing and could not be created");
         }
@@ -928,8 +930,18 @@ pub fn run() {
         .setup(move |app| {
             let handle = app.handle().clone();
             tray::build(&handle)?;
-            // Before the island: see create_settings_window.
-            create_settings_window(&handle);
+            // Configure settings window close-to-hide (pre-created via tauri.conf.json)
+            if let Some(win) = handle.get_webview_window("settings") {
+                let hidden = win.clone();
+                win.on_window_event(move |event| {
+                    if let tauri::WindowEvent::CloseRequested { api, .. } = event {
+                        api.prevent_close();
+                        let _ = hidden.hide();
+                    }
+                });
+            } else {
+                create_settings_window(&handle);
+            }
 
             if let Some(win) = island::window(&handle) {
                 island::make_non_activating(&win);
