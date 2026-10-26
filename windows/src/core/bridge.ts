@@ -55,7 +55,15 @@ export const Bridge = {
 
   quit: () => call<void>("quit_app"),
 
-  openSettingsWindow: () => call<void>("open_settings_window"),
+  openSettingsWindow: () => {
+    if (IS_TAURI) {
+      return call<void>("open_settings_window");
+    }
+    if (typeof window !== "undefined") {
+      window.open("/settings.html", "powpow_settings", "width=560,height=680,menubar=no,toolbar=no");
+    }
+    return Promise.resolve(null);
+  },
 
   /** Writes to %LOCALAPPDATA%\Powpow\powpow.log, next to the Rust lines. */
   log: (message: string) => call<void>("log_line", { message }),

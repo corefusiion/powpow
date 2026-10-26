@@ -631,6 +631,7 @@ export class Island {
           State.paused = false;
           void Bridge.setPaused(false);
         }
+        void Bridge.openSettingsWindow();
         this.alert("settings");
         break;
       case "home":

@@ -1,282 +1,160 @@
-// Embasa Mascot High-Fidelity Vector Data (Reformulated 3D Pixar/Disney Edition)
-// 100% clean bezier curves, liquid volumetric shading, vibrant Embasa tricolor ribbon,
-// large lively cartoon eyes with starburst sparkles, cheerful smile, and running limbs.
-// Fully compliant with AvatarAPI (18 semantic IDs).
+// Embasa Mascot 2D Cartoon Edition
+// Clean 2D vector art with subtle animations, vibrant Embasa tricolor ribbon,
+// large lively cartoon anime eyes with dual sparkles, cheerful smile, and kawaii blushing cheeks.
+// Fully compliant with AvatarAPI (18 semantic IDs) in a 1024x1024 viewBox.
 
 export const EMBASA_DEFS = `
-<radialGradient id="embasa_body_grad" cx="38%" cy="28%" r="72%">
-  <stop offset="0%" stop-color="#99e8ff"/>
-  <stop offset="18%" stop-color="#38c6ff"/>
-  <stop offset="52%" stop-color="#0495f4"/>
-  <stop offset="82%" stop-color="#0454b0"/>
-  <stop offset="100%" stop-color="#012b6b"/>
-</radialGradient>
-
-<radialGradient id="embasa_eye_sclera" cx="42%" cy="32%" r="68%">
-  <stop offset="0%" stop-color="#ffffff"/>
-  <stop offset="80%" stop-color="#f0f7ff"/>
-  <stop offset="100%" stop-color="#cfe5fc"/>
-</radialGradient>
-
-<radialGradient id="embasa_eye_iris" cx="40%" cy="36%" r="65%">
-  <stop offset="0%" stop-color="#011638"/>
-  <stop offset="48%" stop-color="#044da8"/>
-  <stop offset="82%" stop-color="#0495f4"/>
-  <stop offset="100%" stop-color="#38bdf8"/>
-</radialGradient>
-
-<linearGradient id="embasa_ribbon_green" x1="0%" y1="0%" x2="100%" y2="100%">
-  <stop offset="0%" stop-color="#8be22e"/>
-  <stop offset="100%" stop-color="#55a828"/>
+<linearGradient id="embasa_2d_body" x1="0%" y1="0%" x2="0%" y2="100%">
+  <stop offset="0%" stop-color="#40c4ff"/>
+  <stop offset="60%" stop-color="#00b0ff"/>
+  <stop offset="100%" stop-color="#0088cc"/>
 </linearGradient>
 
-<linearGradient id="embasa_ribbon_yellow" x1="0%" y1="0%" x2="100%" y2="100%">
-  <stop offset="0%" stop-color="#fff752"/>
-  <stop offset="100%" stop-color="#f4c01e"/>
+<linearGradient id="embasa_ribbon_green" x1="0%" y1="0%" x2="100%" y2="0%">
+  <stop offset="0%" stop-color="#4caf50"/>
+  <stop offset="100%" stop-color="#43a047"/>
 </linearGradient>
 
-<linearGradient id="embasa_ribbon_orange" x1="0%" y1="0%" x2="100%" y2="100%">
-  <stop offset="0%" stop-color="#ff911a"/>
-  <stop offset="100%" stop-color="#e05800"/>
+<linearGradient id="embasa_ribbon_yellow" x1="0%" y1="0%" x2="100%" y2="0%">
+  <stop offset="0%" stop-color="#ffeb3b"/>
+  <stop offset="100%" stop-color="#fbc02d"/>
 </linearGradient>
 
-<linearGradient id="embasa_ribbon_cyan" x1="0%" y1="0%" x2="100%" y2="100%">
-  <stop offset="0%" stop-color="#38d4ff"/>
-  <stop offset="100%" stop-color="#0288d1"/>
+<linearGradient id="embasa_ribbon_orange" x1="0%" y1="0%" x2="100%" y2="0%">
+  <stop offset="0%" stop-color="#ffa726"/>
+  <stop offset="100%" stop-color="#fb8c00"/>
 </linearGradient>
-
-<linearGradient id="embasa_ribbon_blue" x1="0%" y1="0%" x2="100%" y2="100%">
-  <stop offset="0%" stop-color="#0277bd"/>
-  <stop offset="100%" stop-color="#013f8a"/>
-</linearGradient>
-
-<linearGradient id="embasa_limb_grad" x1="0%" y1="0%" x2="0%" y2="100%">
-  <stop offset="0%" stop-color="#38c6ff"/>
-  <stop offset="100%" stop-color="#046dc8"/>
-</linearGradient>
-
-<linearGradient id="embasa_foot_grad" x1="0%" y1="0%" x2="100%" y2="100%">
-  <stop offset="0%" stop-color="#24baf8"/>
-  <stop offset="100%" stop-color="#034898"/>
-</linearGradient>
-
-<radialGradient id="embasa_mouth_inside" cx="50%" cy="30%" r="70%">
-  <stop offset="0%" stop-color="#540a16"/>
-  <stop offset="100%" stop-color="#220206"/>
-</radialGradient>
 
 <linearGradient id="embasa_tongue_grad" x1="0%" y1="0%" x2="0%" y2="100%">
-  <stop offset="0%" stop-color="#ff7b92"/>
-  <stop offset="100%" stop-color="#e1244e"/>
+  <stop offset="0%" stop-color="#ff8da1"/>
+  <stop offset="100%" stop-color="#e91e63"/>
 </linearGradient>
 
-<filter id="embasa_soft_blur" x="-20%" y="-20%" width="140%" height="140%">
-  <feGaussianBlur stdDeviation="8"/>
+<filter id="embasa_soft_shadow" x="-20%" y="-20%" width="140%" height="140%">
+  <feGaussianBlur stdDeviation="10"/>
 </filter>
 `;
 
 export const EMBASA_GRADIENTS = EMBASA_DEFS;
 
 export const EMBASA_INNER_SVG = `
-<!-- Ribbon Back Pass (Passando por trás da cintura e esvoaçando) -->
-<g id="ribbon-back" class="part-ribbon">
-  <!-- Cauda esvoaçante da fita (Verde / Amarelo / Laranja) -->
-  <path d="M260 620 C140 650 90 720 120 780 C150 840 230 840 270 810 C210 820 160 800 145 760 C130 720 180 670 270 650 Z" fill="url(#embasa_ribbon_green)"/>
-  <path d="M270 650 C180 670 130 720 145 760 C160 800 210 820 270 810 C240 800 200 780 190 750 C180 720 220 680 290 665 Z" fill="url(#embasa_ribbon_yellow)"/>
-  <path d="M290 665 C220 680 180 720 190 750 C200 780 240 800 270 810 C290 800 320 780 340 760 C290 770 250 750 240 730 C230 710 250 685 305 678 Z" fill="url(#embasa_ribbon_orange)"/>
-  <!-- Passagem por trás da cintura -->
-  <path d="M330 630 C450 670 650 670 760 600 C730 580 620 635 340 615 Z" fill="url(#embasa_ribbon_blue)" opacity="0.65"/>
-</g>
+<!-- Grounding Shadow -->
+<ellipse cx="512" cy="940" rx="220" ry="28" fill="#000000" opacity="0.15" filter="url(#embasa_soft_shadow)"/>
 
-<!-- Pernas e Pés de Água (Correndo) -->
+<!-- Legs and Feet (Cute cartoon rounded water paws) -->
 <g id="left-leg" class="part-leg">
-  <!-- Perna esquerda esticada -->
-  <path d="M420 730 C380 770 330 810 320 860 C310 900 340 920 370 910 C410 890 440 820 460 760 Z" fill="url(#embasa_limb_grad)"/>
-  <!-- Pé esquerdo em gota d'água -->
+  <path d="M410 740 C390 790 370 840 360 880 C360 910 400 920 430 900 C450 860 460 800 460 740 Z" fill="#0088cc" stroke="#005580" stroke-width="12" stroke-linejoin="round"/>
   <g id="left-foot" class="part-foot">
-    <ellipse cx="340" cy="880" rx="42" ry="26" transform="rotate(-20 340 880)" fill="url(#embasa_foot_grad)"/>
-    <ellipse cx="330" cy="874" rx="28" ry="12" transform="rotate(-20 330 874)" fill="#8ae0ff" opacity="0.75"/>
+    <ellipse cx="380" cy="890" rx="55" ry="32" fill="#0088cc" stroke="#005580" stroke-width="12"/>
+    <ellipse cx="370" cy="880" rx="28" ry="14" fill="#80d8ff" opacity="0.8"/>
   </g>
 </g>
 
 <g id="right-leg" class="part-leg">
-  <!-- Perna direita avançando -->
-  <path d="M570 740 C610 780 650 830 680 870 C700 900 680 930 640 940 C600 940 570 880 540 810 Z" fill="url(#embasa_limb_grad)"/>
-  <!-- Pé direito apoiando -->
+  <path d="M614 740 C634 790 654 840 664 880 C664 910 624 920 594 900 C574 860 564 800 564 740 Z" fill="#0088cc" stroke="#005580" stroke-width="12" stroke-linejoin="round"/>
   <g id="right-foot" class="part-foot">
-    <ellipse cx="660" cy="900" rx="46" ry="28" transform="rotate(25 660 900)" fill="url(#embasa_foot_grad)"/>
-    <ellipse cx="650" cy="894" rx="30" ry="14" transform="rotate(25 650 894)" fill="#8ae0ff" opacity="0.75"/>
+    <ellipse cx="644" cy="890" rx="55" ry="32" fill="#0088cc" stroke="#005580" stroke-width="12"/>
+    <ellipse cx="634" cy="880" rx="28" ry="14" fill="#80d8ff" opacity="0.8"/>
   </g>
 </g>
 
-<!-- Braço Esquerdo (Atrás) -->
+<!-- Left Arm (Cute resting arm) -->
 <g id="left-arm" class="part-arm">
-  <path d="M290 530 C200 520 120 540 90 580 C80 600 100 620 130 610 C170 590 230 570 280 560 Z" fill="url(#embasa_limb_grad)"/>
-  <!-- Mão esquerda fofa -->
+  <path d="M260 530 C180 550 140 610 170 650 C190 680 230 650 260 610 Z" fill="#0099e6" stroke="#005580" stroke-width="12" stroke-linejoin="round"/>
   <g id="left-hand" class="part-hand">
-    <circle cx="105" cy="595" r="24" fill="url(#embasa_limb_grad)"/>
-    <circle cx="95" cy="580" r="12" fill="url(#embasa_limb_grad)"/>
-    <circle cx="100" cy="590" r="10" fill="#99e8ff" opacity="0.6"/>
+    <circle cx="160" cy="650" r="30" fill="#0099e6" stroke="#005580" stroke-width="12"/>
+    <circle cx="155" cy="645" r="14" fill="#80d8ff" opacity="0.75"/>
   </g>
 </g>
 
-<!-- Corpo Principal da Gota d'Água 3D -->
-<g id="body" class="part-body">
-  <!-- Sombra projetada no chão -->
-  <ellipse cx="512" cy="950" rx="220" ry="32" fill="#000000" opacity="0.22" filter="url(#embasa_soft_blur)"/>
-
-  <!-- Silhueta da Gota com Ponta Aerodinâmica e Barriguinha Fofa -->
-  <path d="M512 85 C485 180 250 380 220 580 C185 750 330 870 512 870 C694 870 839 750 804 580 C774 380 539 180 512 85 Z" fill="url(#embasa_body_grad)"/>
-
-  <!-- Brilho Especular 3D Principal (Crescente de Água Cristalina no topo/esquerda) -->
-  <path d="M512 110 C490 200 290 390 260 560 C235 700 300 790 350 820 C290 770 250 680 270 550 C295 400 480 210 512 110 Z" fill="#ffffff" opacity="0.48"/>
-  <ellipse cx="370" cy="270" rx="35" ry="90" transform="rotate(-34 370 270)" fill="#ffffff" opacity="0.32"/>
-
-  <!-- Ponto de Luz Intenso (Glint) no topo da curvatura -->
-  <ellipse cx="440" cy="180" rx="18" ry="38" transform="rotate(-30 440 180)" fill="#ffffff" opacity="0.75"/>
-  <circle cx="435" cy="170" r="8" fill="#ffffff"/>
-
-  <!-- Reflexo de Borda (Rim Light) na curva inferior direita -->
-  <path d="M720 540 C755 640 735 740 680 810 C745 740 765 630 730 520 Z" fill="#38d4ff" opacity="0.45"/>
-</g>
-
-<!-- Cabeça e Face -->
-<g id="head" class="part-head">
-  <!-- Sobrancelhas Arqueadas Expressivas -->
-  <g id="left-eyebrow" class="part-eyebrow">
-    <path d="M360 330 Q425 295 480 335" fill="none" stroke="#0454b0" stroke-width="14" stroke-linecap="round"/>
-    <path d="M370 332 Q425 303 470 337" fill="none" stroke="#38c6ff" stroke-width="4" stroke-linecap="round" opacity="0.8"/>
-  </g>
-
-  <g id="right-eyebrow" class="part-eyebrow">
-    <path d="M575 315 Q635 285 690 320" fill="none" stroke="#0454b0" stroke-width="14" stroke-linecap="round"/>
-    <path d="M585 317 Q635 293 680 322" fill="none" stroke="#38c6ff" stroke-width="4" stroke-linecap="round" opacity="0.8"/>
-  </g>
-
-  <!-- Olho Esquerdo (Grande, Cartoon Pixar, Vivo) -->
-  <g id="left-eye" class="part-eye">
-    <!-- Contorno escuro da órbita -->
-    <ellipse cx="430" cy="425" rx="76" ry="92" fill="#021836"/>
-    <!-- Esclera branca brilhante -->
-    <ellipse cx="430" cy="425" rx="71" ry="87" fill="url(#embasa_eye_sclera)"/>
-    <!-- Sombra suave na pálpebra superior -->
-    <path d="M365 410 C380 365 480 365 495 410 C465 385 395 385 365 410 Z" fill="#b9daf8" opacity="0.7"/>
-
-    <!-- Pupila e Íris com Rastreamento de Mouse (Left Pupil) -->
-    <g id="left-pupil" class="part-pupil">
-      <!-- Íris Azul Vibrante -->
-      <circle cx="438" cy="430" r="48" fill="url(#embasa_eye_iris)"/>
-      <!-- Pupila Preta -->
-      <circle cx="438" cy="430" r="32" fill="#010a1c"/>
-      <!-- Crescente de Reflexo Azul Claro na base da íris -->
-      <path d="M405 445 A38 38 0 0 0 471 445 A34 34 0 0 1 415 440 Z" fill="#38d4ff"/>
-      <!-- Brilhos Estelares (Dual Specular Sparkles) -->
-      <circle cx="424" cy="408" r="14" fill="#ffffff"/>
-      <circle cx="454" cy="448" r="6.5" fill="#ffffff" opacity="0.9"/>
-    </g>
-  </g>
-
-  <!-- Olho Direito (Grande, Cartoon Pixar, Vivo) -->
-  <g id="right-eye" class="part-eye">
-    <!-- Contorno escuro da órbita -->
-    <ellipse cx="640" cy="405" rx="76" ry="92" fill="#021836"/>
-    <!-- Esclera branca brilhante -->
-    <ellipse cx="640" cy="405" rx="71" ry="87" fill="url(#embasa_eye_sclera)"/>
-    <!-- Sombra suave na pálpebra superior -->
-    <path d="M575 390 C590 345 690 345 705 390 C675 365 605 365 575 390 Z" fill="#b9daf8" opacity="0.7"/>
-
-    <!-- Pupila e Íris com Rastreamento de Mouse (Right Pupil) -->
-    <g id="right-pupil" class="part-pupil">
-      <!-- Íris Azul Vibrante -->
-      <circle cx="632" cy="410" r="48" fill="url(#embasa_eye_iris)"/>
-      <!-- Pupila Preta -->
-      <circle cx="632" cy="410" r="32" fill="#010a1c"/>
-      <!-- Crescente de Reflexo Azul Claro na base da íris -->
-      <path d="M599 425 A38 38 0 0 0 665 425 A34 34 0 0 1 609 420 Z" fill="#38d4ff"/>
-      <!-- Brilhos Estelares (Dual Specular Sparkles) -->
-      <circle cx="618" cy="388" r="14" fill="#ffffff"/>
-      <circle cx="648" cy="428" r="6.5" fill="#ffffff" opacity="0.9"/>
-    </g>
-  </g>
-
-  <!-- Bochechas Coradas Fofas -->
-  <ellipse cx="340" cy="485" rx="26" ry="15" fill="#38bdf8" opacity="0.45" filter="url(#embasa_soft_blur)"/>
-  <ellipse cx="710" cy="465" rx="26" ry="15" fill="#38bdf8" opacity="0.45" filter="url(#embasa_soft_blur)"/>
-
-  <!-- Boca Alegre e Aberta (Sorriso com Dentes e Língua) -->
-  <g id="mouth" class="part-mouth">
-    <!-- Contorno externo e fundo escuro da cavidade bucal -->
-    <path d="M440 500 C470 488 590 482 630 495 C640 540 610 610 535 615 C460 620 430 550 440 500 Z" fill="#021432"/>
-    <path d="M444 504 C472 492 588 486 626 499 C634 538 606 604 535 609 C464 614 436 548 444 504 Z" fill="url(#embasa_mouth_inside)"/>
-
-    <!-- Dentes Brancos Alinhados no Topo -->
-    <path d="M455 504 C485 500 585 496 615 505 C605 528 465 528 455 504 Z" fill="#ffffff"/>
-
-    <!-- Língua Rosada Suave -->
-    <path d="M490 575 C520 540 560 540 590 575 C575 605 510 605 490 575 Z" fill="url(#embasa_tongue_grad)"/>
-
-    <!-- Cantinhos do Sorriso Cartoon -->
-    <path d="M435 505 Q442 498 448 506" fill="none" stroke="#0454b0" stroke-width="5" stroke-linecap="round"/>
-    <path d="M635 500 Q628 493 622 501" fill="none" stroke="#0454b0" stroke-width="5" stroke-linecap="round"/>
-  </g>
-</g>
-
-<!-- Ribbon Frontal (Passando na Frente da Cintura com Cores Oficiais da Embasa) -->
-<g id="ribbon" class="part-ribbon">
-  <!-- Sombra projetada da fita na barriga da gota -->
-  <path d="M250 635 C380 685 640 690 770 590 C755 615 625 725 350 670 Z" fill="#011e4d" opacity="0.38" filter="url(#embasa_soft_blur)"/>
-
-  <!-- Faixa 1: Verde Embasa (#8be22e) -->
-  <path d="M235 620 C360 670 630 670 780 570 L772 590 C625 688 365 688 245 640 Z" fill="url(#embasa_ribbon_green)"/>
-
-  <!-- Faixa 2: Amarelo Sol (#fff752) -->
-  <path d="M245 640 C365 688 625 688 772 590 L764 610 C620 706 370 706 255 660 Z" fill="url(#embasa_ribbon_yellow)"/>
-
-  <!-- Faixa 3: Laranja Quente (#ff911a) -->
-  <path d="M255 660 C370 706 620 706 764 610 L756 630 C615 724 375 724 265 680 Z" fill="url(#embasa_ribbon_orange)"/>
-
-  <!-- Faixa 4: Ciano Água (#38d4ff) -->
-  <path d="M265 680 C375 724 615 724 756 630 L748 650 C610 742 380 742 275 700 Z" fill="url(#embasa_ribbon_cyan)"/>
-
-  <!-- Faixa 5: Azul Royal (#0277bd) -->
-  <path d="M275 700 C380 742 610 742 748 650 L740 670 C605 760 385 760 285 720 Z" fill="url(#embasa_ribbon_blue)"/>
-</g>
-
-<!-- Braço Direito (Frente / Correndo / Acenando) -->
+<!-- Right Arm (Friendly wave gesture) -->
 <g id="right-arm" class="part-arm">
-  <!-- Braço direito flexionado com energia -->
-  <path d="M720 520 C780 470 840 430 890 410 C915 400 930 420 915 445 C875 480 810 540 740 560 Z" fill="url(#embasa_limb_grad)"/>
-  <!-- Mão direita fofa com 4 dedos e joinha / aceno -->
+  <path d="M764 530 C840 500 880 430 870 380 C850 350 810 370 780 420 Z" fill="#0099e6" stroke="#005580" stroke-width="12" stroke-linejoin="round"/>
   <g id="right-hand" class="part-hand">
-    <circle cx="910" cy="415" r="26" fill="url(#embasa_limb_grad)"/>
-    <circle cx="895" cy="385" r="14" fill="url(#embasa_limb_grad)"/>
-    <circle cx="925" cy="390" r="12" fill="url(#embasa_limb_grad)"/>
-    <circle cx="935" cy="415" r="11" fill="url(#embasa_limb_grad)"/>
-    <circle cx="905" cy="410" r="12" fill="#99e8ff" opacity="0.6"/>
+    <circle cx="870" cy="370" r="34" fill="#0099e6" stroke="#005580" stroke-width="12"/>
+    <circle cx="885" cy="345" r="16" fill="#0099e6" stroke="#005580" stroke-width="10"/>
+    <circle cx="865" cy="365" r="14" fill="#80d8ff" opacity="0.75"/>
   </g>
 </g>
 
-<!-- Gotículas d'Água Alegres e Espirros (Water Droplets Splash) -->
+<!-- Main Droplet Body (Clean 2D Cartoon Silhouette) -->
+<g id="body" class="part-body">
+  <path d="M512 90 C535 70 585 70 595 110 C605 150 555 190 512 230 C360 380 210 570 210 730 C210 860 340 900 512 900 C684 900 814 860 814 730 C814 570 664 380 512 230 Z"
+    fill="url(#embasa_2d_body)" stroke="#005580" stroke-width="18" stroke-linejoin="round"/>
+
+  <!-- 2D Glossy Highlight Arc -->
+  <path d="M490 160 C380 330 270 520 270 690 C270 790 350 840 450 850"
+    fill="none" stroke="#ffffff" stroke-width="22" stroke-linecap="round" opacity="0.6"/>
+  <circle cx="500" cy="160" r="15" fill="#ffffff" opacity="0.85"/>
+</g>
+
+<!-- Face & Head Details -->
+<g id="head" class="part-head">
+  <!-- Eyebrows -->
+  <g id="left-eyebrow" class="part-eyebrow">
+    <path d="M350 330 Q405 295 460 330" fill="none" stroke="#005580" stroke-width="14" stroke-linecap="round"/>
+  </g>
+  <g id="right-eyebrow" class="part-eyebrow">
+    <path d="M570 330 Q625 295 680 330" fill="none" stroke="#005580" stroke-width="14" stroke-linecap="round"/>
+  </g>
+
+  <!-- Left Eye (Big Cartoon Anime) -->
+  <g id="left-eye" class="part-eye">
+    <ellipse cx="405" cy="415" rx="65" ry="80" fill="#ffffff" stroke="#005580" stroke-width="12"/>
+    <g id="left-pupil" class="part-pupil">
+      <ellipse cx="410" cy="420" rx="42" ry="54" fill="#0a192f"/>
+      <path d="M375 435 A35 45 0 0 0 445 435 A30 40 0 0 1 385 430 Z" fill="#00e5ff"/>
+      <circle cx="395" cy="395" r="15" fill="#ffffff"/>
+      <circle cx="430" cy="445" r="7.5" fill="#ffffff" opacity="0.9"/>
+    </g>
+  </g>
+
+  <!-- Right Eye (Big Cartoon Anime) -->
+  <g id="right-eye" class="part-eye">
+    <ellipse cx="625" cy="415" rx="65" ry="80" fill="#ffffff" stroke="#005580" stroke-width="12"/>
+    <g id="right-pupil" class="part-pupil">
+      <ellipse cx="620" cy="420" rx="42" ry="54" fill="#0a192f"/>
+      <path d="M585 435 A35 45 0 0 0 655 435 A30 40 0 0 1 595 430 Z" fill="#00e5ff"/>
+      <circle cx="605" cy="395" r="15" fill="#ffffff"/>
+      <circle cx="640" cy="445" r="7.5" fill="#ffffff" opacity="0.9"/>
+    </g>
+  </g>
+
+  <!-- Blushing Cheeks (Kawaii) -->
+  <ellipse cx="320" cy="505" rx="45" ry="26" fill="#ff6b8b" opacity="0.55"/>
+  <ellipse cx="710" cy="505" rx="45" ry="26" fill="#ff6b8b" opacity="0.55"/>
+
+  <!-- Cheerful Smile Mouth -->
+  <g id="mouth" class="part-mouth">
+    <path d="M435 520 C435 630 595 630 595 520 Z" fill="#0a192f" stroke="#005580" stroke-width="12" stroke-linejoin="round"/>
+    <!-- Tongue -->
+    <path d="M470 575 C515 545 540 545 565 575 C550 615 485 615 470 575 Z" fill="url(#embasa_tongue_grad)"/>
+    <!-- Corner Dimples -->
+    <path d="M428 522 Q434 515 440 524" fill="none" stroke="#005580" stroke-width="8" stroke-linecap="round"/>
+    <path d="M602 522 Q596 515 590 524" fill="none" stroke="#005580" stroke-width="8" stroke-linecap="round"/>
+  </g>
+</g>
+
+<!-- Embasa Tricolor Ribbon Across Waist -->
+<g id="ribbon" class="part-ribbon">
+  <!-- Green Ribbon Stripe -->
+  <path d="M240 735 Q512 850 784 735" fill="none" stroke="url(#embasa_ribbon_green)" stroke-width="36" stroke-linecap="round"/>
+  <!-- Yellow Ribbon Stripe -->
+  <path d="M250 750 Q512 860 774 750" fill="none" stroke="url(#embasa_ribbon_yellow)" stroke-width="20" stroke-linecap="round"/>
+  <!-- Orange Ribbon Stripe -->
+  <path d="M260 762 Q512 868 764 762" fill="none" stroke="url(#embasa_ribbon_orange)" stroke-width="10" stroke-linecap="round"/>
+
+  <!-- Center Water Droplet Emblem Badge -->
+  <ellipse cx="512" cy="815" rx="36" ry="44" fill="#ffffff" stroke="#005580" stroke-width="10"/>
+  <path d="M512 785 C495 805 485 825 485 835 C485 850 495 858 512 858 C529 858 539 850 539 835 C539 825 529 805 512 785 Z" fill="#00b0ff"/>
+</g>
+
+<!-- Ambient Water Magic Pearls -->
 <g id="water-droplets" class="part-droplets">
-  <!-- Gotícula 1 (Alto à esquerda) -->
-  <path d="M220 380 C210 395 200 415 200 425 C200 440 215 450 230 440 C245 430 240 405 220 380 Z" fill="url(#embasa_limb_grad)"/>
-  <circle cx="218" cy="422" r="5" fill="#ffffff" opacity="0.8"/>
-
-  <!-- Gotícula 2 (Perto da mão direita) -->
-  <path d="M840 330 C845 345 855 360 855 370 C855 380 845 390 835 385 C820 380 825 355 840 330 Z" fill="url(#embasa_limb_grad)"/>
-  <circle cx="842" cy="365" r="4" fill="#ffffff" opacity="0.85"/>
-
-  <!-- Gotícula 3 (Próxima ao pé esquerdo) -->
-  <circle cx="280" cy="850" r="14" fill="url(#embasa_limb_grad)"/>
-  <circle cx="276" cy="846" r="4.5" fill="#ffffff" opacity="0.9"/>
-
-  <!-- Gotícula 4 (Próxima ao pé direito) -->
-  <circle cx="750" cy="880" r="16" fill="url(#embasa_limb_grad)"/>
-  <circle cx="745" cy="875" r="5" fill="#ffffff" opacity="0.9"/>
-
-  <!-- Gotícula 5 (Pequena faísca) -->
-  <circle cx="780" cy="530" r="9" fill="#38c6ff"/>
-  <circle cx="778" cy="528" r="3" fill="#ffffff"/>
+  <circle cx="180" cy="380" r="16" fill="#80d8ff" stroke="#005580" stroke-width="6"/>
+  <circle cx="174" cy="374" r="5" fill="#ffffff"/>
+  <circle cx="840" cy="280" r="20" fill="#80d8ff" stroke="#005580" stroke-width="6"/>
+  <circle cx="832" cy="272" r="7" fill="#ffffff"/>
 </g>
 `;
 

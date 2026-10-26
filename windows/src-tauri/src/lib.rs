@@ -814,13 +814,24 @@ fn create_settings_window(app: &AppHandle) {
 }
 
 pub fn show_settings_window(app: &AppHandle) {
-    let Some(win) = app.get_webview_window("settings") else {
-        log::line("settings window missing");
-        return;
+    let focus_win = |win: &tauri::WebviewWindow| {
+        let _ = win.unminimize();
+        let _ = win.show();
+        let _ = win.set_always_on_top(true);
+        let _ = win.set_focus();
+        let _ = win.set_always_on_top(false);
     };
-    let _ = win.unminimize();
-    let _ = win.show();
-    let _ = win.set_focus();
+
+    if let Some(win) = app.get_webview_window("settings") {
+        focus_win(&win);
+    } else {
+        create_settings_window(app);
+        if let Some(win) = app.get_webview_window("settings") {
+            focus_win(&win);
+        } else {
+            log::line("settings window missing and could not be created");
+        }
+    }
 }
 
 #[tauri::command]

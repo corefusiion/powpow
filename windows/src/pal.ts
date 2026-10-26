@@ -2295,9 +2295,12 @@ async function press(action: string) {
       return;
     case "pause":
     case "new-chat":
-    case "settings":
       setCard(false);
       callPal(action);
+      return;
+    case "settings":
+      setCard(false);
+      void Bridge.openSettingsWindow();
       return;
   }
 }

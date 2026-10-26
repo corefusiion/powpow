@@ -1584,64 +1584,78 @@ function generalSection(): HTMLElement {
 // ── Boot ──────────────────────────────────────────────────────────────────────
 
 async function main() {
-  const boot = await Bridge.boot();
-  if (boot) {
-    settings = { ...settings, ...boot.settings };
-    version = boot.version;
-  }
-  document.documentElement.dataset.theme = settings.theme ?? "onyx";
-  const status = (await Bridge.hooksStatus()) ?? {
-    installed: false, settingsPath: "", hookPath: "", hookReady: false,
-  };
-
-  const hasKey = (await Bridge.secretPresent("anthropic-api-key")) ?? false;
-  const hasGeminiKey = (await Bridge.secretPresent("gemini-api-key")) ?? false;
-  const hasOpenRouterKey = (await Bridge.secretPresent("openrouter-api-key")) ?? false;
-  const hasOrcaRouterKey = (await Bridge.secretPresent("orcarouter-api-key")) ?? false;
-  const hasTokenRouterKey = (await Bridge.secretPresent("tokenrouter-api-key")) ?? false;
-  const geminiStatus = (await Bridge.geminiHooksStatus()) ?? {
-    installed: false, settingsPath: "", hookPath: "", hookReady: false,
-  };
-  const agyStatus = (await Bridge.agyHooksStatus()) ?? {
-    installed: false, settingsPath: "", hookPath: "", hookReady: false,
-  };
-
-  const keys = [
-    "stripe-api-key", "github-token", "vercel-token",
-    "n8n-url", "n8n-api-key", "resend-api-key", "notion-api-key", "calcom-api-key",
-    "gmail-email", "gmail-app-password", "gmail-oauth",
-    "outlook-email", "outlook-app-password", "outlook-oauth",
-  ];
-  const present: Record<string, boolean> = {};
-  for (const k of keys) present[k] = (await Bridge.secretPresent(k)) ?? false;
-
-  const agents = await Bridge.agentHooksList();
-  settings = { ...settings, ...sanitizeDeclared(settings) };
-  const connected: Record<string, boolean> = { ...((await Bridge.agentHooksStatus()) ?? {}) };
-  for (const def of availablePills()) {
-    if (def.connect.kind === "key") {
-      connected[def.id] = present[def.connect.key] ?? (await Bridge.secretPresent(def.connect.key)) ?? false;
+  try {
+    const boot = await Bridge.boot();
+    if (boot) {
+      settings = { ...settings, ...boot.settings };
+      version = boot.version;
     }
-  }
+    document.documentElement.dataset.theme = settings.theme ?? "onyx";
+    const status = (await Bridge.hooksStatus()) ?? {
+      installed: false, settingsPath: "", hookPath: "", hookReady: false,
+    };
 
-  clear(root);
-  root.append(
-    h("h1", {}, h("span", { text: "Powpow" }), h("span", { class: "version", text: version })),
-    claudeSection(status),
-    geminiSection(geminiStatus),
-    agySection(agyStatus),
-    agentsSection(agents),
-    activePillsSection(connected),
-    apiSection(hasKey, hasGeminiKey, hasOpenRouterKey, hasOrcaRouterKey, hasTokenRouterKey),
-    gmailSection(present),
-    outlookSection(present),
-    integrationsSection(present),
-    generalSection(),
-    h("div", {
-      class: "hint",
-      text: t("No telemetry. Network requests only go to the services you configure yourself."),
-    }),
-  );
+    const hasKey = (await Bridge.secretPresent("anthropic-api-key")) ?? false;
+    const hasGeminiKey = (await Bridge.secretPresent("gemini-api-key")) ?? false;
+    const hasOpenRouterKey = (await Bridge.secretPresent("openrouter-api-key")) ?? false;
+    const hasOrcaRouterKey = (await Bridge.secretPresent("orcarouter-api-key")) ?? false;
+    const hasTokenRouterKey = (await Bridge.secretPresent("tokenrouter-api-key")) ?? false;
+    const geminiStatus = (await Bridge.geminiHooksStatus()) ?? {
+      installed: false, settingsPath: "", hookPath: "", hookReady: false,
+    };
+    const agyStatus = (await Bridge.agyHooksStatus()) ?? {
+      installed: false, settingsPath: "", hookPath: "", hookReady: false,
+    };
+
+    const keys = [
+      "stripe-api-key", "github-token", "vercel-token",
+      "n8n-url", "n8n-api-key", "resend-api-key", "notion-api-key", "calcom-api-key",
+      "gmail-email", "gmail-app-password", "gmail-oauth",
+      "outlook-email", "outlook-app-password", "outlook-oauth",
+    ];
+    const present: Record<string, boolean> = {};
+    for (const k of keys) present[k] = (await Bridge.secretPresent(k)) ?? false;
+
+    const agents = await Bridge.agentHooksList();
+    settings = { ...settings, ...sanitizeDeclared(settings) };
+    const connected: Record<string, boolean> = { ...((await Bridge.agentHooksStatus()) ?? {}) };
+    for (const def of availablePills()) {
+      if (def.connect.kind === "key") {
+        connected[def.id] = present[def.connect.key] ?? (await Bridge.secretPresent(def.connect.key)) ?? false;
+      }
+    }
+
+    clear(root);
+    root.append(
+      h("h1", {}, h("span", { text: "Powpow" }), h("span", { class: "version", text: version })),
+      claudeSection(status),
+      geminiSection(geminiStatus),
+      agySection(agyStatus),
+      agentsSection(agents),
+      activePillsSection(connected),
+      apiSection(hasKey, hasGeminiKey, hasOpenRouterKey, hasOrcaRouterKey, hasTokenRouterKey),
+      gmailSection(present),
+      outlookSection(present),
+      integrationsSection(present),
+      generalSection(),
+      h("div", {
+        class: "hint",
+        text: t("No telemetry. Network requests only go to the services you configure yourself."),
+      }),
+    );
+  } catch (err) {
+    console.error("[powpow-settings] Initialization error:", err);
+    clear(root);
+    root.append(
+      h("h1", {}, h("span", { text: "Powpow" })),
+      generalSection(),
+      h("div", {
+        class: "hint",
+        style: "color: #f87171; margin-top: 12px;",
+        text: "Configurações carregadas com opções básicas.",
+      }),
+    );
+  }
 
   void onEvent<Settings>("settings-changed", (s) => {
     settings = { ...settings, ...s };

@@ -136,6 +136,14 @@ export class MascotSelector {
         img.style.maxWidth = '90px';
         img.style.objectFit = 'contain';
         previewWrapper.appendChild(img);
+      } else if (mascot.id === 'embasa') {
+        const dp = document.createElement('dot-pal') as any;
+        dp.character = 'embasa';
+        dp.size = '92';
+        dp.bubble = 'none';
+        dp.style.width = '92px';
+        dp.style.height = '92px';
+        previewWrapper.appendChild(dp);
       } else if (mascot.isVectorAvatar) {
         // High fidelity Embasa vector
         const embasa = new EmbasaAvatarElement();

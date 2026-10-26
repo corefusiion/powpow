@@ -252,131 +252,142 @@ export const characters = {
   },
 
   embasa: {
-    label: 'Embasa (Gota)',
-    color: '#0495f4',
+    label: 'Embasa (Gotinha 2D)',
+    color: '#00b0ff',
     fur: false,
     tap: 'jump',
     look: 8,
-    mouth: [100, 138],
-    cheek: 42,
-    eyes: { at: [[76, 108], [124, 108]], r: 15, own: ['wide'] },
+    mouth: [100, 142],
+    cheek: 38,
+    eyes: { at: [[78, 114], [122, 114]], r: 13, own: ['wide'] },
     render: ({ id }) => ({
       defs: `
-        <radialGradient id="${id('drop_body')}" cx="36%" cy="28%" r="72%">
-          <stop offset="0%" stop-color="#8ae0ff"/>
-          <stop offset="22%" stop-color="#34c2fb"/>
-          <stop offset="58%" stop-color="#0495f4"/>
-          <stop offset="86%" stop-color="#0354b0"/>
-          <stop offset="100%" stop-color="#012b6b"/>
-        </radialGradient>
-        <radialGradient id="${id('drop_sclera')}" cx="38%" cy="32%" r="68%">
-          <stop offset="0%" stop-color="#ffffff"/>
-          <stop offset="82%" stop-color="#f0f8ff"/>
-          <stop offset="100%" stop-color="#d4e8fc"/>
-        </radialGradient>
-        <linearGradient id="${id('ribbon_grad')}" x1="0%" y1="0%" x2="100%" y2="100%">
-          <stop offset="0%" stop-color="#6dc152"/>
-          <stop offset="28%" stop-color="#f7f14e"/>
-          <stop offset="52%" stop-color="#eb7200"/>
-          <stop offset="76%" stop-color="#1fbcf0"/>
-          <stop offset="100%" stop-color="#0454b0"/>
-        </linearGradient>
-        <linearGradient id="${id('limb_grad')}" x1="0%" y1="0%" x2="0%" y2="100%">
-          <stop offset="0%" stop-color="#38c6ff"/>
-          <stop offset="100%" stop-color="#0467c4"/>
-        </linearGradient>
-        <linearGradient id="${id('foot_grad')}" x1="0%" y1="0%" x2="100%" y2="100%">
-          <stop offset="0%" stop-color="#24baf8"/>
-          <stop offset="100%" stop-color="#034898"/>
+        <style>
+          @keyframes embasa-idle-float {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-5px); }
+          }
+          @keyframes embasa-curl {
+            0%, 100% { transform: rotate(0deg); }
+            50% { transform: rotate(3.5deg); }
+          }
+          @keyframes embasa-sparkle {
+            0%, 100% { transform: scale(0.9); opacity: 0.5; }
+            50% { transform: scale(1.15); opacity: 0.95; }
+          }
+          .embasa-actor {
+            animation: embasa-idle-float 3.2s ease-in-out infinite;
+            transform-origin: 50% 90%;
+          }
+          .embasa-curl-tip {
+            animation: embasa-curl 2.6s ease-in-out infinite;
+            transform-origin: 100px 32px;
+          }
+          .embasa-star {
+            animation: embasa-sparkle 2.2s ease-in-out infinite;
+          }
+        </style>
+        <!-- Soft 2D drop shadow -->
+        <linearGradient id="${id('embasa_body')}" x1="0%" y1="0%" x2="0%" y2="100%">
+          <stop offset="0%" stop-color="#40c4ff"/>
+          <stop offset="65%" stop-color="#00b0ff"/>
+          <stop offset="100%" stop-color="#0088cc"/>
         </linearGradient>
       `,
       body: `
-        <!-- Soft grounding shadow -->
-        <ellipse cx="100" cy="190" rx="46" ry="6" fill="#000000" opacity="0.18"/>
-        <!-- Feet resting safely on the baseline, never clipped -->
-        <g fill="url(#${id('foot_grad')})">
-          <ellipse cx="76" cy="186" rx="16" ry="9" transform="rotate(-6 76 186)"/>
-          <ellipse cx="124" cy="186" rx="16" ry="9" transform="rotate(6 124 186)"/>
-        </g>
-        <g fill="#99e8ff" opacity="0.8">
-          <ellipse cx="74" cy="184" rx="9" ry="3.5" transform="rotate(-6 74 184)"/>
-          <ellipse cx="122" cy="184" rx="9" ry="3.5" transform="rotate(6 122 184)"/>
-        </g>
-        <!-- Fluid Ribbon back pass -->
-        <path fill="none" stroke="url(#${id('ribbon_grad')})" stroke-width="10" stroke-linecap="round" opacity="0.75"
-          d="M38 140 C18 152 24 176 50 184 C80 190 120 190 150 180 C174 168 178 148 162 136"/>
-        <!-- Main 3D Water Droplet Body -->
-        <path fill="url(#${id('drop_body')})" stroke="#022e6b" stroke-width="1.2"
-          d="M100 20 C94 48 40 92 36 128 C32 164 62 178 100 178 C138 178 168 164 164 128 C160 92 106 48 100 20 Z"/>
-        <!-- 3D Specular Highlight Crescent (Glossy Water Droplet) -->
-        <path fill="#ffffff" opacity="0.45"
-          d="M100 26 C96 48 46 92 44 124 C42 148 54 162 66 166 C50 156 46 136 50 114 C56 84 94 36 100 26 Z"/>
-        <ellipse cx="84" cy="62" rx="7" ry="16" transform="rotate(-30 84 62)" fill="#ffffff" opacity="0.65"/>
-        <circle cx="83" cy="58" r="3.2" fill="#ffffff" opacity="0.95"/>
-        <!-- Soft inner reflection bottom right -->
-        <path fill="#38bdf8" opacity="0.35" d="M142 120 C154 140 152 165 136 174 C148 164 150 142 142 120 Z"/>
-        <!-- Left Arm (Active pose) -->
-        <g fill="url(#${id('limb_grad')})">
-          <path d="M42 126 C28 130 18 144 22 156 C24 162 32 162 38 154 C44 146 48 136 48 126 Z"/>
-          <circle cx="24" cy="154" r="7"/>
-          <circle cx="22" cy="150" r="3.5" fill="#8ae0ff"/>
-        </g>
-        <!-- Right Arm (Friendly waving / gesturing greeting) -->
-        <g fill="url(#${id('limb_grad')})">
-          <path d="M158 126 C172 120 184 108 186 96 C186 90 176 90 172 98 C166 108 160 118 152 126 Z"/>
-          <circle cx="184" cy="94" r="7"/>
-          <circle cx="188" cy="88" r="3.8"/>
-          <circle cx="182" cy="92" r="3.2" fill="#8ae0ff"/>
+        <!-- Soft Grounding Shadow -->
+        <ellipse cx="100" cy="192" rx="42" ry="7" fill="#000000" opacity="0.16"/>
+        
+        <g class="embasa-actor">
+          <!-- Feet (cute soft rounded water paws) -->
+          <ellipse cx="78" cy="184" rx="14" ry="8" fill="#0088cc" stroke="#005580" stroke-width="2.5"/>
+          <ellipse cx="122" cy="184" rx="14" ry="8" fill="#0088cc" stroke="#005580" stroke-width="2.5"/>
+          <ellipse cx="76" cy="182" rx="7" ry="3.5" fill="#80d8ff"/>
+          <ellipse cx="120" cy="182" rx="7" ry="3.5" fill="#80d8ff"/>
+
+          <!-- Main 2D Gotinha Body (Clean modern silhouette with subtle curl) -->
+          <path class="embasa-curl-tip"
+            d="M100 24 C104 20 114 20 116 28 C118 36 108 44 100 52 C70 82 40 120 40 152 C40 178 66 186 100 186 C134 186 160 178 160 152 C160 120 130 82 100 52 Z"
+            fill="url(#${id('embasa_body')})" stroke="#005580" stroke-width="3.5" stroke-linejoin="round"/>
+
+          <!-- 2D Glossy Highlight Curve (Clean Cartoon Edge) -->
+          <path d="M96 38 C74 72 52 110 52 144 C52 164 68 174 88 176"
+            fill="none" stroke="#ffffff" stroke-width="4.5" stroke-linecap="round" opacity="0.65"/>
+          <circle cx="98" cy="38" r="3" fill="#ffffff" opacity="0.85"/>
+
+          <!-- Left Arm (Cute resting hand) -->
+          <path d="M48 140 C34 144 26 156 32 166 C36 172 44 168 50 158 Z"
+            fill="#0099e6" stroke="#005580" stroke-width="3" stroke-linejoin="round"/>
+
+          <!-- Right Arm (Friendly wave gesture) -->
+          <path d="M152 140 C166 136 178 126 180 116 C180 108 170 112 164 122 C158 132 154 138 152 140 Z"
+            fill="#0099e6" stroke="#005580" stroke-width="3" stroke-linejoin="round"/>
+          <circle cx="178" cy="114" r="5" fill="#0099e6" stroke="#005580" stroke-width="2.5"/>
         </g>
       `,
       accessories: `
-        <!-- Signature Embasa Fluid Ribbon (front swirl) -->
-        <path fill="none" stroke="url(#${id('ribbon_grad')})" stroke-width="12" stroke-linecap="round"
-          d="M34 142 C64 162 136 162 166 142"/>
-        <path fill="none" stroke="#6dc152" stroke-width="3" stroke-linecap="round" opacity="0.92"
-          d="M40 146 C66 164 134 164 160 146"/>
-        <!-- Ambient Water Droplets & Splashes -->
-        <circle cx="34" cy="64" r="4.5" fill="#38bdf8" opacity="0.85"/>
-        <circle cx="33" cy="62" r="1.8" fill="#ffffff" opacity="0.95"/>
-        <circle cx="166" cy="68" r="5" fill="#38bdf8" opacity="0.85"/>
-        <circle cx="164.5" cy="66" r="2" fill="#ffffff" opacity="0.95"/>
-        <circle cx="174" cy="132" r="3.5" fill="#6dc152" opacity="0.75"/>
-        <circle cx="28" cy="116" r="3.2" fill="#1fbcf0" opacity="0.75"/>
+        <g class="embasa-actor">
+          <!-- Embasa Signature Tricolor Wave Ribbon (Clean 2D Bandeira da Bahia / Água) -->
+          <g>
+            <!-- Green Ribbon Stripe -->
+            <path d="M46 154 Q100 176 154 154" fill="none" stroke="#43a047" stroke-width="8" stroke-linecap="round"/>
+            <!-- Yellow Ribbon Stripe -->
+            <path d="M48 157 Q100 177 152 157" fill="none" stroke="#fbc02d" stroke-width="4.5" stroke-linecap="round"/>
+            <!-- Orange Accent Stripe -->
+            <path d="M50 160 Q100 178 150 160" fill="none" stroke="#fb8c00" stroke-width="2.5" stroke-linecap="round"/>
+            <!-- Center Water Gem Badge -->
+            <ellipse cx="100" cy="168" rx="8" ry="10" fill="#ffffff" stroke="#005580" stroke-width="2"/>
+            <path d="M100 162 C96 166 94 170 94 172 C94 176 96 177 100 177 C104 177 106 176 106 172 C106 170 104 166 100 162 Z" fill="#00b0ff"/>
+          </g>
+
+          <!-- Floating Sparkling Water Pearls (Subtle ambient magic) -->
+          <g class="embasa-star">
+            <circle cx="34" cy="74" r="3.5" fill="#80d8ff" stroke="#005580" stroke-width="1.5"/>
+            <circle cx="33" cy="73" r="1.2" fill="#ffffff"/>
+            <circle cx="166" cy="78" r="4" fill="#80d8ff" stroke="#005580" stroke-width="1.5"/>
+            <circle cx="164.5" cy="76.5" r="1.5" fill="#ffffff"/>
+            <circle cx="172" cy="138" r="2.5" fill="#b9f6ca" opacity="0.85"/>
+          </g>
+        </g>
       `,
       face: `
-        <!-- Cheerful Eyebrows -->
-        <g fill="none" stroke="#0454b0" stroke-width="3.5" stroke-linecap="round">
-          <path d="M64 88 Q76 81 88 88"/>
-          <path d="M112 88 Q124 81 136 88"/>
-        </g>
-        <!-- Big Expressive Pixar Eyes (Follows cursor smoothly!) -->
-        <g class="dp-blink">
-          <!-- Left Eye Sclera (White) -->
-          <ellipse cx="76" cy="108" rx="14" ry="17" fill="url(#${id('drop_sclera')})" stroke="#02285a" stroke-width="1.3"/>
-          <!-- Left Eye Pupil & Iris (Tracks Mouse Cursor) -->
-          <g class="dp-look">
-            <ellipse cx="76.5" cy="108" rx="9.5" ry="12.5" fill="#021432"/>
-            <!-- Vibrant blue iris reflection crescent -->
-            <path d="M69 111 A8.5 9.5 0 0 0 84 111 A7.5 8.5 0 0 1 71 109 Z" fill="#0495f4"/>
-            <ellipse cx="77.5" cy="112" rx="5" ry="3.5" fill="#38bdf8" opacity="0.85"/>
-            <!-- Dual Specular Glints -->
-            ${eyeShine(72.5, 102.5, 3.8)}
-            ${eyeShine(80.5, 113.5, 1.8)}
+        <g class="embasa-actor">
+          <!-- Rosy Blushing Cheeks (Kawaii) -->
+          <ellipse cx="62" cy="132" rx="9" ry="5.5" fill="#ff6b8b" opacity="0.5"/>
+          <ellipse cx="138" cy="132" rx="9" ry="5.5" fill="#ff6b8b" opacity="0.5"/>
+
+          <!-- Sweet Friendly Eyebrows -->
+          <g fill="none" stroke="#005580" stroke-width="3" stroke-linecap="round">
+            <path d="M68 98 Q78 92 88 98"/>
+            <path d="M112 98 Q122 92 132 98"/>
           </g>
-        </g>
-        <g class="dp-blink">
-          <!-- Right Eye Sclera (White) -->
-          <ellipse cx="124" cy="108" rx="14" ry="17" fill="url(#${id('drop_sclera')})" stroke="#02285a" stroke-width="1.3"/>
-          <!-- Right Eye Pupil & Iris (Tracks Mouse Cursor) -->
+
+          <!-- Big Charming 2D Anime/Cartoon Eyes (Follows cursor smoothly!) -->
           <g class="dp-look">
-            <ellipse cx="123.5" cy="108" rx="9.5" ry="12.5" fill="#021432"/>
-            <!-- Vibrant blue iris reflection crescent -->
-            <path d="M116 111 A8.5 9.5 0 0 0 131 111 A7.5 8.5 0 0 1 118 109 Z" fill="#0495f4"/>
-            <ellipse cx="122.5" cy="112" rx="5" ry="3.5" fill="#38bdf8" opacity="0.85"/>
-            <!-- Dual Specular Glints -->
-            ${eyeShine(119.5, 102.5, 3.8)}
-            ${eyeShine(127.5, 113.5, 1.8)}
+            <!-- Left Eye -->
+            <g class="dp-blink">
+              <ellipse cx="78" cy="114" rx="12" ry="15" fill="#0a192f" stroke="#005580" stroke-width="1.5"/>
+              <!-- Vibrant Cyan Iris Glint Arc -->
+              <path d="M70 118 A9 11 0 0 0 86 118 A7.5 9 0 0 1 72 116 Z" fill="#00e5ff"/>
+              <!-- Twin Sparkle Glints -->
+              ${eyeShine(74.5, 108, 4.2)}
+              ${eyeShine(82.5, 119, 2.0)}
+            </g>
+
+            <!-- Right Eye -->
+            <g class="dp-blink">
+              <ellipse cx="122" cy="114" rx="12" ry="15" fill="#0a192f" stroke="#005580" stroke-width="1.5"/>
+              <!-- Vibrant Cyan Iris Glint Arc -->
+              <path d="M114 118 A9 11 0 0 0 130 118 A7.5 9 0 0 1 116 116 Z" fill="#00e5ff"/>
+              <!-- Twin Sparkle Glints -->
+              ${eyeShine(118.5, 108, 4.2)}
+              ${eyeShine(126.5, 119, 2.0)}
+            </g>
           </g>
+
+          <!-- Cute Cheerful Open Smile with Tongue -->
+          <path d="M90 136 Q100 148 110 136" fill="#7a001a" stroke="#005580" stroke-width="2.5" stroke-linecap="round"/>
+          <path d="M94 140 Q100 147 106 140" fill="#ff5252"/>
         </g>
       `,
     }),

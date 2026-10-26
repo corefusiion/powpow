@@ -24,10 +24,10 @@ export const MASCOTS_CATALOG: MascotInfo[] = [
   },
   {
     id: 'embasa',
-    name: 'Gota Embasa',
+    name: 'Gota Embasa (2D Animada)',
     category: 'embasa',
-    description: 'Mascote oficial 3D em formato de gota d\'água com fita multicolorida e olhos expressivos.',
-    color: '#0495f4',
+    description: 'Mascote oficial 2D em formato de gota d\'água com animação suave, fita tricolor da Bahia e traços cartoon modernos.',
+    color: '#00b0ff',
     isVectorAvatar: true,
   },
 
