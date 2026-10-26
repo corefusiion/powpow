@@ -121,6 +121,63 @@
         </div>
       </div>
 
+      <!-- Floating Soundscape Mini-Player Popup Beside the Mascot -->
+      <div id="pal-soundscape-popup" class="pal-soundscape-popup" hidden>
+        <div class="pal-soundscape-header">
+          <div class="pal-soundscape-header-info">
+            <span class="pal-soundscape-header-icon">🎧</span>
+            <div>
+              <div class="pal-soundscape-title">Soundscape & Foco</div>
+              <div id="pal-soundscape-style-badge" class="pal-soundscape-badge">Lo-Fi Beats</div>
+            </div>
+          </div>
+          <button id="pal-soundscape-close-btn" class="pal-soundscape-close-btn" type="button" aria-label="Fechar">✕</button>
+        </div>
+
+        <div class="pal-soundscape-now-playing">
+          <div class="pal-soundscape-disc-wrap">
+            <div id="pal-soundscape-disc" class="pal-soundscape-disc">🎵</div>
+          </div>
+          <div class="pal-soundscape-meta">
+            <div id="pal-soundscape-track-title" class="pal-soundscape-track-title">Midnight Rain & Chillhop</div>
+            <div id="pal-soundscape-track-artist" class="pal-soundscape-track-artist">Powpow Chill Radio</div>
+          </div>
+        </div>
+
+        <!-- Progress bar and time -->
+        <div class="pal-soundscape-progress-row">
+          <span id="pal-soundscape-time-curr" class="pal-soundscape-time">0:00</span>
+          <div id="pal-soundscape-progress-track" class="pal-soundscape-progress-track">
+            <div id="pal-soundscape-progress-fill" class="pal-soundscape-progress-fill"></div>
+          </div>
+          <span id="pal-soundscape-time-dur" class="pal-soundscape-time">3:15</span>
+        </div>
+
+        <!-- Transport controls: Prev, Play/Pause, Next -->
+        <div class="pal-soundscape-controls">
+          <button id="pal-soundscape-prev-btn" class="pal-soundscape-ctrl-btn" type="button" title="Faixa Anterior">⏮</button>
+          <button id="pal-soundscape-play-btn" class="pal-soundscape-ctrl-btn pal-soundscape-play-main" type="button" title="Reproduzir / Pausar">▶</button>
+          <button id="pal-soundscape-next-btn" class="pal-soundscape-ctrl-btn" type="button" title="Próxima Faixa">⏭</button>
+        </div>
+
+        <!-- Style / Genre selector buttons -->
+        <div class="pal-soundscape-styles" id="pal-soundscape-styles">
+          <button class="pal-soundscape-style-btn active" data-style="lofi" type="button">☕ Lo-Fi</button>
+          <button class="pal-soundscape-style-btn" data-style="piano" type="button">🎹 Piano</button>
+          <button class="pal-soundscape-style-btn" data-style="acoustic" type="button">🎸 Violão</button>
+          <button class="pal-soundscape-style-btn" data-style="ambient" type="button">🌌 Ambiente</button>
+          <button class="pal-soundscape-style-btn" data-style="rain" type="button">🌧️ Chuva</button>
+          <button class="pal-soundscape-style-btn" data-style="ocean" type="button">🌊 Oceano</button>
+        </div>
+
+        <!-- Volume row -->
+        <div class="pal-soundscape-vol-row">
+          <span class="pal-soundscape-vol-icon">🔈</span>
+          <input id="pal-soundscape-vol-slider" class="pal-soundscape-vol-slider" type="range" min="0" max="100" value="50" />
+          <span id="pal-soundscape-vol-val" class="pal-soundscape-vol-val">50%</span>
+        </div>
+      </div>
+
       <!-- Interactive Screen Region Selector Overlay -->
       <div id="pal-selector-overlay" class="pal-selector-overlay" hidden>
         <div class="pal-selector-instructions">
@@ -152,7 +209,6 @@
         <div class="pal-sep"></div>
         <button class="pal-item" data-action="pomodoro" data-label="Pomodoro">🍅 Modo Foco (Pomodoro)</button>
         <button class="pal-item" data-action="clipboard" data-label="Clipboard">📋 Área de Transferência</button>
-        <button class="pal-item" data-action="wellness" data-label="Wellness">💧 Hidratação & Bem-Estar</button>
         <button class="pal-item" data-action="soundscape" data-label="Soundscape">🎧 Lo-Fi Soundscape</button>
         <button class="pal-item" data-action="recap" data-label="Daily recap">📔 Diário de Bordo (Daily)</button>
         <div class="pal-sep"></div>

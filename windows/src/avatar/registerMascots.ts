@@ -41,6 +41,108 @@ export function registerAllPageMascots() {
       continue;
     }
 
+    if (mascot.id === 'vault') {
+      registerCharacter('vault', {
+        label: 'Mascote Original',
+        color: '#1E6BB8',
+        fur: false,
+        tap: 'jump',
+        look: 4,
+        mouth: [100, 160],
+        cheek: 36,
+        render: () => ({
+          defs: `
+            <style>
+              .dp-vault-pose { display: none; }
+              .dp-vault-idle { display: block; }
+              :host([data-pose="walk"]) .dp-vault-idle,
+              .dp-root[data-pose="walk"] .dp-vault-idle { display: none !important; }
+              :host([data-pose="walk"]) .dp-vault-walk,
+              .dp-root[data-pose="walk"] .dp-vault-walk { display: block !important; }
+              :host([data-pose="sit"]) .dp-vault-idle,
+              .dp-root[data-pose="sit"] .dp-vault-idle { display: none !important; }
+              :host([data-pose="sit"]) .dp-vault-sit,
+              .dp-root[data-pose="sit"] .dp-vault-sit { display: block !important; }
+              :host([data-pose="think"]) .dp-vault-idle,
+              .dp-root[data-pose="think"] .dp-vault-idle { display: none !important; }
+              :host([data-pose="think"]) .dp-vault-think,
+              .dp-root[data-pose="think"] .dp-vault-think { display: block !important; }
+              :host([data-pose="celebrate"]) .dp-vault-idle,
+              .dp-root[data-pose="celebrate"] .dp-vault-idle { display: none !important; }
+              :host([data-pose="celebrate"]) .dp-vault-celebrate,
+              .dp-root[data-pose="celebrate"] .dp-vault-celebrate { display: block !important; }
+            </style>
+          `,
+          body: `
+            <!-- Sombra de aterramento -->
+            <ellipse cx="100" cy="196" rx="46" ry="8" fill="#000000" opacity="0.16"/>
+            <!-- Mascote Oficial 100% Autêntico com Poses Dinâmicas -->
+            <g class="dp-actor dp-vault-official">
+              <image class="dp-vault-pose dp-vault-idle" href="/avatar/vaultboy/official_frontal_128.png" x="25" y="15" width="150" height="185" preserveAspectRatio="contain"/>
+              <image class="dp-vault-pose dp-vault-walk" href="/avatar/vaultboy/walking_128.png" x="25" y="15" width="150" height="185" preserveAspectRatio="contain"/>
+              <image class="dp-vault-pose dp-vault-sit" href="/avatar/vaultboy/sitting_128.png" x="25" y="15" width="150" height="185" preserveAspectRatio="contain"/>
+              <image class="dp-vault-pose dp-vault-think" href="/avatar/vaultboy/thinking_128.png" x="25" y="15" width="150" height="185" preserveAspectRatio="contain"/>
+              <image class="dp-vault-pose dp-vault-celebrate" href="/avatar/vaultboy/celebrating_128.png" x="25" y="15" width="150" height="185" preserveAspectRatio="contain"/>
+            </g>
+          `,
+          accessories: '',
+          face: '',
+        }),
+      });
+      continue;
+    }
+
+    if (mascot.id === 'doraemon') {
+      registerCharacter('doraemon', {
+        label: 'Doraemon',
+        color: '#009fe8',
+        fur: false,
+        tap: 'jump',
+        look: 4,
+        mouth: [100, 160],
+        cheek: 36,
+        render: () => ({
+          defs: `
+            <style>
+              .dp-dora-pose { display: none; }
+              .dp-dora-idle { display: block; }
+              :host([data-pose="walk"]) .dp-dora-idle,
+              .dp-root[data-pose="walk"] .dp-dora-idle { display: none !important; }
+              :host([data-pose="walk"]) .dp-dora-walk,
+              .dp-root[data-pose="walk"] .dp-dora-walk { display: block !important; }
+              :host([data-pose="sit"]) .dp-dora-idle,
+              .dp-root[data-pose="sit"] .dp-dora-idle { display: none !important; }
+              :host([data-pose="sit"]) .dp-dora-sit,
+              .dp-root[data-pose="sit"] .dp-dora-sit { display: block !important; }
+              :host([data-pose="think"]) .dp-dora-idle,
+              .dp-root[data-pose="think"] .dp-dora-idle { display: none !important; }
+              :host([data-pose="think"]) .dp-dora-think,
+              .dp-root[data-pose="think"] .dp-dora-think { display: block !important; }
+              :host([data-pose="celebrate"]) .dp-dora-idle,
+              .dp-root[data-pose="celebrate"] .dp-dora-idle { display: none !important; }
+              :host([data-pose="celebrate"]) .dp-dora-celebrate,
+              .dp-root[data-pose="celebrate"] .dp-dora-celebrate { display: block !important; }
+            </style>
+          `,
+          body: `
+            <!-- Sombra de aterramento -->
+            <ellipse cx="100" cy="196" rx="46" ry="8" fill="#000000" opacity="0.16"/>
+            <!-- Doraemon Oficial Dinâmico -->
+            <g class="dp-actor dp-doraemon">
+              <image class="dp-dora-pose dp-dora-idle" href="/avatar/doraemon/shime1.png" x="25" y="15" width="150" height="185" preserveAspectRatio="contain"/>
+              <image class="dp-dora-pose dp-dora-walk" href="/avatar/doraemon/action-walk-01.png" x="25" y="15" width="150" height="185" preserveAspectRatio="contain"/>
+              <image class="dp-dora-pose dp-dora-sit" href="/avatar/doraemon/action-rest-01.png" x="25" y="15" width="150" height="185" preserveAspectRatio="contain"/>
+              <image class="dp-dora-pose dp-dora-think" href="/avatar/doraemon/action-coding_thinking-01.png" x="25" y="15" width="150" height="185" preserveAspectRatio="contain"/>
+              <image class="dp-dora-pose dp-dora-celebrate" href="/avatar/doraemon/action-take_copter-01.png" x="25" y="15" width="150" height="185" preserveAspectRatio="contain"/>
+            </g>
+          `,
+          accessories: '',
+          face: '',
+        }),
+      });
+      continue;
+    }
+
     registerCharacter(mascot.id, {
       label: mascot.name,
       color: mascot.color,

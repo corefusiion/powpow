@@ -343,9 +343,152 @@
   </head>
   <body>
     <header>
-      <h1>Avatar Interativo Embasa</h1>
-      <p>Mascote gota d'água 3D oficial da Embasa com ribbon característica, proporções fiéis, olhar dinâmico com mouse tracking, animações leves em SVG nativo e total integração ao aplicativo.</p>
+      <h1>Playground de Avatares & Rig 2D Articulado</h1>
+      <p>Ambiente de validação visual e calibração de juntas anatômicas para os mascotes oficiais da aplicação.</p>
     </header>
+
+    <!-- SEÇÃO PRINCIPAL: RIG 2D ARTICULADO (VAULT MASCOT) -->
+    <div class="vault-rig-section" style="max-width: 1100px; width: 100%; margin-bottom: 32px;">
+      <div style="background: var(--bg-panel); border: 2px solid #38bdf8; border-radius: 20px; padding: 24px; box-shadow: 0 16px 40px rgba(0,0,0,0.5);">
+        <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 16px; margin-bottom: 20px; flex-wrap: wrap; gap: 12px;">
+          <div>
+            <h2 style="font-size: 22px; font-weight: 800; color: #f8fafc; display: flex; align-items: center; gap: 8px;">
+              <span>🦴 Rig 2D Articulado & Anatômico (Mascote Cartoon)</span>
+              <span style="font-size: 11px; padding: 3px 8px; background: #FFD700; color: #000; font-weight: 800; border-radius: 12px;">ETAPA 1 - VALIDAÇÃO</span>
+            </h2>
+            <p style="font-size: 13px; color: var(--text-sub); margin-top: 4px;">
+              Conforme <code>melhoria.txt</code>: partes corporais separadas com juntas circulares sobrepostas (sem furos), pivôs anatômicos, rotação independente e reconstrução da pose oficial com polegar para cima.
+            </p>
+          </div>
+          <div style="display: flex; gap: 10px;">
+            <button id="btn-toggle-skeleton" class="btn" style="background: rgba(0,255,204,0.15); border-color: #00FFCC; color: #00FFCC; font-weight: 700;">
+              👁️ Exibir Pivôs & Esqueleto
+            </button>
+            <button id="btn-reset-rig-pose" class="btn" style="background: rgba(255,215,0,0.2); border-color: #FFD700; color: #FFD700; font-weight: 700;">
+              ↺ Pose Frontal Original
+            </button>
+          </div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 360px 1fr; gap: 24px; align-items: start;">
+          <!-- Mount do Personagem Reconstruído -->
+          <div style="background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.08); border-radius: 16px; padding: 16px; display: flex; flex-direction: column; align-items: center; min-height: 480px; position: relative;">
+            <div id="vault-avatar-mount" style="width: 320px; height: 416px;"></div>
+            <div style="margin-top: 12px; font-size: 11px; color: #94a3b8; text-align: center;">
+              100% Vetorial SVG • Juntas circulares sem costura • Pálpebras e pupilas dinâmicas
+            </div>
+          </div>
+
+          <!-- Painel de Articulação e Testes de Juntas -->
+          <div>
+            <!-- Presets de Pose -->
+            <div style="margin-bottom: 18px;">
+              <div class="section-title">Presets de Poses (Model Sheet Oficial)</div>
+              <div class="btn-grid" style="grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));">
+                <button class="btn active" data-vault-pose="reference">🌟 Oficial (Thumbs-up)</button>
+                <button class="btn" data-vault-pose="walk_stride">🚶 Caminhada</button>
+                <button class="btn" data-vault-pose="waving">👋 Acenando</button>
+                <button class="btn" data-vault-pose="pointing">👉 Apontando</button>
+                <button class="btn" data-vault-pose="thinking">🤔 Pensativo</button>
+                <button class="btn" data-vault-pose="celebrating">🎉 Comemorando</button>
+                <button class="btn" data-vault-pose="crossed">🙅 Braços Cruzados</button>
+              </div>
+            </div>
+
+            <!-- Demonstração Separada de Articulações (Sliders) -->
+            <div style="margin-bottom: 18px;">
+              <div class="section-title">Articulações dos Membros & Juntas (Demonstração Separada)</div>
+              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; background: rgba(0,0,0,0.25); padding: 12px; border-radius: 12px;">
+                <!-- Braço Direito -->
+                <div>
+                  <strong style="font-size: 11px; color: #38bdf8;">Braço Direito (Viewer Esquerda)</strong>
+                  <div style="margin-top: 6px; font-size: 11px; display: flex; justify-content: space-between;">
+                    <span>Ombro: <span id="val-sr">-25°</span></span>
+                    <input type="range" id="slider-sr" min="-120" max="120" value="-25" style="width: 100px;" />
+                  </div>
+                  <div style="margin-top: 6px; font-size: 11px; display: flex; justify-content: space-between;">
+                    <span>Cotovelo: <span id="val-er">-45°</span></span>
+                    <input type="range" id="slider-er" min="-140" max="50" value="-45" style="width: 100px;" />
+                  </div>
+                  <div style="margin-top: 8px;">
+                    <span style="font-size: 10px; color: var(--text-sub);">Mão Direita:</span>
+                    <select id="select-hand-r" style="background: #111; color: #fff; font-size: 11px; border-radius: 4px; padding: 2px 6px;">
+                      <option value="thumbs-up">👍 Thumbs-Up (Oficial)</option>
+                      <option value="wave">👋 Wave (Aceno)</option>
+                      <option value="fist">✊ Fist (Punho)</option>
+                      <option value="pointing">👉 Pointing (Apontar)</option>
+                      <option value="open">✋ Open (Aberta)</option>
+                    </select>
+                  </div>
+                </div>
+
+                <!-- Braço Esquerdo -->
+                <div>
+                  <strong style="font-size: 11px; color: #38bdf8;">Braço Esquerdo (Viewer Direita)</strong>
+                  <div style="margin-top: 6px; font-size: 11px; display: flex; justify-content: space-between;">
+                    <span>Ombro: <span id="val-sl">20°</span></span>
+                    <input type="range" id="slider-sl" min="-120" max="120" value="20" style="width: 100px;" />
+                  </div>
+                  <div style="margin-top: 6px; font-size: 11px; display: flex; justify-content: space-between;">
+                    <span>Cotovelo: <span id="val-el">45°</span></span>
+                    <input type="range" id="slider-el" min="-40" max="140" value="45" style="width: 100px;" />
+                  </div>
+                  <div style="margin-top: 8px;">
+                    <span style="font-size: 10px; color: var(--text-sub);">Mão Esquerda:</span>
+                    <select id="select-hand-l" style="background: #111; color: #fff; font-size: 11px; border-radius: 4px; padding: 2px 6px;">
+                      <option value="hip">Cintura (Oficial)</option>
+                      <option value="open">Aberta</option>
+                      <option value="fist">Punho</option>
+                      <option value="pointing">Apontar</option>
+                    </select>
+                  </div>
+                </div>
+
+                <!-- Cabeça & Tronco -->
+                <div>
+                  <strong style="font-size: 11px; color: #ffd700;">Cabeça & Tronco</strong>
+                  <div style="margin-top: 6px; font-size: 11px; display: flex; justify-content: space-between;">
+                    <span>Cabeça: <span id="val-head">0°</span></span>
+                    <input type="range" id="slider-head" min="-35" max="35" value="0" style="width: 100px;" />
+                  </div>
+                  <div style="margin-top: 6px; font-size: 11px; display: flex; justify-content: space-between;">
+                    <span>Tronco: <span id="val-torso">0°</span></span>
+                    <input type="range" id="slider-torso" min="-25" max="25" value="0" style="width: 100px;" />
+                  </div>
+                </div>
+
+                <!-- Pernas -->
+                <div>
+                  <strong style="font-size: 11px; color: #ffd700;">Pernas & Joelhos</strong>
+                  <div style="margin-top: 6px; font-size: 11px; display: flex; justify-content: space-between;">
+                    <span>Perna Dir: <span id="val-hr">-4°</span></span>
+                    <input type="range" id="slider-hr" min="-60" max="60" value="-4" style="width: 100px;" />
+                  </div>
+                  <div style="margin-top: 6px; font-size: 11px; display: flex; justify-content: space-between;">
+                    <span>Perna Esq: <span id="val-hl">6°</span></span>
+                    <input type="range" id="slider-hl" min="-60" max="60" value="6" style="width: 100px;" />
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Expressões Faciais & Bocas -->
+            <div>
+              <div class="section-title">Expressões Faciais & Bocas Reconstruídas</div>
+              <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                <button class="btn" data-vault-mouth="normal">Sorriso Oficial</button>
+                <button class="btn" data-vault-mouth="happy">Feliz (Dentes/Língua)</button>
+                <button class="btn" data-vault-mouth="surprised">Surpreso (O)</button>
+                <button class="btn" data-vault-mouth="thinking">Pensativo</button>
+                <button class="btn" data-vault-mouth="sad">Triste</button>
+                <button class="btn" data-vault-mouth="talking">Fala (Lip-Sync)</button>
+                <button class="btn" id="btn-vault-blink">Piscar Olhos 😉</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
 
     <div class="demo-layout">
       <!-- Palco Principal (Alta Resolução) -->

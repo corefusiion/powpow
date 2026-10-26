@@ -8,6 +8,9 @@ import { Island } from "./island/island";
 import { handleHook, registerHookHandlers } from "./island/hooks";
 import { latestDiff, storyTurns } from "./core/activity";
 import { registerIntegrationHandlers, refreshConfigured } from "./island/integrations";
+import { registerAllPageMascots } from "./avatar/registerMascots";
+
+registerAllPageMascots();
 
 async function main() {
   const root = document.getElementById("root");

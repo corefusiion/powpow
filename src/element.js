@@ -248,6 +248,7 @@ const styles = `
   }
   .dp-idle { position: absolute; left: 0; bottom: 0; width: 100%; height: 20%; pointer-events: auto; }
   .dp-idle, .dp-pose, .dp-actor { transform-origin: 50% 100%; }
+  .dp-actor { transition: transform .18s cubic-bezier(.25, .8, .35, 1); }
   .dp-idle { perspective: 600px; }
   .dp-pose { transition: transform .8s cubic-bezier(.25, .8, .35, 1); }
   svg { display: block; width: 100%; height: 100%; overflow: visible; transition: filter .4s; }
@@ -1778,6 +1779,8 @@ export class DotPal extends Base {
 
   setPose(pose) {
     this._poseName = pose;
+    this.setAttribute('data-pose', pose);
+    if (this.#root) this.#root.setAttribute('data-pose', pose);
     if (pose === 'celebrate') this.play?.('jump');
     else if (pose === 'walk') this.idle = 'bounce';
     else if (pose === 'idle') this.idle = 'float';

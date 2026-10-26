@@ -23,8 +23,11 @@ import { h } from "../views/dom";
 // Side effect registers the `dot-pal` tag; the island draws one instead of Mochi
 // whenever Settings › Character picks something else (registerCustom feeds "custom").
 import { DotPal, characters, registerCustom, type CustomPal } from "../../../src/index.js";
+import { registerAllPageMascots } from "../avatar/registerMascots";
 import { IslandStateMachine } from "./fsm";
 import { PAL_EMOTE, PAL_STATE } from "./palState";
+
+registerAllPageMascots();
 
 const BOT_OVERHANG = 40;
 /** Same margin as the Rust hit test (src-tauri/src/island.rs). */
@@ -603,11 +606,6 @@ export class Island {
       case "clipboard": {
         this.alert("prompt");
         await this.sendPrompt("clipboard");
-        break;
-      }
-      case "wellness": {
-        this.alert("prompt");
-        await this.sendPrompt("água");
         break;
       }
       case "soundscape": {

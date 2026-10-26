@@ -31,7 +31,6 @@ import {
   renderPomodoroCard,
   renderSoundscapeCard,
   renderToneDetectorCard,
-  renderWellnessCard,
 } from "./proFeaturesCards";
 
 let nextId = 1;
@@ -221,19 +220,6 @@ export function buildPrompt(actions: ViewActions, onHeightChange: () => void): V
         return;
       }
 
-      // ── Pro Feature: Bem-Estar / Hidratação / Alongamento ─────────
-      if (/^(água|agua|hidratação|hidratacao|beber água|postura|alongamento|alongar|ergonomia)/i.test(qLower)) {
-        const card = renderWellnessCard();
-        State.chatHistory.push({
-          id: nextId++,
-          role: "assistant",
-          content: `💧 Bem-Estar & Ergonomia Proativo (Mascote Embasa):`,
-          card,
-        });
-        State.stateOverride = null;
-        Sound.play("finish");
-        return;
-      }
 
       // ── Pro Feature: Resumo de Reunião e Janela ───────────────────
       if (/(resumo (da )?(reunião|reuniao|janela|tela)|resumir (a )?(reunião|reuniao|janela|tela))/i.test(qLower)) {

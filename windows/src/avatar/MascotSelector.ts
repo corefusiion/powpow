@@ -120,7 +120,23 @@ export class MascotSelector {
       const previewWrapper = document.createElement('div');
       previewWrapper.className = 'ms-card-preview';
 
-      if (mascot.isVectorAvatar) {
+      if (mascot.id === 'vault') {
+        const img = document.createElement('img');
+        img.src = '/avatar/official_frontal.png';
+        img.alt = 'Mascote Original';
+        img.style.maxHeight = '90px';
+        img.style.maxWidth = '90px';
+        img.style.objectFit = 'contain';
+        previewWrapper.appendChild(img);
+      } else if (mascot.id === 'doraemon') {
+        const img = document.createElement('img');
+        img.src = '/avatar/doraemon/shime1.png';
+        img.alt = 'Doraemon';
+        img.style.maxHeight = '90px';
+        img.style.maxWidth = '90px';
+        img.style.objectFit = 'contain';
+        previewWrapper.appendChild(img);
+      } else if (mascot.isVectorAvatar) {
         // High fidelity Embasa vector
         const embasa = new EmbasaAvatarElement();
         embasa.style.width = '100px';

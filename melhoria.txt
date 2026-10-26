@@ -1,0 +1,49 @@
+Quero uma bancada de testes para comparar três projetos de mascote de desktop. Cada projeto deve ficar COMPLETO e funcionando com seus personagens ORIGINAIS, e depois eu quero o MEU personagem (Vault Boy, do projeto powpow) adicionado como personagem extra em uma cópia separada. Trabalhe por fases e PARE ao fim de cada uma para eu validar. Responda em português.
+
+REGRAS GERAIS
+- Crie powpow-lab/ com: originais/ (os três projetos sem modificação), vaultboy/ (cópias com o Vault Boy adicionado), assets/ (arte do Vault Boy), RESULTADOS.md.
+- NUNCA modifique a pasta originais/. Trabalhos com o Vault Boy sempre em cópias dentro de vaultboy/.
+- Não instale nada fora de powpow-lab sem me avisar. Se faltar Node, Rust, Java ou Python, diga o que instalar e espere.
+- NÃO execute .exe, .jar ou outros binários que venham dentro dos repositórios. Compile a partir do código-fonte (no ngoc-thu/shimeji use build.bat). Se não conseguir compilar, me avise em vez de contornar.
+- Não use chaves de API, contas nem credenciais. Se um recurso exigir isso (por exemplo OpenClaw no Doraemon), rode em modo offline e registre o que ficou indisponível.
+- Registre em RESULTADOS.md todo erro, workaround e tempo gasto.
+
+FASE 0 — Clonar e ler
+Clone em originais/:
+git clone https://github.com/AlleyBo55/doraemon
+git clone https://github.com/ngoc-thu/shimeji
+git clone https://github.com/xiangking/agent-pet
+Leia README e licença de cada um e resuma em RESULTADOS.md: como roda, pré-requisitos, licença, personagens que acompanham.
+
+FASE 1 — Rodar os ORIGINAIS completos (linha de base)
+Para cada projeto, em originais/, instale, compile e rode com os personagens que já vêm nele. Teste e registre com notas de 0 a 5 e uma frase de evidência:
+1. Roda sem erros no Windows 11
+2. Janela transparente, sem borda, sem atrapalhar cliques
+3. Anda pela área de trabalho
+4. Anda e senta em janelas abertas
+5. Segue o mouse
+6. Reage quando eu o arrasto
+7. Recebe comandos externos (como testou: WebSocket, menu, etc.)
+8. Suavidade percebida do movimento (descreva: quantos quadros por ação, se há transição entre estados, se parece mecânico)
+9. Uso de CPU e memória em repouso e em movimento (Get-Process ou Gerenciador de Tarefas)
+Se algo não funcionar ou não existir, registre exatamente isso. Não corrija o projeto original.
+PARE aqui e me mostre a tabela da linha de base antes de seguir.
+
+FASE 2 — Arte do Vault Boy (assets/)
+Use as imagens do Vault Boy que já existem no projeto powpow (arte ORIGINAL, sem pixelizar nem redesenhar). Gere com fundo 100% transparente e sem halo: uma versão limpa de cada pose existente, todas com o mesmo tamanho de quadro e os pés alinhados na mesma linha de base. Onde faltarem quadros, reaproveite poses com pequenas variações (espelhar, deslocar 1-2 px, inclinar levemente) e marque em RESULTADOS.md quais são provisórios.
+
+FASE 3 — Vault Boy no ngoc-thu/shimeji
+Copie originais/shimeji para vaultboy/shimeji. Documente o que cada shimeN.png representa (parado, andando, sentado, caindo, escalando, arrastado etc.). Crie characters/VaultBoy/ com shime1.png até shime46.png a partir dos assets, respeitando esse mapa, e mantenha os personagens originais disponíveis na tela de configurações. Rode e repita os testes 1 a 9.
+
+FASE 4 — Vault Boy no AlleyBo55/doraemon
+Copie originais/doraemon para vaultboy/doraemon. Adicione o Vault Boy como pacote de sprites alternativo (quadros 128x128, mesma lógica de estados do projeto) SEM apagar os sprites do Doraemon: deve ser possível escolher qual personagem usar. Rode offline e repita os testes 1 a 9.
+
+FASE 5 — Vault Boy no xiangking/agent-pet
+Copie originais/agent-pet para vaultboy/agent-pet. Crie um pet em %APPDATA%\agent-pet\pets\vault-boy\ com pet.json e spritesheet.png no formato exigido (1536x1872, grade 8x9, células 192x208; linhas: idle, running-right, running-left, waving, jumping, failed, waiting, running, review). Os pets originais continuam disponíveis. Envie mensagens de teste pelo WebSocket em ws://127.0.0.1:8765 para cada message_type e confirme que cada animação toca. Repita os testes 1 a 9 (registre o que ele NÃO faz, como andar e sentar em janelas).
+
+FASE 6 — Relatório comparativo
+Em RESULTADOS.md, monte uma tabela única: projeto x (original, com Vault Boy) x critérios 1 a 9. Inclua:
+- Diferença de suavidade entre o personagem original e o Vault Boy em cada motor, e a causa provável (quantidade de quadros, easing, etc.).
+- Facilidade de trocar o renderizador de quadros por animação de esqueleto (rig 2D) em cada projeto.
+- Licença e riscos de cada um.
+Termine com: qual é a melhor base para o powpow, o que reaproveitar de cada um, o que descartar e os próximos passos.

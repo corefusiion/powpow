@@ -1220,7 +1220,7 @@ function characterRow(): HTMLElement {
 
   const galleryToggle = h("button", {
     style: "background: rgba(4, 149, 244, 0.2); border-color: rgba(4, 149, 244, 0.5); color: #38bdf8;",
-    text: "🎨 " + t("Galeria de Mascotes (53)"),
+    text: "🎨 " + t(`Galeria de Mascotes (${MASCOTS_CATALOG.length})`),
   });
   galleryToggle.addEventListener("click", () => {
     galleryPanel.hidden = !galleryPanel.hidden;

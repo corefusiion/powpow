@@ -1,33 +1,34 @@
-// Wellness & Ergonomics Suite: Hydration, 20-20-20 Eye Rest, Anti-Burnout, 30s Guided Micro-Stretch.
+// Metric-Driven Proactive Wellness & Ergonomics Suite.
+// Monitors user productivity, active screen time, and continuous typing engagement
+// to proactively recommend 5-minute hydration/movement breaks and anti-fatigue pauses.
 
 import { Sound } from "./sound";
 import { DailyRecap } from "./productivity";
 
 export interface WellnessSettings {
-  waterIntervalMinutes: number;
-  waterGoalGlasses: number;
-  eyeRestIntervalMinutes: number;
+  continuousWorkLimitMinutes: number; // e.g. 50 min of continuous typing/work before reminder
+  eyeRestIntervalMinutes: number; // 20-20-20 rule
   workdayEndHour: number; // e.g. 18 for 18:00
   workdayEndMinute: number;
   antiBurnoutEnabled: boolean;
 }
 
 export interface WellnessState {
-  glassesDrankToday: number;
-  goalGlasses: number;
-  nextWaterTimeMs: number;
-  nextEyeRestTimeMs: number;
+  continuousActiveMinutes: number;
+  totalActiveMinutesToday: number;
+  breaksTakenToday: number;
+  activeAppName: string;
   isEyeRestActive: boolean;
   eyeRestSecondsLeft: number;
   isWorkdayEnded: boolean;
   activeStretchStep: number | null; // null or 0, 1, 2 (each 10s)
   stretchSecondsLeft: number;
+  lastReminderMessage: string;
 }
 
 const DEFAULT_SETTINGS: WellnessSettings = {
-  waterIntervalMinutes: 45,
-  waterGoalGlasses: 8,
-  eyeRestIntervalMinutes: 20,
+  continuousWorkLimitMinutes: 45,
+  eyeRestIntervalMinutes: 25,
   workdayEndHour: 18,
   workdayEndMinute: 0,
   antiBurnoutEnabled: true,
@@ -35,11 +36,16 @@ const DEFAULT_SETTINGS: WellnessSettings = {
 
 class WellnessManager {
   private settings: WellnessSettings = { ...DEFAULT_SETTINGS };
-  private glassesToday: number = 0;
   private dateKey: string = "";
 
-  private lastWaterReminderMs: number = Date.now();
+  private continuousActiveSeconds: number = 0;
+  private totalActiveSecondsToday: number = 0;
+  private breaksTakenToday: number = 0;
+  private activeAppName: string = "";
+  private lastActivityTimestamp: number = Date.now();
+  private lastContinuousReminderMs: number = 0;
   private lastEyeRestReminderMs: number = Date.now();
+  private lastReminderMessage: string = "";
 
   private isEyeRestActive: boolean = false;
   private eyeRestSecondsLeft: number = 20;
@@ -56,13 +62,16 @@ class WellnessManager {
     this.checkDate();
     this.load();
     this.startTicker();
+    this.listenToUserActivity();
   }
 
   private checkDate() {
     const today = new Date().toISOString().split("T")[0];
     if (this.dateKey !== today) {
       this.dateKey = today;
-      this.glassesToday = 0;
+      this.continuousActiveSeconds = 0;
+      this.totalActiveSecondsToday = 0;
+      this.breaksTakenToday = 0;
       this.isWorkdayEndedNotified = false;
       this.load();
     }
@@ -70,10 +79,11 @@ class WellnessManager {
 
   private load() {
     try {
-      const stored = localStorage.getItem(`powpow_wellness_${this.dateKey}`);
+      const stored = localStorage.getItem(`powpow_wellness_metrics_${this.dateKey}`);
       if (stored) {
         const data = JSON.parse(stored);
-        this.glassesToday = data.glassesToday ?? 0;
+        this.totalActiveSecondsToday = data.totalActiveSecondsToday ?? 0;
+        this.breaksTakenToday = data.breaksTakenToday ?? 0;
       }
       const cfg = localStorage.getItem("powpow_wellness_config");
       if (cfg) {
@@ -87,13 +97,33 @@ class WellnessManager {
   private save() {
     try {
       localStorage.setItem(
-        `powpow_wellness_${this.dateKey}`,
-        JSON.stringify({ glassesToday: this.glassesToday }),
+        `powpow_wellness_metrics_${this.dateKey}`,
+        JSON.stringify({
+          totalActiveSecondsToday: this.totalActiveSecondsToday,
+          breaksTakenToday: this.breaksTakenToday,
+        }),
       );
       localStorage.setItem("powpow_wellness_config", JSON.stringify(this.settings));
     } catch {
       // ignore
     }
+  }
+
+  /** Hook window mouse & keyboard events to measure true active work engagement */
+  private listenToUserActivity() {
+    const onUserActive = () => {
+      this.recordActivity();
+    };
+
+    window.addEventListener("pointermove", onUserActive, { passive: true });
+    window.addEventListener("keydown", onUserActive, { passive: true });
+    window.addEventListener("click", onUserActive, { passive: true });
+  }
+
+  public recordActivity(appName?: string) {
+    const now = Date.now();
+    this.lastActivityTimestamp = now;
+    if (appName) this.activeAppName = appName;
   }
 
   private startTicker() {
@@ -106,21 +136,45 @@ class WellnessManager {
     const now = Date.now();
     this.checkDate();
 
-    // 1. Check Hydration interval
-    const waterIntervalMs = this.settings.waterIntervalMinutes * 60 * 1000;
-    if (now - this.lastWaterReminderMs >= waterIntervalMs) {
-      this.lastWaterReminderMs = now;
-      this.triggerWaterReminder();
+    const timeSinceLastActivity = now - this.lastActivityTimestamp;
+    const isUserCurrentlyEngaged = timeSinceLastActivity < 90000; // active in last 90s
+
+    if (isUserCurrentlyEngaged) {
+      this.continuousActiveSeconds++;
+      this.totalActiveSecondsToday++;
+
+      if (this.continuousActiveSeconds % 60 === 0) {
+        this.save();
+      }
+
+      // 1. Continuous Work & Hydration Reminder (e.g. 45-50 min of nonstop work)
+      const continuousMinutes = Math.floor(this.continuousActiveSeconds / 60);
+      const limitMinutes = this.settings.continuousWorkLimitMinutes;
+
+      if (continuousMinutes >= limitMinutes && now - this.lastContinuousReminderMs > limitMinutes * 60 * 1000) {
+        this.lastContinuousReminderMs = now;
+        this.triggerProductivityRestReminder(continuousMinutes);
+      }
+
+      // 2. 20-20-20 Eye Fatigue Reminder (e.g. 25 min of screen time)
+      const eyeIntervalMs = this.settings.eyeRestIntervalMinutes * 60 * 1000;
+      if (!this.isEyeRestActive && now - this.lastEyeRestReminderMs >= eyeIntervalMs) {
+        this.lastEyeRestReminderMs = now;
+        this.startEyeRest();
+      }
+    } else {
+      // User has been idle for >= 4 minutes: counts as an organic break!
+      if (timeSinceLastActivity >= 240000 && this.continuousActiveSeconds >= 600) {
+        const breakAfterMinutes = Math.floor(this.continuousActiveSeconds / 60);
+        this.breaksTakenToday++;
+        this.continuousActiveSeconds = 0;
+        this.save();
+        DailyRecap.log("note", `☕ Pausa revigorante realizada após ${breakAfterMinutes} min de foco`);
+        this.notify();
+      }
     }
 
-    // 2. Check 20-20-20 Eye Rest interval
-    const eyeIntervalMs = this.settings.eyeRestIntervalMinutes * 60 * 1000;
-    if (!this.isEyeRestActive && now - this.lastEyeRestReminderMs >= eyeIntervalMs) {
-      this.lastEyeRestReminderMs = now;
-      this.startEyeRest();
-    }
-
-    // 3. Check Anti-Burnout / Workday End
+    // 3. Anti-Burnout / Workday End Check
     if (this.settings.antiBurnoutEnabled && !this.isWorkdayEndedNotified) {
       const d = new Date();
       if (
@@ -134,24 +188,22 @@ class WellnessManager {
   }
 
   getState(): WellnessState {
-    const waterIntervalMs = this.settings.waterIntervalMinutes * 60 * 1000;
-    const eyeIntervalMs = this.settings.eyeRestIntervalMinutes * 60 * 1000;
-
     const d = new Date();
     const isAfterWork =
       d.getHours() > this.settings.workdayEndHour ||
       (d.getHours() === this.settings.workdayEndHour && d.getMinutes() >= this.settings.workdayEndMinute);
 
     return {
-      glassesDrankToday: this.glassesToday,
-      goalGlasses: this.settings.waterGoalGlasses,
-      nextWaterTimeMs: this.lastWaterReminderMs + waterIntervalMs,
-      nextEyeRestTimeMs: this.lastEyeRestReminderMs + eyeIntervalMs,
+      continuousActiveMinutes: Math.floor(this.continuousActiveSeconds / 60),
+      totalActiveMinutesToday: Math.floor(this.totalActiveSecondsToday / 60),
+      breaksTakenToday: this.breaksTakenToday,
+      activeAppName: this.activeAppName,
       isEyeRestActive: this.isEyeRestActive,
       eyeRestSecondsLeft: this.eyeRestSecondsLeft,
       isWorkdayEnded: isAfterWork,
       activeStretchStep: this.activeStretchStep,
       stretchSecondsLeft: this.stretchSecondsLeft,
+      lastReminderMessage: this.lastReminderMessage,
     };
   }
 
@@ -172,28 +224,21 @@ class WellnessManager {
     }
   }
 
-  // ── Actions ───────────────────────────────────────────────────────────────
+  // ── Proactive Metric-Driven Reminders ──────────────────────────────────────
 
-  drinkGlass() {
-    this.glassesToday++;
-    this.save();
-    Sound.play("finish");
-    DailyRecap.log("note", `💧 Bebeu 1 copo de água (${this.glassesToday}/${this.settings.waterGoalGlasses})`);
+  private triggerProductivityRestReminder(minutesEngaged: number) {
+    const appSnippet = this.activeAppName ? ` no ${this.activeAppName}` : "";
+    const msg = `Você já digitou e trabalhou nos últimos ${minutesEngaged} minutos${appSnippet}! Que tal descansar 5 minutinhos, esticar as pernas e beber água? 💧`;
+    this.lastReminderMessage = msg;
     this.notify();
 
     window.dispatchEvent(
-      new CustomEvent("powpow-water-drank", {
-        detail: { total: this.glassesToday, goal: this.settings.waterGoalGlasses },
-      }),
-    );
-  }
-
-  triggerWaterReminder() {
-    window.dispatchEvent(
-      new CustomEvent("powpow-water-reminder", {
+      new CustomEvent("powpow-wellness-alert", {
         detail: {
-          current: this.glassesToday,
-          goal: this.settings.waterGoalGlasses,
+          type: "rest_and_hydration",
+          minutesEngaged,
+          message: msg,
+          appName: this.activeAppName,
         },
       }),
     );
@@ -267,19 +312,26 @@ class WellnessManager {
     }
     if (completed) {
       Sound.play("finish");
-      DailyRecap.log("note", "🧘 Realizou micro-alongamento guiado (30 seg)");
+      DailyRecap.log("note", "🧘 Realizou micro-alongamento de alívio muscular (30 seg)");
     }
     this.notify();
     window.dispatchEvent(new CustomEvent("powpow-stretch-finished", { detail: { completed } }));
   }
 
-  triggerWorkdayEnd() {
+  private triggerWorkdayEnd() {
+    const totalHours = (this.totalActiveSecondsToday / 3600).toFixed(1);
+    const msg = `Hora de encerrar o expediente! Você teve ~${totalHours}h de foco ativo hoje. Salve suas tarefas e bom descanso! 🌅`;
+    this.lastReminderMessage = msg;
+    this.notify();
+
     window.dispatchEvent(
       new CustomEvent("powpow-workday-end", {
         detail: {
           hour: this.settings.workdayEndHour,
           minute: this.settings.workdayEndMinute,
-          glassesDrank: this.glassesToday,
+          totalHours,
+          breaksTaken: this.breaksTakenToday,
+          message: msg,
         },
       }),
     );

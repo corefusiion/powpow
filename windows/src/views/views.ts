@@ -19,6 +19,7 @@ import { pillColor } from "../core/pill-colors";
 import { buildPlanPill, claudePillVisible, codexPillVisible, geminiPillVisible, planCardOpen, PlanCard } from "./usage";
 import { Pomodoro } from "../core/productivity";
 import { SysMonitor } from "../core/sysMonitor";
+import { Soundscape } from "../core/soundscape";
 
 export interface ViewActions {
   setView(v: IslandViewName): void;
@@ -143,6 +144,15 @@ export function buildHeader(actions: ViewActions): ViewHost {
     style: "font-size:10px;color:#94a3b8;cursor:default;",
   });
 
+  const soundscapePill = h("button", {
+    class: "tab soundscape-pill",
+    title: "Soundscape Lo-Fi",
+    style: "display:none;font-weight:600;font-size:11px;color:#c084fc;",
+    onclick: () => {
+      Soundscape.toggle();
+    },
+  });
+
   const el = h(
     "div",
     { id: "header" },
@@ -151,6 +161,7 @@ export function buildHeader(actions: ViewActions): ViewHost {
       "div",
       { class: "header-actions" },
       pomoPill,
+      soundscapePill,
       weatherPill,
       resourcePill,
       claudePill.el,
@@ -183,6 +194,16 @@ export function buildHeader(actions: ViewActions): ViewHost {
         pomoPill.textContent = `${pomoState.mode === "focus" ? "🍅" : "☕"} ${Pomodoro.formatTime()}`;
       } else {
         pomoPill.style.display = "none";
+      }
+
+      // Soundscape pill sync
+      const sc = Soundscape.getState();
+      if (sc.isPlaying) {
+        soundscapePill.style.display = "";
+        soundscapePill.textContent = `🎧 ${sc.currentTrack.title.slice(0, 14)}…`;
+        soundscapePill.title = `Tocando: ${sc.currentTrack.title} (${sc.currentTrack.styleLabel}) — Clique para pausar`;
+      } else {
+        soundscapePill.style.display = "none";
       }
 
       // Weather pill sync

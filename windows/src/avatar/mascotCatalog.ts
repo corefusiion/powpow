@@ -13,7 +13,15 @@ export interface MascotInfo {
 }
 
 export const MASCOTS_CATALOG: MascotInfo[] = [
-  // ── Oficial Embasa ──
+  // ── Oficial Embasa / Projeto ──
+  {
+    id: 'vault',
+    name: 'Mascote 2D Articulado',
+    category: 'embasa',
+    description: 'Mascote cartoon oficial 2D articulado com juntas anatômicas, polegar pra cima e rig vetorial completo.',
+    color: '#1E6BB8',
+    isVectorAvatar: true,
+  },
   {
     id: 'embasa',
     name: 'Gota Embasa',
@@ -70,6 +78,7 @@ export const MASCOTS_CATALOG: MascotInfo[] = [
   { id: 'granny', name: 'Vovó (Granny)', category: 'people', description: 'Senhora carinhosa', color: '#ff7675' },
 
   // ── Robôs & Criaturas (Robots) ──
+  { id: 'doraemon', name: 'Doraemon (Gato Cósmico)', category: 'robots', description: 'Mascote gato cósmico do futuro com animações dinâmicas a 60 FPS.', color: '#009fe8' },
   { id: 'robot', name: 'Robô (Robot)', category: 'robots', description: 'Androide clássico metálico', color: '#0984e3' },
   { id: 'postbot', name: 'Postbot', category: 'robots', description: 'Robô mensageiro veloz', color: '#e17055' },
   { id: 'gearbot', name: 'Engrenagem (Gearbot)', category: 'robots', description: 'Robô steampunk mecânico', color: '#b71540' },

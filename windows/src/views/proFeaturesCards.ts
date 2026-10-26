@@ -15,8 +15,7 @@ import { Bridge } from "../core/bridge";
 import { SmartClipboard } from "../core/clipboard";
 import { DailyRecap, Pomodoro } from "../core/productivity";
 import { Sound } from "../core/sound";
-import { Soundscape, type SoundscapeMode } from "../core/soundscape";
-import { Wellness } from "../core/wellness";
+import { Soundscape, type SoundscapeStyle } from "../core/soundscape";
 import { h } from "./dom";
 
 // Helper for temporary copy feedback
@@ -482,6 +481,7 @@ export function renderPomodoroCard(): HTMLElement {
 
 export function renderSoundscapeCard(): HTMLElement {
   const card = h("div", { class: "sys-agent-card" });
+  const state = Soundscape.getState();
 
   const head = h(
     "div",
@@ -489,23 +489,26 @@ export function renderSoundscapeCard(): HTMLElement {
     h("span", { class: "sys-icon", text: "🎧" }),
     h("div", { class: "sys-title-group" },
       h("span", { class: "sys-card-title", text: "Soundscape Lo-Fi & Foco" }),
-      h("span", { class: "sys-card-sub", text: "Ruído ambiente sintetizado na Ilha (Offline)" }),
+      h("span", { class: "sys-card-sub", text: `${state.currentTrack.title} (${state.currentTrack.styleLabel})` }),
     ),
   );
 
-  const modesGrid = h("div", { class: "sys-sound-grid" });
-  const presets: Array<{ id: SoundscapeMode; icon: string; name: string }> = [
-    { id: "rain", icon: "🌧️", name: "Chuva Suave" },
-    { id: "cafe", icon: "☕", name: "Cafeteria" },
-    { id: "ocean", icon: "🌊", name: "Ondas do Mar" },
-    { id: "lofi", icon: "🎵", name: "Lo-Fi Beats" },
+  const presets: Array<{ id: SoundscapeStyle; icon: string; name: string }> = [
+    { id: "lofi", icon: "☕", name: "Lo-Fi Beats" },
+    { id: "piano", icon: "🎹", name: "Piano" },
+    { id: "acoustic", icon: "🎸", name: "Violão" },
+    { id: "ambient", icon: "🌌", name: "Ambiente" },
+    { id: "rain", icon: "🌧️", name: "Chuva" },
+    { id: "ocean", icon: "🌊", name: "Ondas" },
   ];
 
+  const modesGrid = h("div", { class: "sys-sound-grid" });
   for (const p of presets) {
     const btn = h("button", {
-      class: "sys-sound-btn",
+      class: `sys-sound-btn ${state.currentStyle === p.id ? "active" : ""}`,
       onclick: () => {
-        Soundscape.setMode(p.id);
+        Soundscape.setStyle(p.id);
+        updateCard();
       },
     }, h("span", { text: p.icon }), h("span", { text: p.name }));
     modesGrid.append(btn);
@@ -516,28 +519,65 @@ export function renderSoundscapeCard(): HTMLElement {
     min: "0",
     max: "1",
     step: "0.05",
-    value: Soundscape.getState().volume.toString(),
+    value: state.volume.toString(),
     class: "sys-vol-slider",
     oninput: (e) => {
       Soundscape.setVolume(parseFloat((e.target as HTMLInputElement).value));
     },
   });
 
+  const btnPrev = h("button", {
+    class: "sys-icon-btn",
+    text: "⏮",
+    title: "Faixa Anterior",
+    onclick: () => {
+      Soundscape.prev();
+      updateCard();
+    },
+  });
+
+  const btnPlay = h("button", {
+    class: "sys-btn-primary",
+    text: state.isPlaying ? "⏸ Pausar" : "▶ Tocar",
+    onclick: () => {
+      Soundscape.toggle();
+      updateCard();
+    },
+  });
+
+  const btnNext = h("button", {
+    class: "sys-icon-btn",
+    text: "⏭",
+    title: "Próxima Faixa",
+    onclick: () => {
+      Soundscape.next();
+      updateCard();
+    },
+  });
+
+  const controlsRow = h("div", { class: "sys-actions-row", style: "display:flex;align-items:center;gap:8px;" },
+    btnPrev,
+    btnPlay,
+    btnNext,
+  );
+
   const volRow = h("div", { class: "sys-vol-row" },
     h("span", { text: "🔈 Volume:" }),
     volSlider,
-    h("button", {
-      class: "sys-icon-btn",
-      text: Soundscape.getState().isPlaying ? "Pausar" : "Tocar",
-      onclick: () => Soundscape.toggle(),
-    }),
   );
 
-  card.append(head, modesGrid, volRow);
+  const updateCard = () => {
+    const s = Soundscape.getState();
+    const sub = head.querySelector(".sys-card-sub");
+    if (sub) sub.textContent = `${s.currentTrack.title} (${s.currentTrack.styleLabel})`;
+    btnPlay.textContent = s.isPlaying ? "⏸ Pausar" : "▶ Tocar";
+  };
+
+  card.append(head, modesGrid, controlsRow, volRow);
   return card;
 }
 
-// ── 10. Feature 20: Diário de Bordo & Standup ────────────────────────────────
+// ── 10. Feature 20: Diário de Bordo & Standup Executivo ─────────────────────
 
 export function renderDailyRecapCard(): HTMLElement {
   const card = h("div", { class: "sys-agent-card" });
@@ -547,93 +587,82 @@ export function renderDailyRecapCard(): HTMLElement {
     { class: "sys-card-head" },
     h("span", { class: "sys-icon", text: "📔" }),
     h("div", { class: "sys-title-group" },
-      h("span", { class: "sys-card-title", text: "Diário de Bordo / Standup Local" }),
-      h("span", { class: "sys-card-sub", text: "Resumo do que foi realizado hoje no seu PC" }),
+      h("span", { class: "sys-card-title", text: "Diário de Bordo & Standup Executivo" }),
+      h("span", { class: "sys-card-sub", text: "Métricas de foco por app e entregas registradas" }),
     ),
   );
 
-  const standupText = DailyRecap.generateStandupMarkdown();
-  const textBox = h("pre", { class: "sys-standup-box", text: standupText });
+  // App breakdown and KPI stats
+  const appStats = DailyRecap.getAppUsage();
+  const totalMins = appStats.reduce((acc, u) => acc + u.minutes, 0);
+  const totalHoursStr = `${Math.floor(totalMins / 60)}h ${totalMins % 60}m`;
+  const pomodoros = DailyRecap.getItems().filter((i) => i.category === "pomodoro").length;
+
+  const statsGrid = h("div", { style: "display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-bottom:10px;" },
+    h("div", { style: "background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:8px;padding:6px;text-align:center;" },
+      h("div", { style: "font-size:10px;color:#94a3b8;", text: "Foco Total" }),
+      h("div", { style: "font-size:13px;font-weight:700;color:#38bdf8;", text: totalHoursStr }),
+    ),
+    h("div", { style: "background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:8px;padding:6px;text-align:center;" },
+      h("div", { style: "font-size:10px;color:#94a3b8;", text: "Pomodoros" }),
+      h("div", { style: "font-size:13px;font-weight:700;color:#f87171;", text: `${pomodoros} ciclos` }),
+    ),
+    h("div", { style: "background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:8px;padding:6px;text-align:center;" },
+      h("div", { style: "font-size:10px;color:#94a3b8;", text: "Ferramentas" }),
+      h("div", { style: "font-size:13px;font-weight:700;color:#a78bfa;", text: `${appStats.length} apps` }),
+    ),
+  );
+
+  // App breakdown progress bars
+  const appBarsContainer = h("div", { style: "display:flex;flex-direction:column;gap:5px;margin-bottom:10px;" });
+  for (const a of appStats) {
+    const row = h("div", { style: "display:flex;flex-direction:column;gap:2px;" },
+      h("div", { style: "display:flex;justify-content:space-between;font-size:10px;color:#cbd5e1;" },
+        h("span", { text: a.app }),
+        h("span", { text: `${Math.floor(a.minutes / 60)}h ${a.minutes % 60}m (${a.percent}%)` }),
+      ),
+      h("div", { style: "height:4px;background:rgba(255,255,255,0.1);border-radius:3px;overflow:hidden;" },
+        h("div", { style: `height:100%;width:${a.percent}%;background:linear-gradient(90deg, #38bdf8, #818cf8);border-radius:3px;` }),
+      ),
+    );
+    appBarsContainer.append(row);
+  }
+
+  let standupText = DailyRecap.generateStandupMarkdown();
+  const textBox = h("pre", { class: "sys-standup-box", style: "max-height:160px;overflow-y:auto;white-space:pre-wrap;font-size:11px;line-height:1.45;", text: standupText });
+
+  const taskInput = h("input", {
+    type: "text",
+    placeholder: "Adicionar entrega ou tarefa concluída...",
+    style: "flex:1;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.12);border-radius:8px;padding:6px 8px;color:#f1f5f9;font-size:11px;",
+  }) as HTMLInputElement;
+
+  const btnAddTask = h("button", {
+    class: "sys-btn-ghost",
+    text: "+ Adicionar",
+    style: "font-size:11px;padding:6px 10px;",
+    onclick: () => {
+      const val = taskInput.value.trim();
+      if (!val) return;
+      DailyRecap.addTask(val);
+      taskInput.value = "";
+      standupText = DailyRecap.generateStandupMarkdown();
+      textBox.textContent = standupText;
+    },
+  });
+
+  const taskRow = h("div", { style: "display:flex;gap:6px;align-items:center;margin-top:8px;" }, taskInput, btnAddTask);
 
   const btnCopy = h("button", {
     class: "sys-btn-primary",
     text: "📋 Copiar para WhatsApp / Teams",
+    style: "margin-top:10px;",
     onclick: () => {
       void navigator.clipboard.writeText(standupText);
       setCopied(btnCopy, "📋 Copiar para WhatsApp / Teams");
     },
   });
 
-  const actions = h("div", { class: "sys-actions-row" }, btnCopy);
-  card.append(head, textBox, actions);
-  return card;
-}
-
-// ── 11. Features 6, 8, 9, 10: Bem-Estar & Ergonomia ──────────────────────────
-
-export function renderWellnessCard(): HTMLElement {
-  const card = h("div", { class: "sys-agent-card" });
-
-  const head = h(
-    "div",
-    { class: "sys-card-head" },
-    h("span", { class: "sys-icon", text: "💧" }),
-    h("div", { class: "sys-title-group" },
-      h("span", { class: "sys-card-title", text: "Bem-Estar & Ergonomia (Mascote Embasa)" }),
-      h("span", { class: "sys-card-sub", text: "Hidratação, descanso ocular e alongamento" }),
-    ),
-  );
-
-  const state = Wellness.getState();
-
-  // Water widget
-  const waterRow = h("div", { class: "sys-wellness-row" },
-    h("div", { class: "sys-wellness-info" },
-      h("span", { class: "sys-wellness-icon", text: "💧" }),
-      h("div", undefined,
-        h("div", { class: "sys-wellness-label", text: "Hidratação Diária" }),
-        h("div", { class: "sys-wellness-sub", text: `${state.glassesDrankToday} de ${state.goalGlasses} copos bebidos` }),
-      ),
-    ),
-    h("button", {
-      class: "sys-btn-primary",
-      text: "+1 Copo 💧",
-      onclick: () => Wellness.drinkGlass(),
-    }),
-  );
-
-  // Micro-stretch widget
-  const stretchRow = h("div", { class: "sys-wellness-row" },
-    h("div", { class: "sys-wellness-info" },
-      h("span", { class: "sys-wellness-icon", text: "🧘" }),
-      h("div", undefined,
-        h("div", { class: "sys-wellness-label", text: "Micro-Alongamento (30s)" }),
-        h("div", { class: "sys-wellness-sub", text: "Alívio de tensão nos ombros e punhos" }),
-      ),
-    ),
-    h("button", {
-      class: "sys-btn-ghost",
-      text: "Iniciar 30s",
-      onclick: () => Wellness.startMicroStretch(),
-    }),
-  );
-
-  // 20-20-20 Eye Rest
-  const eyeRow = h("div", { class: "sys-wellness-row" },
-    h("div", { class: "sys-wellness-info" },
-      h("span", { class: "sys-wellness-icon", text: "👀" }),
-      h("div", undefined,
-        h("div", { class: "sys-wellness-label", text: "Regra 20-20-20" }),
-        h("div", { class: "sys-wellness-sub", text: "Descanso ocular contra fadiga visual" }),
-      ),
-    ),
-    h("button", {
-      class: "sys-chip-btn",
-      text: "Pausar 20s",
-      onclick: () => Wellness.startEyeRest(),
-    }),
-  );
-
-  card.append(head, waterRow, stretchRow, eyeRow);
+  card.append(head, statsGrid, appBarsContainer, textBox, taskRow, btnCopy);
   return card;
 }

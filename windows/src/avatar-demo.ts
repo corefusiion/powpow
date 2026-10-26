@@ -1,4 +1,5 @@
 import { EmbasaAvatarElement } from './avatar/EmbasaAvatarElement';
+import { VaultAvatarElement, type MouthVariant } from './avatar/VaultAvatarElement';
 import { MascotSelector } from './avatar/MascotSelector';
 import type { Emotion, Gesture } from './avatar/types';
 import { DotPal } from '../../src/index.js';
@@ -220,4 +221,109 @@ if (selectorMount) {
   });
   selectorMount.appendChild(selector.container);
 }
+
+// ── 5. Setup do Rig 2D Articulado (Vault Mascot - Etapa 1) ──
+const vaultMount = document.getElementById('vault-avatar-mount');
+if (vaultMount) {
+  const vaultAvatar = new VaultAvatarElement();
+  vaultAvatar.setAttribute('tracking', 'true');
+  vaultMount.appendChild(vaultAvatar);
+
+  // Toggle Skeleton / Pivôs
+  const btnToggleSkeleton = document.getElementById('btn-toggle-skeleton');
+  let skeletonActive = false;
+  btnToggleSkeleton?.addEventListener('click', () => {
+    skeletonActive = !skeletonActive;
+    vaultAvatar.toggleSkeletonOverlay(skeletonActive);
+    if (btnToggleSkeleton) {
+      btnToggleSkeleton.textContent = skeletonActive ? '👁️ Ocultar Pivôs' : '👁️ Exibir Pivôs & Esqueleto';
+    }
+  });
+
+  // Reset Pose
+  document.getElementById('btn-reset-rig-pose')?.addEventListener('click', () => {
+    vaultAvatar.applyPose('reference');
+    syncSlidersToPose('reference');
+  });
+
+  // Presets de Pose
+  const poseBtns = document.querySelectorAll<HTMLButtonElement>('[data-vault-pose]');
+  poseBtns.forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const pose = btn.getAttribute('data-vault-pose')!;
+      poseBtns.forEach((b) => b.classList.remove('active'));
+      btn.classList.add('active');
+      vaultAvatar.applyPose(pose);
+      syncSlidersToPose(pose);
+    });
+  });
+
+  // Sliders individuais de juntas anatômicas
+  const bindSlider = (sliderId: string, valId: string, bone: any) => {
+    const slider = document.getElementById(sliderId) as HTMLInputElement | null;
+    const valSpan = document.getElementById(valId);
+    slider?.addEventListener('input', () => {
+      const deg = parseInt(slider.value, 10);
+      if (valSpan) valSpan.textContent = `${deg}°`;
+      vaultAvatar.setBoneAngle(bone, deg);
+    });
+  };
+
+  bindSlider('slider-sr', 'val-sr', 'shoulder_right');
+  bindSlider('slider-er', 'val-er', 'elbow_right');
+  bindSlider('slider-sl', 'val-sl', 'shoulder_left');
+  bindSlider('slider-el', 'val-el', 'elbow_left');
+  bindSlider('slider-head', 'val-head', 'head');
+  bindSlider('slider-torso', 'val-torso', 'torso');
+  bindSlider('slider-hr', 'val-hr', 'hip_right');
+  bindSlider('slider-hl', 'val-hl', 'hip_left');
+
+  function syncSlidersToPose(_poseName?: string) {
+    const updateSlider = (sliderId: string, valId: string, bone: any) => {
+      const slider = document.getElementById(sliderId) as HTMLInputElement | null;
+      const valSpan = document.getElementById(valId);
+      if (slider) {
+        const deg = Math.round(vaultAvatar.getBoneAngle(bone));
+        slider.value = String(deg);
+        if (valSpan) valSpan.textContent = `${deg}°`;
+      }
+    };
+    updateSlider('slider-sr', 'val-sr', 'shoulder_right');
+    updateSlider('slider-er', 'val-er', 'elbow_right');
+    updateSlider('slider-sl', 'val-sl', 'shoulder_left');
+    updateSlider('slider-el', 'val-el', 'elbow_left');
+    updateSlider('slider-head', 'val-head', 'head');
+    updateSlider('slider-torso', 'val-torso', 'torso');
+    updateSlider('slider-hr', 'val-hr', 'hip_right');
+    updateSlider('slider-hl', 'val-hl', 'hip_left');
+  }
+
+  // Variantes de Mãos
+  const selectHandR = document.getElementById('select-hand-r') as HTMLSelectElement | null;
+  selectHandR?.addEventListener('change', () => {
+    vaultAvatar.setHandVariant('right', selectHandR.value);
+  });
+
+  const selectHandL = document.getElementById('select-hand-l') as HTMLSelectElement | null;
+  selectHandL?.addEventListener('change', () => {
+    vaultAvatar.setHandVariant('left', selectHandL.value);
+  });
+
+  // Bocas
+  const mouthBtns = document.querySelectorAll<HTMLButtonElement>('[data-vault-mouth]');
+  mouthBtns.forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const mouth = btn.getAttribute('data-vault-mouth') as MouthVariant;
+      mouthBtns.forEach((b) => b.classList.remove('active'));
+      btn.classList.add('active');
+      vaultAvatar.setMouthVariant(mouth);
+    });
+  });
+
+  // Piscar
+  document.getElementById('btn-vault-blink')?.addEventListener('click', () => {
+    vaultAvatar.blink();
+  });
+}
+
 

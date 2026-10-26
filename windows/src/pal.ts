@@ -16,16 +16,26 @@ import { recordTokenUsage } from "./core/plan";
 import { t } from "./core/i18n";
 import { h } from "./views/dom";
 import { DotPal, registerCustom, type CustomPal, type Emote } from "../../src/index.js";
+import { registerAllPageMascots } from "./avatar/registerMascots";
 import { Sound } from "./core/sound";
+import { Soundscape, type SoundscapePlayerState, type SoundscapeStyle } from "./core/soundscape";
+import { DailyRecap } from "./core/productivity";
+import { Wellness } from "./core/wellness";
+
+// Registra todos os mascotes (Doraemon, Vault Boy e os 52 mascotes) no runtime do pal
+registerAllPageMascots();
 
 // Window geometry — mirrors tauri.conf.json's "pal" entry. The body keeps the
 // old 140x250 box at the window's left edge; the remaining width is the room
-// the card opens into (360px) or the screen chat popup (540x440px).
+// the card opens into (360px), the floating soundscape popup (420x340px) or
+// the screen chat popup (540x440px).
 const CARD_W = 360;
 const PAL_W = 140;
 const PAL_H = 250;
 const CHAT_W = 540;
 const CHAT_H = 440;
+const SOUNDSCAPE_W = 420;
+const SOUNDSCAPE_H = 340;
 // Mochi's canvas: the body is 60 % of it, so 130 px of canvas is the 78 px
 // body the dot-pal wears too — both sit on the centre of the body's box.
 const BOT_SIZE = 130;
@@ -122,6 +132,35 @@ const chatLightboxCloseBtn = document.getElementById("pal-chat-lightbox-close");
 const selectorOverlayEl = document.getElementById("pal-selector-overlay");
 const selectorBoxEl = document.getElementById("pal-selector-box");
 const selectorSizeBadgeEl = document.getElementById("pal-selector-size-badge");
+
+// Floating Soundscape Mini-Player elements
+const soundscapePopupEl = document.getElementById("pal-soundscape-popup");
+const soundscapeBadgeEl = document.getElementById("pal-soundscape-style-badge");
+const soundscapeCloseBtn = document.getElementById("pal-soundscape-close-btn");
+const soundscapeDiscEl = document.getElementById("pal-soundscape-disc");
+const soundscapeTrackTitleEl = document.getElementById("pal-soundscape-track-title");
+const soundscapeTrackArtistEl = document.getElementById("pal-soundscape-track-artist");
+const soundscapeTimeCurrEl = document.getElementById("pal-soundscape-time-curr");
+const soundscapeTimeDurEl = document.getElementById("pal-soundscape-time-dur");
+const soundscapeProgressTrackEl = document.getElementById("pal-soundscape-progress-track");
+const soundscapeProgressFillEl = document.getElementById("pal-soundscape-progress-fill");
+const soundscapePrevBtn = document.getElementById("pal-soundscape-prev-btn");
+const soundscapePlayBtn = document.getElementById("pal-soundscape-play-btn");
+const soundscapeNextBtn = document.getElementById("pal-soundscape-next-btn");
+const soundscapeStylesEl = document.getElementById("pal-soundscape-styles");
+const soundscapeVolSlider = document.getElementById("pal-soundscape-vol-slider") as HTMLInputElement | null;
+const soundscapeVolValEl = document.getElementById("pal-soundscape-vol-val");
+
+let isSoundscapeOpen = false;
+
+// User drag-and-drop state for repositioning the floating mascot
+let isUserDraggingPal = false;
+let dragStartScreenX = 0;
+let dragStartScreenY = 0;
+let dragStartPalX = 0;
+let dragStartPalY = 0;
+let hasUserMovedEnoughToDrag = false;
+let suppressNextClick = false;
 
 let isChatOpen = false;
 let isChatSending = false;
@@ -1214,11 +1253,16 @@ let isPerchedOnWindow = false;
 async function pollActiveWindowBounds() {
   const now = performance.now();
   if (now - lastWindowPoll < WINDOW_POLL_INTERVAL_MS) return;
+  const elapsedSec = Math.round((now - lastWindowPoll) / 1000);
   lastWindowPoll = now;
   try {
     const b = await Bridge.activeWindowBounds();
     if (b && b.width >= 160 && b.height >= 160) {
       cachedWindowBounds = { ...b, at: now };
+      if (b.appName) {
+        DailyRecap.recordAppUsage(b.appName, elapsedSec);
+        Wellness.recordActivity(b.appName);
+      }
     }
   } catch {
     // Graceful fallback
@@ -1376,7 +1420,11 @@ function step(dt: number, now: number) {
   } else if (rule === "watch") {
     eyeTo = cursorAt >= 0 ? cursorPos : null;
     const distFromStation = Math.hypot(cursorPos.x - stationCursor.x, cursorPos.y - stationCursor.y);
-    if (stationCursor.x === -9999 || distFromStation > SHIFT_THRESHOLD) {
+    const distFromCurrentPal = Math.hypot(cursorPos.x - (x + PAL_W / 2), cursorPos.y - (y + PAL_H / 2));
+    if (distFromCurrentPal < 150) {
+      // Cursor is near the mascot: stay put and observe comfortably, don't trigger reroute
+      stationShiftStart = 0;
+    } else if (stationCursor.x === -9999 || distFromStation > SHIFT_THRESHOLD) {
       // Activity moved to a noticeably different screen area (>240px away)
       if (stationShiftStart === 0) {
         stationShiftStart = now;
@@ -1422,9 +1470,13 @@ function step(dt: number, now: number) {
   const dy = t.y - y;
   const dist = Math.hypot(dx, dy);
   if (dist > 0) {
-    if (dx !== 0) {
-      faceDir = Math.sign(dx);
-      if (pal) pal.setDirection(faceDir);
+    // Direction hysteresis: require substantial movement (>10px) to prevent rapid 1-frame flipping
+    if (Math.abs(dx) > 10) {
+      const newDir = Math.sign(dx);
+      if (newDir !== 0 && newDir !== faceDir) {
+        faceDir = newDir;
+        if (pal) pal.setDirection(faceDir);
+      }
     }
     if (pal && currentVelocity > 2) {
       pal.setPose("walk");
@@ -1495,11 +1547,21 @@ function computeGaze(dt: number, now: number) {
     const dy = cursorPos.y - (y + PAL_H / 2);
     const dist = Math.hypot(dx, dy);
 
-    if (dist > 70) {
+    if (dist > 90) {
       // Gentle direction: clamped to friendly max ±0.35 horizontal, ±0.25 vertical
       const s = Math.tanh(dist / 400);
       targetGazeX = Math.max(-0.35, Math.min(0.35, (dx / dist) * s * 0.6));
       targetGazeY = Math.max(-0.25, Math.min(0.25, (dy / dist) * s * 0.45));
+    } else if (dist > 25) {
+      // Damp smoothly towards forward resting gaze to prevent rapid angular swings
+      const t = (dist - 25) / 65;
+      const s = Math.tanh(dist / 400);
+      const activeX = Math.max(-0.35, Math.min(0.35, (dx / dist) * s * 0.6));
+      const activeY = Math.max(-0.25, Math.min(0.25, (dy / dist) * s * 0.45));
+      const restingX = faceDir * 0.12;
+      const restingY = 0.04;
+      targetGazeX = activeX * t + restingX * (1 - t);
+      targetGazeY = activeY * t + restingY * (1 - t);
     } else {
       // Close by: relaxed forward gaze
       targetGazeX = faceDir * 0.12;
@@ -1616,17 +1678,28 @@ function syncCharacter() {
     el.character = want;
     root.append(el);
     pal = el;
+    pal.look = "none";
     pal.setDirection(faceDir);
   }
   applyState(lastState);
 }
 
-// ── The card ────────────────────────────────────────────────────────────────
+// ── The card & Soundscape ───────────────────────────────────────────────────
 /** Tell Rust which part of the window takes the mouse: the body, plus the
- *  card when it is open — the transparent rest stays click-through. */
+ *  card, soundscape, or chat popup when open — the transparent rest stays click-through. */
 function pushRect() {
-  const w = isChatOpen ? CHAT_W : (cardOpen || isAlertOpen) ? CARD_W : PAL_W;
-  const h = isChatOpen ? CHAT_H : PAL_H;
+  let w = PAL_W;
+  let h = PAL_H;
+  if (isChatOpen) {
+    w = CHAT_W;
+    h = CHAT_H;
+  } else if (isSoundscapeOpen) {
+    w = SOUNDSCAPE_W;
+    h = SOUNDSCAPE_H;
+  } else if (cardOpen || isAlertOpen) {
+    w = CARD_W;
+    h = PAL_H;
+  }
   lastRect = { x: 0, y: 0, w, h };
   void Bridge.setPalRect(lastRect.x, lastRect.y, lastRect.w, lastRect.h);
 }
@@ -1637,11 +1710,63 @@ function setCard(open: boolean) {
   cardEl.hidden = !open;
   if (open && isAlertOpen) closeAlertPopup();
   if (open && isChatOpen) closeScreenChat();
+  if (open && isSoundscapeOpen) closeSoundscapePopup();
   if (!open) {
     searchWrap.hidden = true;
     searchOpenBtn.hidden = false;
     if (document.activeElement === searchInput) searchInput.blur();
   }
+  pushRect();
+}
+
+function formatSec(seconds: number): string {
+  const m = Math.floor(seconds / 60);
+  const s = Math.floor(seconds % 60);
+  return `${m}:${s < 10 ? "0" : ""}${s}`;
+}
+
+function renderSoundscapePopupUI(state: SoundscapePlayerState) {
+  if (!soundscapePopupEl || !isSoundscapeOpen) return;
+  if (soundscapeTrackTitleEl) soundscapeTrackTitleEl.textContent = state.currentTrack.title;
+  if (soundscapeTrackArtistEl) soundscapeTrackArtistEl.textContent = state.currentTrack.artist;
+  if (soundscapeBadgeEl) soundscapeBadgeEl.textContent = state.currentTrack.styleLabel;
+  if (soundscapePlayBtn) soundscapePlayBtn.textContent = state.isPlaying ? "⏸" : "▶";
+  if (soundscapeDiscEl) soundscapeDiscEl.classList.toggle("is-spinning", state.isPlaying);
+
+  if (soundscapeTimeCurrEl) soundscapeTimeCurrEl.textContent = formatSec(state.currentTime);
+  if (soundscapeTimeDurEl) soundscapeTimeDurEl.textContent = formatSec(state.duration);
+  const pct = state.duration > 0 ? (state.currentTime / state.duration) * 100 : 0;
+  if (soundscapeProgressFillEl) soundscapeProgressFillEl.style.width = `${pct.toFixed(1)}%`;
+
+  if (soundscapeStylesEl) {
+    for (const btn of Array.from(soundscapeStylesEl.querySelectorAll<HTMLButtonElement>(".pal-soundscape-style-btn"))) {
+      btn.classList.toggle("active", btn.dataset.style === state.currentStyle);
+    }
+  }
+
+  if (soundscapeVolSlider && document.activeElement !== soundscapeVolSlider) {
+    soundscapeVolSlider.value = String(Math.round(state.volume * 100));
+  }
+  if (soundscapeVolValEl) {
+    soundscapeVolValEl.textContent = `${Math.round(state.volume * 100)}%`;
+  }
+}
+
+function openSoundscapePopup() {
+  if (isSoundscapeOpen) return;
+  isSoundscapeOpen = true;
+  if (cardOpen) setCard(false);
+  if (isAlertOpen) closeAlertPopup();
+  if (isChatOpen) closeScreenChat();
+  if (soundscapePopupEl) soundscapePopupEl.hidden = false;
+  renderSoundscapePopupUI(Soundscape.getState());
+  pushRect();
+}
+
+function closeSoundscapePopup() {
+  if (!isSoundscapeOpen) return;
+  isSoundscapeOpen = false;
+  if (soundscapePopupEl) soundscapePopupEl.hidden = true;
   pushRect();
 }
 
@@ -2159,15 +2284,9 @@ async function press(action: string) {
       showThought("📋 Abrindo Área de Transferência...", "star");
       callPal(action);
       return;
-    case "wellness":
-      setCard(false);
-      showThought("💧 Cuidando da sua saúde e hidratação!", "love");
-      callPal(action);
-      return;
     case "soundscape":
       setCard(false);
-      showThought("🎧 Abrindo Soundscape Lo-Fi...", "happy");
-      callPal(action);
+      openSoundscapePopup();
       return;
     case "recap":
       setCard(false);
@@ -2360,22 +2479,165 @@ async function main() {
     }, alertRemainingMs);
   });
 
+  // ── Proactive Metric-Driven Wellness & Anti-Burnout Alerts ──
+  window.addEventListener("powpow-wellness-alert", (e: Event) => {
+    const detail = (e as CustomEvent).detail;
+    if (detail?.message) {
+      showThought(detail.message, "love", 8000, true);
+    }
+  });
+
+  window.addEventListener("powpow-workday-end", (e: Event) => {
+    const detail = (e as CustomEvent).detail;
+    if (detail?.message) {
+      showThought(detail.message, "star", 8000, true);
+    }
+  });
+
+  // ── Drag & Drop Mascot Movement (Click & Hold to Move) ──
+  root.addEventListener("pointerdown", (e) => {
+    const target = e.target as HTMLElement;
+    if (
+      target.closest("#pal-card") ||
+      target.closest("#pal-soundscape-popup") ||
+      target.closest("#pal-chat-popup") ||
+      target.closest("#pal-alert-popup")
+    ) {
+      return;
+    }
+
+    if (e.clientX <= PAL_W) {
+      isUserDraggingPal = true;
+      hasUserMovedEnoughToDrag = false;
+      dragStartScreenX = e.screenX;
+      dragStartScreenY = e.screenY;
+      dragStartPalX = x;
+      dragStartPalY = y;
+      try {
+        root.setPointerCapture(e.pointerId);
+      } catch {}
+    }
+  });
+
+  root.addEventListener("pointermove", (e) => {
+    if (!isUserDraggingPal) return;
+    const dx = e.screenX - dragStartScreenX;
+    const dy = e.screenY - dragStartScreenY;
+    if (!hasUserMovedEnoughToDrag && Math.hypot(dx, dy) > 6) {
+      hasUserMovedEnoughToDrag = true;
+      root.classList.add("is-user-dragging");
+      legs = [];
+      currentVelocity = 0;
+      if (cardOpen) setCard(false);
+      if (isSoundscapeOpen) closeSoundscapePopup();
+      if (thoughtEl) thoughtEl.hidden = true;
+      if (pal) pal.setPose("sit");
+    }
+
+    if (hasUserMovedEnoughToDrag) {
+      const spot = clampTo({ x: dragStartPalX + dx, y: dragStartPalY + dy });
+      x = spot.x;
+      y = spot.y;
+      send();
+    }
+  });
+
+  const finishPalDrag = () => {
+    if (!isUserDraggingPal) return;
+    isUserDraggingPal = false;
+    root.classList.remove("is-user-dragging");
+    if (hasUserMovedEnoughToDrag) {
+      suppressNextClick = true;
+      setTimeout(() => {
+        suppressNextClick = false;
+      }, 250);
+      legs = [];
+      currentVelocity = 0;
+      idleUntil = performance.now() + 180000; // Park comfortably at user-chosen spot for 3 minutes!
+      if (pal) pal.setPose("sit");
+    }
+    hasUserMovedEnoughToDrag = false;
+  };
+
+  root.addEventListener("pointerup", finishPalDrag);
+  root.addEventListener("pointercancel", finishPalDrag);
+
   root.addEventListener("click", (e) => {
+    if (suppressNextClick) {
+      suppressNextClick = false;
+      return;
+    }
     const el = (e.target as HTMLElement).closest("[data-action]") as HTMLElement | null;
     if (el?.dataset.action) {
       void press(el.dataset.action);
       return;
     }
     if ((e.target as HTMLElement).closest("#pal-card")) return; // a gap, not a button
+    if ((e.target as HTMLElement).closest("#pal-soundscape-popup")) return;
     if ((e.target as HTMLElement).closest("#pal-alert-popup")) return;
     if ((e.target as HTMLElement).closest("#pal-chat-popup")) return;
     if (e.clientX <= PAL_W) {
       if (isChatOpen) {
         closeScreenChat();
+      } else if (isSoundscapeOpen) {
+        closeSoundscapePopup();
       } else {
         setCard(!cardOpen);
       }
     }
+  });
+
+  // ── Floating Soundscape Mini-Player Event Listeners ──
+  soundscapeCloseBtn?.addEventListener("click", (e) => {
+    e.stopPropagation();
+    closeSoundscapePopup();
+  });
+
+  soundscapePlayBtn?.addEventListener("click", (e) => {
+    e.stopPropagation();
+    Soundscape.toggle();
+  });
+
+  soundscapePrevBtn?.addEventListener("click", (e) => {
+    e.stopPropagation();
+    Soundscape.prev();
+  });
+
+  soundscapeNextBtn?.addEventListener("click", (e) => {
+    e.stopPropagation();
+    Soundscape.next();
+  });
+
+  soundscapeStylesEl?.addEventListener("click", (e) => {
+    const btn = (e.target as HTMLElement).closest(".pal-soundscape-style-btn") as HTMLElement | null;
+    if (btn && btn.dataset.style) {
+      e.stopPropagation();
+      Soundscape.setStyle(btn.dataset.style as SoundscapeStyle);
+    }
+  });
+
+  soundscapeProgressTrackEl?.addEventListener("click", (e) => {
+    e.stopPropagation();
+    const rect = soundscapeProgressTrackEl.getBoundingClientRect();
+    const clickX = e.clientX - rect.left;
+    const ratio = Math.max(0, Math.min(1, clickX / rect.width));
+    const duration = Soundscape.getState().duration;
+    if (duration > 0) {
+      Soundscape.seek(ratio * duration);
+    }
+  });
+
+  soundscapeVolSlider?.addEventListener("input", (e) => {
+    e.stopPropagation();
+    const val = parseFloat((e.target as HTMLInputElement).value);
+    Soundscape.setVolume(val / 100);
+    if (soundscapeVolValEl) {
+      soundscapeVolValEl.textContent = `${Math.round(val)}%`;
+    }
+  });
+
+  Soundscape.onStateChange((state) => {
+    renderSoundscapePopupUI(state);
   });
 
   // ── Screen Chat Event Listeners ──
