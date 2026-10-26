@@ -20,6 +20,7 @@ import { buildPlanPill, claudePillVisible, codexPillVisible, geminiPillVisible, 
 import { Pomodoro } from "../core/productivity";
 import { SysMonitor } from "../core/sysMonitor";
 import { Soundscape } from "../core/soundscape";
+import { Bridge } from "../core/bridge";
 
 export interface ViewActions {
   setView(v: IslandViewName): void;
@@ -585,6 +586,29 @@ function buildNote(): ViewHost {
 // ── In-island settings ────────────────────────────────────────────────────────
 
 function buildSettings(actions: ViewActions): ViewHost {
+  const mascots = [
+    { id: "embasa", label: "💧 Embasa 2D" },
+    { id: "doraemon", label: "🐱 Doraemon" },
+    { id: "vaultboy", label: "⚡ Vault Boy" },
+    { id: "shimeji", label: "🍄 Shimeji" },
+    { id: "mochi", label: "🥟 Mochi" },
+  ];
+  const mascotButtons = mascots.map((m) =>
+    h(
+      "button",
+      {
+        class: "mascot-seg-btn",
+        style: "padding: 3px 8px; font-size: 11px; border-radius: 999px; border: none; cursor: pointer; transition: all 0.15s ease;",
+        onclick: () => {
+          State.settings.character = m.id;
+          void Bridge.saveSettings(State.settings);
+          State.notify();
+          actions.blip();
+        },
+      },
+      m.label,
+    ),
+  );
   const soundSwitch = h("button", { class: "switch", onclick: () => actions.toggleSound() });
   const volume = h("input", {
     type: "range", min: "0", max: "0.2", step: "0.005",
@@ -600,6 +624,12 @@ function buildSettings(actions: ViewActions): ViewHost {
   const rows = h(
     "div",
     { class: "settings-rows" },
+    h(
+      "div",
+      { class: "settings-row", style: "gap:6px; flex-wrap:wrap; padding-bottom: 2px;" },
+      h("span", { style: "font-weight:600; font-size:11px; color:#cbd5e1; margin-right:4px;" }, "Mascote:"),
+      h("div", { class: "seg", style: "display:flex; gap:4px; flex-wrap:wrap;" }, ...mascotButtons),
+    ),
     h("div", { class: "settings-row" }, soundSwitch, h("span", { text: t("Sound") }), volume),
     h(
       "div",
@@ -633,6 +663,14 @@ function buildSettings(actions: ViewActions): ViewHost {
       soundSwitch.classList.toggle("on", s.soundEnabled);
       volume.value = String(s.soundVolume);
       volume.style.opacity = s.soundEnabled ? "1" : "0.4";
+      const curChar = s.character || "embasa";
+      mascotButtons.forEach((b, i) => {
+        const isSelected = curChar === mascots[i].id;
+        b.classList.toggle("on", isSelected);
+        b.style.background = isSelected ? "#3b82f6" : "rgba(255,255,255,0.08)";
+        b.style.color = isSelected ? "#ffffff" : "#94a3b8";
+        b.style.fontWeight = isSelected ? "600" : "400";
+      });
       autoLabel.textContent = `${t("Auto-close")} · ${Math.round(s.autoCloseInterval)}s`;
       segButtons.forEach((b, i) => b.classList.toggle("on", s.autoCloseInterval === [10, 15, 30][i]));
       clear(claudeBadge);

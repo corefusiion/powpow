@@ -794,6 +794,8 @@ fn create_settings_window(app: &AppHandle) {
         .title("Settings — Powpow")
         .inner_size(560.0, 680.0)
         .min_inner_size(460.0, 480.0)
+        .transparent(true)
+        .decorations(false)
         .resizable(true)
         .visible(false)
         .center()
@@ -831,7 +833,8 @@ pub fn show_settings_window(app: &AppHandle) {
             focus_win(&win);
             log::line("settings window created and displayed");
         } else {
-            log::line("settings window missing and could not be created");
+            log::line("settings window fallback to in-island settings view");
+            let _ = app.emit_to(island::WINDOW_LABEL, "tray", "settings".to_string());
         }
     }
 }
@@ -930,18 +933,7 @@ pub fn run() {
         .setup(move |app| {
             let handle = app.handle().clone();
             tray::build(&handle)?;
-            // Configure settings window close-to-hide (pre-created via tauri.conf.json)
-            if let Some(win) = handle.get_webview_window("settings") {
-                let hidden = win.clone();
-                win.on_window_event(move |event| {
-                    if let tauri::WindowEvent::CloseRequested { api, .. } = event {
-                        api.prevent_close();
-                        let _ = hidden.hide();
-                    }
-                });
-            } else {
-                create_settings_window(&handle);
-            }
+            // Settings window created on demand
 
             if let Some(win) = island::window(&handle) {
                 island::make_non_activating(&win);
