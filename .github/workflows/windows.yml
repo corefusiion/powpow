@@ -87,6 +87,7 @@ jobs:
           npm run pack
           $version = (Get-Content src-tauri/tauri.conf.json | ConvertFrom-Json).version
           "version=$version" >> $env:GITHUB_OUTPUT
+          Compress-Archive -Path target/release/powpow.exe, target/release/powpow-hook.exe -DestinationPath release/Powpow-Windows-$version-portable.zip -Force
           Get-ChildItem release | Format-Table Name, Length
 
       # Upload only on a manual run or when publishing a release.
@@ -100,15 +101,11 @@ jobs:
           retention-days: 30
 
       # The unsigned NSIS installer is what Defender false-positives on, so the
-      # bare binaries go up as well. hooks.rs already falls back to looking for
-      # powpow-hook.exe next to powpow.exe, which is exactly this layout, so the
-      # portable pair runs with working Claude Code hooks and no installer.
+      # portable zip provides the direct binaries without the NSIS unpacking stub.
       - uses: actions/upload-artifact@v4
         with:
           name: Powpow-Windows-portable
-          path: |
-            windows/target/release/powpow.exe
-            windows/target/release/powpow-hook.exe
+          path: windows/release/Powpow-Windows-${{ steps.pack.outputs.version }}-portable.zip
           retention-days: 30
 
       - name: Publish the release
