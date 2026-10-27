@@ -835,37 +835,38 @@ fn create_settings_window(app: &AppHandle) {
 }
 
 pub fn show_settings_window(app: &AppHandle) {
-    let focus_win = |win: &tauri::WebviewWindow| {
-        let _ = win.unminimize();
-        let _ = win.show();
-        let _ = win.set_always_on_top(true);
-        let _ = win.set_focus();
-        let _ = win.set_always_on_top(false);
-    };
+    let handle = app.clone();
+    let _ = app.run_on_main_thread(move || {
+        let app = &handle;
+        let focus_win = |win: &tauri::WebviewWindow| {
+            let _ = win.unminimize();
+            let _ = win.show();
+            let _ = win.set_always_on_top(true);
+            let _ = win.set_focus();
+            let _ = win.set_always_on_top(false);
+        };
 
-    // Always alert the island to open in-island settings as well
-    let _ = app.emit_to(island::WINDOW_LABEL, "tray", "settings".to_string());
+        // Always alert the island to open in-island settings as well
+        let _ = app.emit_to(island::WINDOW_LABEL, "tray", "settings".to_string());
 
-    if let Some(win) = app.get_webview_window("settings") {
-        focus_win(&win);
-        log::line("settings window displayed");
-    } else {
-        create_settings_window(app);
         if let Some(win) = app.get_webview_window("settings") {
             focus_win(&win);
-            log::line("settings window created and displayed");
+            log::line("settings window displayed");
         } else {
-            log::line("settings window fallback to in-island settings view");
+            create_settings_window(app);
+            if let Some(win) = app.get_webview_window("settings") {
+                focus_win(&win);
+                log::line("settings window created and displayed");
+            } else {
+                log::line("settings window fallback to in-island settings view");
+            }
         }
-    }
+    });
 }
 
 #[tauri::command]
 fn open_settings_window(app: AppHandle) {
-    let handle = app.clone();
-    let _ = app.run_on_main_thread(move || {
-        show_settings_window(&handle);
-    });
+    show_settings_window(&app);
 }
 
 pub fn run() {

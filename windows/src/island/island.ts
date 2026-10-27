@@ -428,10 +428,12 @@ export class Island {
           if (from === "powpow") State.view = State.defaultView();
           if (!this.wasInIsland) this.fsm.mouseLeft();
           break;
-        case "home":
-          this.expand(State.defaultView());
-          if (!this.wasInIsland) this.fsm.mouseLeft();
+        case "home": {
+          const target = State.view && State.view !== "greeting" ? State.view : State.defaultView();
+          this.expand(target);
+          if (!this.wasInIsland && !State.isPinned) this.fsm.mouseLeft();
           break;
+        }
         case "powpow":
           this.expand("greeting");
           this.greeting.start();
@@ -514,10 +516,12 @@ export class Island {
     if (view === "settings") {
       State.isPinned = true;
       this.fsm.pinned = true;
+      this.homeCollapseAt = null;
+      this.fsm.cancelTimers();
     }
     if (State.mode !== "expanded") {
-      this.fsm.forceHome();
       State.view = view;
+      this.fsm.forceHome();
       this.animateGeometry(false);
       State.notify();
       return;
@@ -637,7 +641,8 @@ export class Island {
         }
         State.isPinned = true;
         this.fsm.pinned = true;
-        void Bridge.openSettingsWindow();
+        this.homeCollapseAt = null;
+        this.fsm.cancelTimers();
         this.alert("settings");
         break;
       case "home":
@@ -656,9 +661,12 @@ export class Island {
     if (view === "settings") {
       State.isPinned = true;
       this.fsm.pinned = true;
+      this.homeCollapseAt = null;
+      this.fsm.cancelTimers();
     } else {
       this.fsm.pinned = State.isPinned;
     }
+    State.view = view;
     this.fsm.forceHome();
     this.expand(view);
   }

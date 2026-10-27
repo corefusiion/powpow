@@ -99,13 +99,14 @@ export function buildHeader(actions: ViewActions): ViewHost {
   const tabStory = h("button", { class: "tab", title: t("Story"), onclick: () => go("story") }, svg(ICONS.doc, 13));
   const tabChat = h("button", { class: "tab", title: t("Ask"), onclick: () => go("prompt") }, svg(ICONS.bubble, 13));
   const tabDrop = h("button", { class: "tab", title: t("Drop"), onclick: () => go("upload") }, svg(ICONS.plus, 13));
+  const tabSettings = h("button", { class: "tab", title: t("Settings"), onclick: () => go("settings") }, svg(ICONS.gear, 13));
 
   const gearBtn = h("button", {
+    class: "tab",
     title: t("Settings…"),
     onclick: (e: Event) => {
       e.stopPropagation();
       go("settings");
-      actions.openSettingsWindow();
     },
   }, svg(ICONS.gear, 14));
   const soundBtn = h("button", { title: t("Mute"), onclick: () => actions.toggleSound() }, svg(ICONS.speakerOn, 14));
@@ -119,7 +120,7 @@ export function buildHeader(actions: ViewActions): ViewHost {
       class: "tab lang-badge",
       title: t("Language: English — switch in Settings"),
       text: langBadge(),
-      onclick: () => actions.openSettingsWindow(),
+      onclick: () => go("settings"),
     },
   );
 
@@ -164,7 +165,7 @@ export function buildHeader(actions: ViewActions): ViewHost {
   const el = h(
     "div",
     { id: "header" },
-    h("div", { class: "tabs" }, tabHome, tabStory, tabChat, tabDrop),
+    h("div", { class: "tabs" }, tabHome, tabStory, tabChat, tabDrop, tabSettings),
     h(
       "div",
       { class: "header-actions" },
@@ -189,6 +190,7 @@ export function buildHeader(actions: ViewActions): ViewHost {
       tabStory.classList.toggle("on", v === "story");
       tabChat.classList.toggle("on", v === "prompt");
       tabDrop.classList.toggle("on", v === "upload");
+      tabSettings.classList.toggle("on", v === "settings");
       gearBtn.classList.toggle("on", v === "settings");
       clear(gearBtn);
       gearBtn.append(svg(v === "settings" ? ICONS.gearFill : ICONS.gear, 14));
@@ -281,7 +283,7 @@ function buildOverview(actions: ViewActions): ViewHost {
       cardKey = "";
       State.notify();
     },
-    openSettings: () => actions.openSettingsWindow(),
+    openSettings: () => actions.setView("settings"),
   };
 
   return {
