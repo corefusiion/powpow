@@ -216,7 +216,7 @@ fn set_paused(paused: bool) {
 // ── The roaming pal (a window of its own, so the island never has to move) ────
 
 /// Whether the pal is out walking. The island decides; the window asks once.
-static PAL_WANDER: AtomicBool = AtomicBool::new(false);
+static PAL_WANDER: AtomicBool = AtomicBool::new(true);
 
 /// The face the island last set. The pal asks for it when its page loads,
 /// since the event that carried it may have raced the page.
@@ -875,6 +875,8 @@ pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_single_instance::init(|app, _argv, _cwd| {
             let _ = app.emit_to(island::WINDOW_LABEL, "tray", "open".to_string());
+            apply_pal_wander(app, true);
+            let _ = app.emit_to("pal", "pal-summon", ());
         }))
         .plugin(tauri_plugin_autostart::init(MacosLauncher::LaunchAgent, None))
         .manage(Shared {
@@ -973,6 +975,7 @@ pub fn run() {
                 island::make_non_activating(&pal);
                 let _ = pal.set_ignore_cursor_events(true);
             }
+            apply_pal_wander(&handle, true);
             gate.collapsed.store(false, Ordering::Relaxed);
             gate.set_collapsed(false);
             island::spawn_cursor_poll(handle.clone(), gate.clone());

@@ -50,7 +50,7 @@
         "alwaysOnTop": true,
         "skipTaskbar": true,
         "focus": false,
-        "visible": false,
+        "visible": true,
         "center": false,
         "maximizable": false,
         "minimizable": false,
