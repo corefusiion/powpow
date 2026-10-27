@@ -35,7 +35,7 @@ pub fn build(app: &AppHandle) -> tauri::Result<()> {
             let id = event.id.as_ref();
             match id {
                 "quit" => {
-                    log::line("Tray Quit requested: terminating process");
+                    crate::log::line("Tray Quit requested: terminating process");
                     std::process::exit(0);
                 }
                 "settings" => {
