@@ -99,7 +99,14 @@ export function buildHeader(actions: ViewActions): ViewHost {
   const tabStory = h("button", { class: "tab", title: t("Story"), onclick: () => go("story") }, svg(ICONS.doc, 13));
   const tabChat = h("button", { class: "tab", title: t("Ask"), onclick: () => go("prompt") }, svg(ICONS.bubble, 13));
   const tabDrop = h("button", { class: "tab", title: t("Drop"), onclick: () => go("upload") }, svg(ICONS.plus, 13));
-  const tabSettings = h("button", { class: "tab", title: t("Settings"), onclick: () => go("settings") }, svg(ICONS.gear, 13));
+  const tabSettings = h("button", {
+    class: "tab",
+    title: t("Settings"),
+    onclick: () => {
+      go("settings");
+      actions.openSettingsWindow();
+    },
+  }, svg(ICONS.gear, 13));
 
   const gearBtn = h("button", {
     class: "tab",
@@ -107,6 +114,7 @@ export function buildHeader(actions: ViewActions): ViewHost {
     onclick: (e: Event) => {
       e.stopPropagation();
       go("settings");
+      actions.openSettingsWindow();
     },
   }, svg(ICONS.gear, 14));
   const soundBtn = h("button", { title: t("Mute"), onclick: () => actions.toggleSound() }, svg(ICONS.speakerOn, 14));

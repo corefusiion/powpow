@@ -2329,7 +2329,8 @@ async function press(action: string) {
       return;
     case "settings":
       setCard(false);
-      showThought("⚙️ Abrindo Configurações na Ilha...", "happy", 3000);
+      showThought("⚙️ Abrindo Configurações...", "happy", 3000);
+      void Bridge.openSettingsWindow();
       callPal("settings");
       return;
   }

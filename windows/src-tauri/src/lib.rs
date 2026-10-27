@@ -960,7 +960,16 @@ pub fn run() {
         .setup(move |app| {
             let handle = app.handle().clone();
             tray::build(&handle)?;
-            // Settings window created on demand
+            // Settings window close-to-hide (pre-created via tauri.conf.json)
+            if let Some(win) = handle.get_webview_window("settings") {
+                let hidden = win.clone();
+                win.on_window_event(move |event| {
+                    if let tauri::WindowEvent::CloseRequested { api, .. } = event {
+                        api.prevent_close();
+                        let _ = hidden.hide();
+                    }
+                });
+            }
 
             if let Some(win) = island::window(&handle) {
                 island::make_non_activating(&win);

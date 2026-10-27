@@ -2,7 +2,7 @@ use serde::Serialize;
 use tauri::{AppHandle, Emitter, Manager};
 use windows::Win32::Foundation::POINT;
 use windows::Win32::UI::Input::KeyboardAndMouse::{RegisterHotKey, MOD_CONTROL, MOD_NOREPEAT};
-use windows::Win32::UI::WindowsAndMessaging::{GetCursorPos, GetMessageW, MSG, WM_HOTKEY};
+use windows::Win32::UI::WindowsAndMessaging::{GetCursorPos, GetMessageW, PeekMessageW, MSG, PM_NOREMOVE, WM_HOTKEY};
 
 #[derive(Serialize, Clone, Copy)]
 pub struct SummonPayload {
@@ -17,6 +17,10 @@ pub fn spawn(app: AppHandle) {
         const VK_8: u32 = 0x38;
 
         unsafe {
+            // Force creation of Win32 message queue for this thread before registering thread hotkeys
+            let mut dummy = MSG::default();
+            let _ = PeekMessageW(&mut dummy, None, 0, 0, PM_NOREMOVE);
+
             if let Err(e) = RegisterHotKey(None, HOTKEY_SUMMON_PAL, MOD_CONTROL | MOD_NOREPEAT, VK_8) {
                 crate::log::line(format!("Failed to register Ctrl+8 hotkey: {e}"));
                 return;
@@ -42,13 +46,16 @@ pub fn spawn(app: AppHandle) {
                         y: point.y,
                     };
 
-                    // 3. Show, unminimize, focus, and emit to pal window
-                    if let Some(pal) = app.get_webview_window("pal") {
-                        let _ = pal.show();
-                        let _ = pal.unminimize();
-                        let _ = pal.set_focus();
-                        let _ = pal.emit("pal-summon", payload);
-                    }
+                    // 3. Show, unminimize, focus, and emit to pal window on main thread
+                    let app_handle = app.clone();
+                    let _ = app.run_on_main_thread(move || {
+                        if let Some(pal) = app_handle.get_webview_window("pal") {
+                            let _ = pal.show();
+                            let _ = pal.unminimize();
+                            let _ = pal.set_focus();
+                            let _ = pal.emit("pal-summon", payload);
+                        }
+                    });
 
                     // 4. Also notify island and pal about unpause and wander state
                     let _ = app.emit("pal-unpause", ());

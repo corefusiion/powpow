@@ -1037,11 +1037,10 @@ export class Island {
   syncPalWander() {
     const on =
       State.settings.wander &&
-      State.mode === "compact" &&
+      State.mode !== "expanded" &&
       !State.paused &&
       State.stateOverride == null &&
       State.pendingApproval == null &&
-      !this.collapsed &&
       !this.wasInIsland &&
       !this.draggingGhost &&
       !State.fileDragOver &&
