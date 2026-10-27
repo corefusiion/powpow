@@ -36,7 +36,6 @@ pub fn build(app: &AppHandle) -> tauri::Result<()> {
             match id {
                 "quit" => {
                     log::line("Tray Quit requested: terminating process");
-                    app.cleanup_before_exit();
                     std::process::exit(0);
                 }
                 "settings" => {

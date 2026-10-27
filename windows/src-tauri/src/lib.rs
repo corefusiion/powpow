@@ -202,8 +202,7 @@ fn find_on_path(stem: &str) -> Option<std::path::PathBuf> {
 }
 
 #[tauri::command]
-fn quit_app(app: AppHandle) {
-    app.cleanup_before_exit();
+fn quit_app(_app: AppHandle) {
     std::process::exit(0);
 }
 
