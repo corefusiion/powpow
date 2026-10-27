@@ -51,3 +51,12 @@ Corporate and consumer antivirus solutions (Trend Micro Apex One, Windows Defend
 3. **Browser SmartScreen Download Workaround:**
    - In Microsoft Edge, if a brand-new unsigned SHA-256 hash displays "Download blocked / not commonly downloaded":
      Press `Ctrl + J` (Downloads) -> click the three dots `...` next to the file -> **Keep** (`Manter`) -> **Show more** (`Mostrar mais`) -> **Keep anyway** (`Manter mesmo assim`).
+
+4. **Never Create Nested ZIP Archives in GitHub Actions Artifacts (upload-artifact):**
+   - GitHub Actions upload-artifact ALWAYS wraps uploaded files inside a .zip.
+   - If you run Compress-Archive to produce a .zip and then pass that .zip to upload-artifact, the resulting download is a nested zip (.zip inside a .zip containing .exe files).
+   - Google Safe Browsing heuristics classify nested archives containing executables as high-risk malware dropper evasion, triggering 'Download perigoso bloqueado' in Google Chrome.
+   - Configuration Rule: Pass bare binary paths (target/release/powpow.exe, target/release/powpow-hook.exe) to upload-artifact so GitHub generates a clean, single-layer flat archive.
+5. **Publish to GitHub Releases for Legitimate Distribution:**
+   - Chrome Safe Browsing trusts downloads from official GitHub Release assets (github.com/.../releases/download/...) far more than ephemeral runner artifact URLs (pipelines.actions.githubusercontent.com).
+   - The CI workflow maintains the rolling windows-latest release with direct links to both Powpow-Windows-setup.exe and Powpow-Windows-portable.zip.

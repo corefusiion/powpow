@@ -71,6 +71,7 @@
     ],
     "resources": { "../target/release/powpow-hook.exe": "powpow-hook.exe" },
     "copyright": "© 2026 Gleisson Santos",
+    "publisher": "Gleisson Santos",
     "category": "DeveloperTool",
     "shortDescription": "Mochi lives at the top of your screen",
     "longDescription": "Powpow puts Mochi at the top of your screen: it shows your Claude Code sessions and a few integrations, and lets you approve, answer, chat and drop files without leaving what you are doing.",
