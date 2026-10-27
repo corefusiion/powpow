@@ -203,7 +203,8 @@ fn find_on_path(stem: &str) -> Option<std::path::PathBuf> {
 
 #[tauri::command]
 fn quit_app(app: AppHandle) {
-    app.exit(0);
+    app.cleanup_before_exit();
+    std::process::exit(0);
 }
 
 /// Tray → Pause. Paused means paused: the pollers stop talking to the network,

@@ -511,6 +511,10 @@ export class Island {
   setView(view: IslandViewName) {
     this.stopSequenceIfLeaving(view);
     this.pinUploadIfNeeded(view);
+    if (view === "settings") {
+      State.isPinned = true;
+      this.fsm.pinned = true;
+    }
     if (State.mode !== "expanded") {
       this.fsm.forceHome();
       State.view = view;
@@ -631,6 +635,8 @@ export class Island {
           State.paused = false;
           void Bridge.setPaused(false);
         }
+        State.isPinned = true;
+        this.fsm.pinned = true;
         void Bridge.openSettingsWindow();
         this.alert("settings");
         break;
@@ -647,7 +653,12 @@ export class Island {
 
   /** Alert from the hook server: open on this view. Pinned alerts never auto-close. */
   alert(view: IslandViewName) {
-    this.fsm.pinned = State.isPinned;
+    if (view === "settings") {
+      State.isPinned = true;
+      this.fsm.pinned = true;
+    } else {
+      this.fsm.pinned = State.isPinned;
+    }
     this.fsm.forceHome();
     this.expand(view);
   }

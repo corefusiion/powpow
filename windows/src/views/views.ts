@@ -102,7 +102,8 @@ export function buildHeader(actions: ViewActions): ViewHost {
 
   const gearBtn = h("button", {
     title: t("Settings…"),
-    onclick: () => {
+    onclick: (e: Event) => {
+      e.stopPropagation();
       go("settings");
       actions.openSettingsWindow();
     },
@@ -646,9 +647,22 @@ function buildSettings(actions: ViewActions): ViewHost {
       h("div", { class: "grow" }),
       h("button", {
         class: "link-btn",
+        style: "color:#38bdf8;font-size:11.5px;font-weight:600;margin-right:8px",
+        text: "Janela Completa ↗",
+        onclick: (e: Event) => {
+          e.stopPropagation();
+          actions.openSettingsWindow();
+        },
+      }),
+      h("button", {
+        class: "link-btn",
         style: "color:#8e939c;font-size:11.5px",
-        text: t("Settings…"),
-        onclick: () => actions.openSettingsWindow(),
+        text: "✕ Fechar",
+        onclick: (e: Event) => {
+          e.stopPropagation();
+          State.isPinned = false;
+          actions.setView(State.defaultView());
+        },
       }),
     ),
   );
