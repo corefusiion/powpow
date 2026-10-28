@@ -57,29 +57,6 @@
         "closable": false,
         "dragDropEnabled": false,
         "additionalBrowserArgs": "--disable-features=msWebOOUI,msPdfOOUI,msSmartScreenProtection --autoplay-policy=no-user-gesture-required"
-      },
-      {
-        "label": "settings",
-        "title": "Settings — Powpow",
-        "url": "settings.html",
-        "width": 580,
-        "height": 720,
-        "minWidth": 460,
-        "minHeight": 480,
-        "resizable": true,
-        "decorations": false,
-        "transparent": true,
-        "shadow": false,
-        "alwaysOnTop": false,
-        "skipTaskbar": false,
-        "focus": false,
-        "visible": false,
-        "center": true,
-        "maximizable": false,
-        "minimizable": true,
-        "closable": true,
-        "dragDropEnabled": false,
-        "additionalBrowserArgs": "--disable-features=msWebOOUI,msPdfOOUI,msSmartScreenProtection --autoplay-policy=no-user-gesture-required"
       }
     ]
   },

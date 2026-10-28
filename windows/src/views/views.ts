@@ -597,6 +597,9 @@ function buildNote(): ViewHost {
 // ── In-island settings ────────────────────────────────────────────────────────
 
 function buildSettings(actions: ViewActions): ViewHost {
+  type SettingsTab = "mascots" | "keys" | "hooks" | "general";
+  let activeTab: SettingsTab = "mascots";
+
   const mascots = [
     { id: "embasa", label: "💧 Embasa 2D" },
     { id: "doraemon", label: "🐱 Doraemon" },
@@ -604,12 +607,13 @@ function buildSettings(actions: ViewActions): ViewHost {
     { id: "shimeji", label: "🍄 Shimeji" },
     { id: "mochi", label: "🥟 Mochi" },
   ];
+
   const mascotButtons = mascots.map((m) =>
     h(
       "button",
       {
         class: "mascot-seg-btn",
-        style: "padding: 3px 8px; font-size: 11px; border-radius: 999px; border: none; cursor: pointer; transition: all 0.15s ease;",
+        style: "padding: 3px 9px; font-size: 11px; border-radius: 999px; border: none; cursor: pointer; transition: all 0.15s ease;",
         onclick: () => {
           State.settings.character = m.id;
           void Bridge.saveSettings(State.settings);
@@ -620,65 +624,259 @@ function buildSettings(actions: ViewActions): ViewHost {
       m.label,
     ),
   );
+
+  const personalities = [
+    { id: "sarcastic", label: "😏 Sarcástico" },
+    { id: "friendly", label: "😊 Amigável" },
+    { id: "coach", label: "💪 Treinador" },
+    { id: "philosophical", label: "🧐 Filosófico" },
+    { id: "chaotic", label: "🤪 Caótico" },
+  ];
+
+  const personalityButtons = personalities.map((p) =>
+    h(
+      "button",
+      {
+        class: "mascot-seg-btn",
+        style: "padding: 3px 8px; font-size: 10.5px; border-radius: 999px; border: none; cursor: pointer; transition: all 0.15s ease;",
+        onclick: () => {
+          State.settings.personality = p.id;
+          void Bridge.saveSettings(State.settings);
+          State.notify();
+          actions.blip();
+        },
+      },
+      p.label,
+    ),
+  );
+
+  // Sub-tabs
+  const tabBtnMascots = h("button", { class: "tab on", style: "font-size:11px; padding:2px 8px;", onclick: () => switchTab("mascots") }, "🎭 Mascote");
+  const tabBtnKeys = h("button", { class: "tab", style: "font-size:11px; padding:2px 8px;", onclick: () => switchTab("keys") }, "🔑 APIs");
+  const tabBtnHooks = h("button", { class: "tab", style: "font-size:11px; padding:2px 8px;", onclick: () => switchTab("hooks") }, "⚡ Hooks");
+  const tabBtnGeneral = h("button", { class: "tab", style: "font-size:11px; padding:2px 8px;", onclick: () => switchTab("general") }, "🔊 Geral");
+
+  const closeBtn = h("button", {
+    class: "link-btn",
+    style: "color:#94a3b8; font-size:11.5px; font-weight:600; padding:2px 6px; cursor:pointer;",
+    text: "✕ Fechar",
+    onclick: (e: Event) => {
+      e.stopPropagation();
+      State.isPinned = false;
+      actions.setView(State.defaultView());
+      actions.blip();
+    },
+  });
+
+  const tabBar = h("div", {
+    style: "display:flex; align-items:center; justify-content:space-between; margin-bottom:8px; border-bottom:1px solid rgba(255,255,255,0.06); padding-bottom:6px;",
+  },
+    h("div", { style: "display:flex; gap:4px;" }, tabBtnMascots, tabBtnKeys, tabBtnHooks, tabBtnGeneral),
+    closeBtn,
+  );
+
+  // Mascots panel
+  const mascotsPanel = h("div", { class: "settings-panel", style: "display:flex; flex-direction:column; gap:6px;" },
+    h("div", { style: "display:flex; align-items:center; gap:6px; flex-wrap:wrap;" },
+      h("span", { style: "font-weight:600; font-size:11px; color:#cbd5e1; width:72px;" }, "Personagem:"),
+      h("div", { style: "display:flex; gap:4px; flex-wrap:wrap;" }, ...mascotButtons),
+    ),
+    h("div", { style: "display:flex; align-items:center; gap:6px; flex-wrap:wrap; margin-top:2px;" },
+      h("span", { style: "font-weight:600; font-size:11px; color:#cbd5e1; width:72px;" }, "Tom de voz:"),
+      h("div", { style: "display:flex; gap:4px; flex-wrap:wrap;" }, ...personalityButtons),
+    ),
+  );
+
+  // API Keys panel
+  const anthropicInput = h("input", {
+    type: "password",
+    placeholder: "sk-ant-...",
+    style: "background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.1); color:#fff; border-radius:4px; padding:3px 6px; font-size:10.5px; width:150px;",
+  }) as HTMLInputElement;
+
+  const anthropicStatus = h("span", { style: "font-size:10px; color:#94a3b8;" }, "verificando...");
+
+  const saveAnthropicBtn = h("button", {
+    class: "link-btn",
+    style: "background:rgba(59,130,246,0.2); border:1px solid rgba(59,130,246,0.4); color:#60a5fa; border-radius:4px; padding:2px 6px; font-size:10.5px; cursor:pointer;",
+    text: "Salvar",
+    onclick: async () => {
+      const v = anthropicInput.value.trim();
+      if (v) {
+        await Bridge.secretSet("claude-api-key", v);
+        anthropicInput.value = "";
+        anthropicStatus.textContent = "🟢 Salva";
+        actions.blip();
+      }
+    },
+  });
+
+  const geminiInput = h("input", {
+    type: "password",
+    placeholder: "AIzaSy...",
+    style: "background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.1); color:#fff; border-radius:4px; padding:3px 6px; font-size:10.5px; width:150px;",
+  }) as HTMLInputElement;
+
+  const geminiStatus = h("span", { style: "font-size:10px; color:#94a3b8;" }, "verificando...");
+
+  const saveGeminiBtn = h("button", {
+    class: "link-btn",
+    style: "background:rgba(59,130,246,0.2); border:1px solid rgba(59,130,246,0.4); color:#60a5fa; border-radius:4px; padding:2px 6px; font-size:10.5px; cursor:pointer;",
+    text: "Salvar",
+    onclick: async () => {
+      const v = geminiInput.value.trim();
+      if (v) {
+        await Bridge.secretSet("gemini-api-key", v);
+        geminiInput.value = "";
+        geminiStatus.textContent = "🟢 Salva";
+        actions.blip();
+      }
+    },
+  });
+
+  const keysPanel = h("div", { class: "settings-panel", style: "display:none; flex-direction:column; gap:6px;" },
+    h("div", { style: "display:flex; align-items:center; gap:8px;" },
+      h("span", { style: "font-size:11px; font-weight:600; color:#cbd5e1; width:72px;" }, "Anthropic:"),
+      anthropicInput,
+      saveAnthropicBtn,
+      anthropicStatus,
+    ),
+    h("div", { style: "display:flex; align-items:center; gap:8px;" },
+      h("span", { style: "font-size:11px; font-weight:600; color:#cbd5e1; width:72px;" }, "Gemini:"),
+      geminiInput,
+      saveGeminiBtn,
+      geminiStatus,
+    ),
+  );
+
+  // Hooks panel
+  const claudeHookLabel = h("span", { style: "font-size:11px; color:#cbd5e1;" }, "Claude Code: verificando...");
+  const claudeHookBtn = h("button", {
+    class: "link-btn",
+    style: "font-size:10.5px; padding:2px 8px; border-radius:4px; background:rgba(255,255,255,0.08); border:none; cursor:pointer; color:#fff;",
+    text: "Alternar",
+    onclick: async () => {
+      try {
+        const st = await Bridge.hooksStatus();
+        const next = !st?.installed;
+        const prev = await Bridge.hooksPreview(next);
+        await Bridge.hooksApply(next, prev.fingerprint);
+        claudeHookLabel.textContent = next ? "Claude Code: 🟢 Ativo" : "Claude Code: ⚪ Inativo";
+        actions.blip();
+      } catch (e) {
+        claudeHookLabel.textContent = "Claude Code: erro ao alternar";
+      }
+    },
+  });
+
+  const agyHookLabel = h("span", { style: "font-size:11px; color:#cbd5e1;" }, "Antigravity (agy): verificando...");
+  const agyHookBtn = h("button", {
+    class: "link-btn",
+    style: "font-size:10.5px; padding:2px 8px; border-radius:4px; background:rgba(255,255,255,0.08); border:none; cursor:pointer; color:#fff;",
+    text: "Alternar",
+    onclick: async () => {
+      try {
+        const st = await Bridge.agyHooksStatus();
+        const next = !st?.installed;
+        const prev = await Bridge.agyHooksPreview(next);
+        await Bridge.agyHooksApply(next, prev.fingerprint);
+        agyHookLabel.textContent = next ? "Antigravity (agy): 🟢 Ativo" : "Antigravity (agy): ⚪ Inativo";
+        actions.blip();
+      } catch (e) {
+        agyHookLabel.textContent = "Antigravity: erro ao alternar";
+      }
+    },
+  });
+
+  const hooksPanel = h("div", { class: "settings-panel", style: "display:none; flex-direction:column; gap:8px;" },
+    h("div", { style: "display:flex; align-items:center; justify-content:space-between; max-width:380px;" },
+      claudeHookLabel,
+      claudeHookBtn,
+    ),
+    h("div", { style: "display:flex; align-items:center; justify-content:space-between; max-width:380px;" },
+      agyHookLabel,
+      agyHookBtn,
+    ),
+  );
+
+  // General panel
   const soundSwitch = h("button", { class: "switch", onclick: () => actions.toggleSound() });
   const volume = h("input", {
     type: "range", min: "0", max: "0.2", step: "0.005",
     oninput: (e: Event) => actions.setVolume(Number((e.target as HTMLInputElement).value)),
   }) as HTMLInputElement;
-  const autoLabel = h("span", {});
-  const segButtons = [10, 15, 30].map((s) =>
-    h("button", { onclick: () => actions.setAutoClose(s) }, `${s}s`),
-  );
-  const claudeBadge = h("span", { class: "status-badge" });
-  const apiBadge = h("span", { class: "status-badge" });
 
-  const rows = h(
-    "div",
-    { class: "settings-rows" },
-    h(
-      "div",
-      { class: "settings-row", style: "gap:6px; flex-wrap:wrap; padding-bottom: 2px;" },
-      h("span", { style: "font-weight:600; font-size:11px; color:#cbd5e1; margin-right:4px;" }, "Mascote:"),
-      h("div", { class: "seg", style: "display:flex; gap:4px; flex-wrap:wrap;" }, ...mascotButtons),
+  const autoLabel = h("span", { style: "font-size:11px; color:#cbd5e1;" });
+  const segButtons = [10, 15, 30].map((s) =>
+    h("button", { onclick: () => actions.setAutoClose(s), style: "font-size:10px; padding:2px 6px;" }, `${s}s`),
+  );
+
+  const wanderSwitch = h("button", {
+    class: "switch",
+    onclick: () => {
+      State.settings.wander = !State.settings.wander;
+      void Bridge.saveSettings(State.settings);
+      State.notify();
+      actions.blip();
+    },
+  });
+
+  const generalPanel = h("div", { class: "settings-panel", style: "display:none; flex-direction:column; gap:6px;" },
+    h("div", { style: "display:flex; align-items:center; gap:8px;" },
+      soundSwitch,
+      h("span", { text: t("Sound"), style: "font-size:11px; color:#cbd5e1; width:50px;" }),
+      volume,
     ),
-    h("div", { class: "settings-row" }, soundSwitch, h("span", { text: t("Sound") }), volume),
-    h(
-      "div",
-      { class: "settings-row" },
+    h("div", { style: "display:flex; align-items:center; gap:8px;" },
+      wanderSwitch,
+      h("span", { text: "Mascote solto no Desktop", style: "font-size:11px; color:#cbd5e1; margin-right:8px;" }),
+    ),
+    h("div", { style: "display:flex; align-items:center; gap:8px;" },
       svg(ICONS.timer, 12),
       autoLabel,
       h("div", { class: "seg" }, ...segButtons),
     ),
-    h(
-      "div",
-      { class: "settings-row", style: "gap:14px" },
-      claudeBadge,
-      apiBadge,
-      h("div", { class: "grow" }),
-      h("button", {
-        class: "link-btn",
-        style: "color:#38bdf8;font-size:11.5px;font-weight:600;margin-right:8px",
-        text: "Janela Completa ↗",
-        onclick: (e: Event) => {
-          e.stopPropagation();
-          actions.openSettingsWindow();
-        },
-      }),
-      h("button", {
-        class: "link-btn",
-        style: "color:#8e939c;font-size:11.5px",
-        text: "✕ Fechar",
-        onclick: (e: Event) => {
-          e.stopPropagation();
-          State.isPinned = false;
-          actions.setView(State.defaultView());
-        },
-      }),
-    ),
   );
 
-  const el = h("div", { class: "view" },
-    card(null, h("div", { class: "stack", style: "padding:14px 16px 14px 84px" }, rows)));
+  function switchTab(t: SettingsTab) {
+    activeTab = t;
+    tabBtnMascots.classList.toggle("on", t === "mascots");
+    tabBtnKeys.classList.toggle("on", t === "keys");
+    tabBtnHooks.classList.toggle("on", t === "hooks");
+    tabBtnGeneral.classList.toggle("on", t === "general");
+
+    mascotsPanel.style.display = t === "mascots" ? "flex" : "none";
+    keysPanel.style.display = t === "keys" ? "flex" : "none";
+    hooksPanel.style.display = t === "hooks" ? "flex" : "none";
+    generalPanel.style.display = t === "general" ? "flex" : "none";
+    actions.blip();
+
+    if (t === "keys") {
+      void Bridge.secretPresent("claude-api-key").then((ok) => {
+        anthropicStatus.textContent = ok ? "🟢 Configurada" : "⚪ Não salva";
+      });
+      void Bridge.secretPresent("gemini-api-key").then((ok) => {
+        geminiStatus.textContent = ok ? "🟢 Configurada" : "⚪ Não salva";
+      });
+    } else if (t === "hooks") {
+      void Bridge.hooksStatus().then((st) => {
+        claudeHookLabel.textContent = st?.installed ? "Claude Code: 🟢 Ativo" : "Claude Code: ⚪ Inativo";
+      });
+      void Bridge.agyHooksStatus().then((st) => {
+        agyHookLabel.textContent = st?.installed ? "Antigravity (agy): 🟢 Ativo" : "Antigravity (agy): ⚪ Inativo";
+      });
+    }
+  }
+
+  const container = h("div", { class: "stack", style: "padding:12px 16px 12px 84px; width:100%; box-sizing:border-box;" },
+    tabBar,
+    mascotsPanel,
+    keysPanel,
+    hooksPanel,
+    generalPanel,
+  );
+
+  const el = h("div", { class: "view" }, card(null, container));
 
   return {
     el,
@@ -687,6 +885,8 @@ function buildSettings(actions: ViewActions): ViewHost {
       soundSwitch.classList.toggle("on", s.soundEnabled);
       volume.value = String(s.soundVolume);
       volume.style.opacity = s.soundEnabled ? "1" : "0.4";
+      wanderSwitch.classList.toggle("on", s.wander);
+
       const curChar = s.character || "embasa";
       mascotButtons.forEach((b, i) => {
         const isSelected = curChar === mascots[i].id;
@@ -695,15 +895,18 @@ function buildSettings(actions: ViewActions): ViewHost {
         b.style.color = isSelected ? "#ffffff" : "#94a3b8";
         b.style.fontWeight = isSelected ? "600" : "400";
       });
+
+      const curPers = s.personality || "sarcastic";
+      personalityButtons.forEach((b, i) => {
+        const isSelected = curPers === personalities[i].id;
+        b.classList.toggle("on", isSelected);
+        b.style.background = isSelected ? "#10b981" : "rgba(255,255,255,0.06)";
+        b.style.color = isSelected ? "#ffffff" : "#94a3b8";
+        b.style.fontWeight = isSelected ? "600" : "400";
+      });
+
       autoLabel.textContent = `${t("Auto-close")} · ${Math.round(s.autoCloseInterval)}s`;
       segButtons.forEach((b, i) => b.classList.toggle("on", s.autoCloseInterval === [10, 15, 30][i]));
-      clear(claudeBadge);
-      claudeBadge.append(
-        dot(s.hooksInstalled ? "#22C55E" : "#F4505E", 6),
-        h("span", { text: "Claude Code" }),
-      );
-      clear(apiBadge);
-      apiBadge.append(dot("#F4505E", 6), h("span", { text: "API" }));
     },
   };
 }
