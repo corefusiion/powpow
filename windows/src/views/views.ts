@@ -655,6 +655,17 @@ function buildSettings(actions: ViewActions): ViewHost {
   const tabBtnHooks = h("button", { class: "tab", style: "font-size:11px; padding:2px 8px;", onclick: () => switchTab("hooks") }, "⚡ Hooks");
   const tabBtnGeneral = h("button", { class: "tab", style: "font-size:11px; padding:2px 8px;", onclick: () => switchTab("general") }, "🔊 Geral");
 
+  const openWindowBtn = h("button", {
+    class: "link-btn",
+    style: "color:#38bdf8; font-size:11.5px; font-weight:600; padding:2px 8px; cursor:pointer; margin-right:8px;",
+    text: "Janela Completa ↗",
+    onclick: (e: Event) => {
+      e.stopPropagation();
+      actions.openSettingsWindow();
+      actions.blip();
+    },
+  });
+
   const closeBtn = h("button", {
     class: "link-btn",
     style: "color:#94a3b8; font-size:11.5px; font-weight:600; padding:2px 6px; cursor:pointer;",
@@ -671,7 +682,7 @@ function buildSettings(actions: ViewActions): ViewHost {
     style: "display:flex; align-items:center; justify-content:space-between; margin-bottom:8px; border-bottom:1px solid rgba(255,255,255,0.06); padding-bottom:6px;",
   },
     h("div", { style: "display:flex; gap:4px;" }, tabBtnMascots, tabBtnKeys, tabBtnHooks, tabBtnGeneral),
-    closeBtn,
+    h("div", { style: "display:flex; align-items:center;" }, openWindowBtn, closeBtn),
   );
 
   // Mascots panel
