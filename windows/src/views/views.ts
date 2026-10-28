@@ -6,7 +6,7 @@ import { h, svg, clear, dot } from "./dom";
 import { ICONS } from "./icons";
 import { t, langBadge } from "../core/i18n";
 import { Ticker } from "./ticker";
-import { State, type AgentTask } from "../core/state";
+import { State, type AgentTask, type PalPersonality } from "../core/state";
 import { diffIsFresh, latestDiff } from "../core/activity";
 import { washRGBA, type IslandViewName, type Wash } from "../core/layout";
 import { createMiniBot, pruneMiniBots } from "../mochi/minibots";
@@ -598,7 +598,6 @@ function buildNote(): ViewHost {
 
 function buildSettings(actions: ViewActions): ViewHost {
   type SettingsTab = "mascots" | "keys" | "hooks" | "general";
-  let activeTab: SettingsTab = "mascots";
 
   const mascots = [
     { id: "embasa", label: "💧 Embasa 2D" },
@@ -625,7 +624,7 @@ function buildSettings(actions: ViewActions): ViewHost {
     ),
   );
 
-  const personalities = [
+  const personalities: { id: PalPersonality; label: string }[] = [
     { id: "sarcastic", label: "😏 Sarcástico" },
     { id: "friendly", label: "😊 Amigável" },
     { id: "coach", label: "💪 Treinador" },
@@ -839,7 +838,6 @@ function buildSettings(actions: ViewActions): ViewHost {
   );
 
   function switchTab(t: SettingsTab) {
-    activeTab = t;
     tabBtnMascots.classList.toggle("on", t === "mascots");
     tabBtnKeys.classList.toggle("on", t === "keys");
     tabBtnHooks.classList.toggle("on", t === "hooks");
