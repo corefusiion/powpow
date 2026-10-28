@@ -1625,9 +1625,36 @@ async function main() {
       }
     }
 
+    const titleBar = h(
+      "div",
+      {
+        class: "settings-titlebar",
+        "data-tauri-drag-region": "",
+        style: "display:flex; align-items:center; justify-content:space-between; padding:4px 0 12px; border-bottom:1px solid var(--hairline); margin-bottom:14px; user-select:none; cursor:grab;",
+      },
+      h("div", { style: "display:flex; align-items:center; gap:8px; font-weight:600; font-size:14px; color:var(--ink);" },
+        h("span", { style: "font-size:16px;" }, "⚙️"),
+        h("span", {}, "Configurações — Powpow"),
+        h("span", { class: "version", text: version, style: "font-size:11px; opacity:0.6; margin-left:6px;" })
+      ),
+      h("button", {
+        class: "settings-close-btn",
+        title: "Fechar",
+        style: "background:rgba(255,255,255,0.06); border:1px solid var(--hairline); color:var(--dim); font-size:13px; font-weight:600; cursor:pointer; padding:4px 10px; border-radius:6px; transition:all 0.15s ease;",
+        onclick: async () => {
+          try {
+            const { getCurrentWebviewWindow } = await import("@tauri-apps/api/webviewWindow");
+            await getCurrentWebviewWindow().hide();
+          } catch {
+            window.close();
+          }
+        },
+      }, "✕ Fechar")
+    );
+
     clear(root);
     root.append(
-      h("h1", {}, h("span", { text: "Powpow" }), h("span", { class: "version", text: version })),
+      titleBar,
       claudeSection(status),
       geminiSection(geminiStatus),
       agySection(agyStatus),

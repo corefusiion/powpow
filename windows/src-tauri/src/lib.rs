@@ -789,35 +789,17 @@ fn settings_page_url(app: &AppHandle) -> WebviewUrl {
 /// one that exists before the island's webview does.
 fn create_settings_window(app: &AppHandle) {
     let url = settings_page_url(app);
-    let res = WebviewWindowBuilder::new(app, "settings", url.clone())
+    let win_res = WebviewWindowBuilder::new(app, "settings", url)
         .additional_browser_args(BROWSER_ARGS)
         .title("Settings — Powpow")
-        .inner_size(560.0, 680.0)
+        .inner_size(580.0, 720.0)
         .min_inner_size(460.0, 480.0)
-        .transparent(false)
-        .decorations(true)
+        .transparent(true)
+        .decorations(false)
         .resizable(true)
         .visible(false)
         .center()
         .build();
-
-    let win_res = match res {
-        Ok(win) => Ok(win),
-        Err(err) => {
-            log::line(format!("settings standard window failed ({err}), trying transparent fallback"));
-            WebviewWindowBuilder::new(app, "settings", url)
-                .additional_browser_args(BROWSER_ARGS)
-                .title("Settings — Powpow")
-                .inner_size(560.0, 680.0)
-                .min_inner_size(460.0, 480.0)
-                .transparent(true)
-                .decorations(true)
-                .resizable(true)
-                .visible(false)
-                .center()
-                .build()
-        }
-    };
 
     match win_res {
         Ok(win) => {
