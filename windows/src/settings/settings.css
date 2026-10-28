@@ -212,7 +212,7 @@
 }
 
 html {
-  background: var(--bg);
+  background: transparent;
   height: 100%;
 }
 

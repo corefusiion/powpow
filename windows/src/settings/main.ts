@@ -1644,7 +1644,7 @@ async function main() {
         onclick: async () => {
           try {
             const { getCurrentWebviewWindow } = await import("@tauri-apps/api/webviewWindow");
-            await getCurrentWebviewWindow().hide();
+            await getCurrentWebviewWindow().close();
           } catch {
             window.close();
           }

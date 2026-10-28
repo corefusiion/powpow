@@ -783,19 +783,14 @@ fn create_settings_window(app: &AppHandle) -> Option<tauri::WebviewWindow> {
         .title("Settings — Powpow")
         .inner_size(580.0, 720.0)
         .min_inner_size(460.0, 480.0)
+        .transparent(true)
+        .decorations(false)
         .resizable(true)
         .visible(true)
         .center()
         .build()
     {
         Ok(win) => {
-            let hidden = win.clone();
-            win.on_window_event(move |event| {
-                if let tauri::WindowEvent::CloseRequested { api, .. } = event {
-                    api.prevent_close();
-                    let _ = hidden.hide();
-                }
-            });
             let _ = win.unminimize();
             let _ = win.show();
             let _ = win.set_always_on_top(true);
@@ -813,7 +808,7 @@ fn create_settings_window(app: &AppHandle) -> Option<tauri::WebviewWindow> {
 
 pub fn show_settings_window(app: &AppHandle) {
     let handle = app.clone();
-    let _ = app.run_on_main_thread(move || {
+    std::thread::spawn(move || {
         let app = &handle;
         if let Some(win) = app.get_webview_window("settings") {
             let _ = win.unminimize();
@@ -829,8 +824,9 @@ pub fn show_settings_window(app: &AppHandle) {
 }
 
 #[tauri::command]
-fn open_settings_window(app: AppHandle) {
+async fn open_settings_window(app: AppHandle) -> Result<(), String> {
     show_settings_window(&app);
+    Ok(())
 }
 
 pub fn run() {
