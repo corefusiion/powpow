@@ -776,7 +776,7 @@ fn settings_page_url(app: &AppHandle) -> WebviewUrl {
     WebviewUrl::App("settings.html".into())
 }
 
-fn create_settings_window(app: &AppHandle) {
+fn create_settings_window(app: &AppHandle) -> Option<tauri::WebviewWindow> {
     let url = settings_page_url(app);
     match WebviewWindowBuilder::new(app, "settings", url)
         .additional_browser_args(BROWSER_ARGS)
@@ -784,7 +784,7 @@ fn create_settings_window(app: &AppHandle) {
         .inner_size(580.0, 720.0)
         .min_inner_size(460.0, 480.0)
         .resizable(true)
-        .visible(false)
+        .visible(true)
         .center()
         .build()
     {
@@ -796,9 +796,18 @@ fn create_settings_window(app: &AppHandle) {
                     let _ = hidden.hide();
                 }
             });
-            log::line("settings window created successfully");
+            let _ = win.unminimize();
+            let _ = win.show();
+            let _ = win.set_always_on_top(true);
+            let _ = win.set_focus();
+            let _ = win.set_always_on_top(false);
+            log::line("settings window created and shown successfully");
+            Some(win)
         }
-        Err(err) => log::line(format!("settings window build error: {err}")),
+        Err(err) => {
+            log::line(format!("settings window build error: {err}"));
+            None
+        }
     }
 }
 
@@ -806,25 +815,15 @@ pub fn show_settings_window(app: &AppHandle) {
     let handle = app.clone();
     let _ = app.run_on_main_thread(move || {
         let app = &handle;
-        let focus_win = |win: &tauri::WebviewWindow| {
+        if let Some(win) = app.get_webview_window("settings") {
             let _ = win.unminimize();
             let _ = win.show();
             let _ = win.set_always_on_top(true);
             let _ = win.set_focus();
             let _ = win.set_always_on_top(false);
-        };
-
-        if let Some(win) = app.get_webview_window("settings") {
-            focus_win(&win);
             log::line("settings window focused");
         } else {
             create_settings_window(app);
-            if let Some(win) = app.get_webview_window("settings") {
-                focus_win(&win);
-                log::line("settings window created and focused");
-            } else {
-                log::line("settings window could not be opened");
-            }
         }
     });
 }
@@ -925,7 +924,6 @@ pub fn run() {
         .setup(move |app| {
             let handle = app.handle().clone();
             tray::build(&handle)?;
-            create_settings_window(&handle);
 
             if let Some(win) = island::window(&handle) {
                 island::make_non_activating(&win);

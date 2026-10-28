@@ -2331,7 +2331,6 @@ async function press(action: string) {
       setCard(false);
       showThought("⚙️ Abrindo Configurações...", "happy", 3000);
       void Bridge.openSettingsWindow();
-      callPal("settings");
       return;
   }
 }
