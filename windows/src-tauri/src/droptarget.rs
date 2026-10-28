@@ -176,9 +176,6 @@ fn inject(hwnd: HWND, ctx: &mut WalkCtx) {
 unsafe extern "system" fn walk(hwnd: HWND, lparam: LPARAM) -> BOOL {
     let ctx = unsafe { &mut *(lparam.0 as *mut WalkCtx) };
     inject(hwnd, ctx);
-    unsafe {
-        let _ = EnumChildWindows(Some(hwnd), Some(walk), lparam);
-    }
     true.into()
 }
 
@@ -214,8 +211,7 @@ pub fn ensure_targets(app: &AppHandle, label: &'static str) {
     ));
 }
 
-/// Both windows, like the old unblock pass.
+/// Injects our drop target into the island window.
 pub fn ensure_all(app: &AppHandle) {
     ensure_targets(app, WINDOW_LABEL);
-    ensure_targets(app, "settings");
 }
