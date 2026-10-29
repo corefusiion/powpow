@@ -339,6 +339,11 @@
         flex-wrap: wrap;
         align-items: center;
       }
+
+      @keyframes gf-orbit {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+      }
     </style>
   </head>
   <body>
@@ -346,6 +351,9 @@
       <h1>Playground de Avatares & Rig 2D Articulado</h1>
       <p>Ambiente de validação visual e calibração de juntas anatômicas para os mascotes oficiais da aplicação.</p>
     </header>
+
+    <!-- SEÇÃO PROCEDURAL: GROUND FOLLOWER (MASCÔTES ANDANDO NO CHÃO COM FÍSICA PROCEDURAL) -->
+    <div id="ground-follower-mount" style="max-width: 1100px; width: 100%; margin-bottom: 32px;"></div>
 
     <!-- SEÇÃO PRINCIPAL: RIG 2D ARTICULADO (VAULT MASCOT) -->
     <div class="vault-rig-section" style="max-width: 1100px; width: 100%; margin-bottom: 32px;">

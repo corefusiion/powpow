@@ -3,6 +3,14 @@ import { VaultAvatarElement, type MouthVariant } from './avatar/VaultAvatarEleme
 import { MascotSelector } from './avatar/MascotSelector';
 import type { Emotion, Gesture } from './avatar/types';
 import { DotPal } from '../../src/index.js';
+import { GroundFollowerView } from './avatar/GroundFollowerView';
+
+// 0. Instancia a Seção Procedural do Mascote no Chão (Ground Follower)
+const groundMount = document.getElementById('ground-follower-mount');
+if (groundMount) {
+  const followerView = new GroundFollowerView();
+  followerView.mount(groundMount);
+}
 
 // 1. Instancia o avatar interativo de alta resolução (Web Component)
 const mount = document.getElementById('avatar-mount')!;

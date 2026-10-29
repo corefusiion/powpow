@@ -131,6 +131,46 @@ export const actions = {
       { transform: 'rotateY(720deg) scale(1, 1)' },
     ],
   },
+  // Pirueta completa de 360° em 700ms com salto e squash ao pousar
+  pirouette: {
+    duration: 700,
+    easing: 'cubic-bezier(.34, 1.56, .64, 1)',
+    particles: 'star',
+    keyframes: [
+      { transform: 'rotate(0deg) translateY(0) scale(1, 1)' },
+      { transform: 'rotate(180deg) translateY(-26%) scale(0.9, 1.15)', offset: 0.5 },
+      { transform: 'rotate(360deg) translateY(0) scale(1.16, 0.82)', offset: 0.85 },
+      { transform: 'rotate(360deg) translateY(0) scale(1, 1)' },
+    ],
+  },
+  // Salto de alta fidelidade com squash 90ms (-16%), gravidade e pouso elástico (-22%)
+  springJump: {
+    duration: 760,
+    easing: 'linear',
+    keyframes: [
+      { transform: squashStretch(0, 1, 1), easing: 'ease-in' },
+      // Squash prévio de preparação: 90ms (-16% altura, +16% largura)
+      { transform: squashStretch(0, 1.16, 0.84), offset: 0.12, easing: 'cubic-bezier(.1, .9, .2, 1)' },
+      // Ápice do salto gravitacional: estica +18%
+      { transform: squashStretch(-28, 0.9, 1.18), offset: 0.48, easing: 'cubic-bezier(.6, 0, .8, .4)' },
+      // Pouso com impacto: amassa 22% (-0.22)
+      { transform: squashStretch(0, 1.22, 0.78), offset: 0.76, easing: 'cubic-bezier(.3, .7, .4, 1)' },
+      // Recuperação elástica de mola (stiffness 380, damping 14)
+      { transform: squashStretch(0, 0.98, 1.03), offset: 0.88 },
+      { transform: squashStretch(0, 1, 1) },
+    ],
+  },
+  // Apontamento para botão / foco
+  point: {
+    duration: 650,
+    easing: 'ease-out',
+    keyframes: [
+      { transform: 'rotate(0deg)' },
+      { transform: 'rotate(-6deg) scale(1.05)', offset: 0.3 },
+      { transform: 'rotate(8deg) scale(1.02)', offset: 0.7 },
+      { transform: 'rotate(0deg)' },
+    ],
+  },
 };
 
 /** Add (or replace) an action usable with `pal.play(name)`. */
