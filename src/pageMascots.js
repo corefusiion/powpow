@@ -50,7 +50,6 @@ export const PAGE_MASCOTS = [
   { id: 'granny', label: 'Vovó (Granny)', category: 'people', color: '#ff7675' },
 
   // ── Robôs & Criaturas (Robots) ──
-  { id: 'robot', label: 'Robô (Robot)', category: 'robots', color: '#0984e3' },
   { id: 'postbot', label: 'Postbot', category: 'robots', color: '#e17055' },
   { id: 'gearbot', label: 'Engrenagem (Gearbot)', category: 'robots', color: '#b71540' },
   { id: 'clockwork', label: 'Corda (Clockwork)', category: 'robots', color: '#e58e26' },

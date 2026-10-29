@@ -275,6 +275,10 @@ export const characters = {
             0%, 100% { transform: scale(0.9); opacity: 0.5; }
             50% { transform: scale(1.15); opacity: 0.95; }
           }
+          @keyframes embasa-wave {
+            0%, 100% { transform: rotate(0deg); }
+            50% { transform: rotate(-24deg); }
+          }
           .embasa-actor {
             animation: embasa-idle-float 3.2s ease-in-out infinite;
             transform-origin: 50% 90%;
@@ -285,6 +289,10 @@ export const characters = {
           }
           .embasa-star {
             animation: embasa-sparkle 2.2s ease-in-out infinite;
+          }
+          .embasa-wave-arm {
+            animation: embasa-wave 1.6s ease-in-out infinite;
+            transform-origin: 152px 140px;
           }
         </style>
         <!-- Soft 2D drop shadow -->
@@ -308,7 +316,7 @@ export const characters = {
           <!-- Main 2D Gotinha Body (Clean modern silhouette with subtle curl) -->
           <path class="embasa-curl-tip"
             d="M100 24 C104 20 114 20 116 28 C118 36 108 44 100 52 C70 82 40 120 40 152 C40 178 66 186 100 186 C134 186 160 178 160 152 C160 120 130 82 100 52 Z"
-            fill="url(#${id('embasa_body')})" stroke="#005580" stroke-width="3.5" stroke-linejoin="round"/>
+            fill="url(${id('embasa_body')})" stroke="#005580" stroke-width="3.5" stroke-linejoin="round"/>
 
           <!-- 2D Glossy Highlight Curve (Clean Cartoon Edge) -->
           <path d="M96 38 C74 72 52 110 52 144 C52 164 68 174 88 176"
@@ -319,10 +327,12 @@ export const characters = {
           <path d="M48 140 C34 144 26 156 32 166 C36 172 44 168 50 158 Z"
             fill="#0099e6" stroke="#005580" stroke-width="3" stroke-linejoin="round"/>
 
-          <!-- Right Arm (Friendly wave gesture) -->
-          <path d="M152 140 C166 136 178 126 180 116 C180 108 170 112 164 122 C158 132 154 138 152 140 Z"
-            fill="#0099e6" stroke="#005580" stroke-width="3" stroke-linejoin="round"/>
-          <circle cx="178" cy="114" r="5" fill="#0099e6" stroke="#005580" stroke-width="2.5"/>
+          <!-- Right Arm with Animated Friendly Waving (Balançando o braço) -->
+          <g class="embasa-wave-arm">
+            <path d="M152 140 C166 136 178 126 180 116 C180 108 170 112 164 122 C158 132 154 138 152 140 Z"
+              fill="#0099e6" stroke="#005580" stroke-width="3" stroke-linejoin="round"/>
+            <circle cx="178" cy="114" r="5" fill="#0099e6" stroke="#005580" stroke-width="2.5"/>
+          </g>
         </g>
       `,
       accessories: `
@@ -362,26 +372,32 @@ export const characters = {
             <path d="M112 98 Q122 92 132 98"/>
           </g>
 
-          <!-- Big Charming 2D Anime/Cartoon Eyes (Follows cursor smoothly!) -->
+          <!-- Charming 2D Anime/Cartoon Eyes: White Sclera base on face -->
+          <g>
+            <ellipse cx="78" cy="114" rx="13" ry="16" fill="#ffffff" stroke="#005580" stroke-width="2"/>
+            <ellipse cx="122" cy="114" rx="13" ry="16" fill="#ffffff" stroke="#005580" stroke-width="2"/>
+          </g>
+
+          <!-- Dynamic Pupils and Iris Tracking the Pointer Smoothly! -->
           <g class="dp-look">
             <!-- Left Eye -->
             <g class="dp-blink">
-              <ellipse cx="78" cy="114" rx="12" ry="15" fill="#0a192f" stroke="#005580" stroke-width="1.5"/>
+              <ellipse cx="78" cy="114" rx="8.5" ry="11.5" fill="#0a192f"/>
               <!-- Vibrant Cyan Iris Glint Arc -->
-              <path d="M70 118 A9 11 0 0 0 86 118 A7.5 9 0 0 1 72 116 Z" fill="#00e5ff"/>
+              <path d="M71 117 A7 9 0 0 0 85 117 A6 7.5 0 0 1 72 115 Z" fill="#00e5ff"/>
               <!-- Twin Sparkle Glints -->
-              ${eyeShine(74.5, 108, 4.2)}
-              ${eyeShine(82.5, 119, 2.0)}
+              ${eyeShine(75.5, 109, 3.4)}
+              ${eyeShine(81.5, 118, 1.7)}
             </g>
 
             <!-- Right Eye -->
             <g class="dp-blink">
-              <ellipse cx="122" cy="114" rx="12" ry="15" fill="#0a192f" stroke="#005580" stroke-width="1.5"/>
+              <ellipse cx="122" cy="114" rx="8.5" ry="11.5" fill="#0a192f"/>
               <!-- Vibrant Cyan Iris Glint Arc -->
-              <path d="M114 118 A9 11 0 0 0 130 118 A7.5 9 0 0 1 116 116 Z" fill="#00e5ff"/>
+              <path d="M115 117 A7 9 0 0 0 129 117 A6 7.5 0 0 1 116 115 Z" fill="#00e5ff"/>
               <!-- Twin Sparkle Glints -->
-              ${eyeShine(118.5, 108, 4.2)}
-              ${eyeShine(126.5, 119, 2.0)}
+              ${eyeShine(119.5, 109, 3.4)}
+              ${eyeShine(125.5, 118, 1.7)}
             </g>
           </g>
 

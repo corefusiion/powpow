@@ -791,6 +791,12 @@ fn create_settings_window(app: &AppHandle) -> Option<tauri::WebviewWindow> {
         .build()
     {
         Ok(win) => {
+            let win_for_close = win.clone();
+            win.on_window_event(move |event| {
+                if let tauri::WindowEvent::CloseRequested { .. } = event {
+                    let _ = win_for_close.destroy();
+                }
+            });
             let _ = win.unminimize();
             let _ = win.show();
             let _ = win.set_always_on_top(true);
@@ -811,15 +817,17 @@ pub fn show_settings_window(app: &AppHandle) {
     std::thread::spawn(move || {
         let app = &handle;
         if let Some(win) = app.get_webview_window("settings") {
-            let _ = win.unminimize();
-            let _ = win.show();
-            let _ = win.set_always_on_top(true);
-            let _ = win.set_focus();
-            let _ = win.set_always_on_top(false);
-            log::line("settings window focused");
-        } else {
-            create_settings_window(app);
+            if let Ok(true) = win.is_visible() {
+                let _ = win.unminimize();
+                let _ = win.set_always_on_top(true);
+                let _ = win.set_focus();
+                let _ = win.set_always_on_top(false);
+                log::line("settings window focused");
+                return;
+            }
+            let _ = win.destroy();
         }
+        create_settings_window(app);
     });
 }
 
@@ -827,6 +835,13 @@ pub fn show_settings_window(app: &AppHandle) {
 async fn open_settings_window(app: AppHandle) -> Result<(), String> {
     show_settings_window(&app);
     Ok(())
+}
+
+#[tauri::command]
+fn close_settings_window(app: AppHandle) {
+    if let Some(win) = app.get_webview_window("settings") {
+        let _ = win.destroy();
+    }
 }
 
 pub fn run() {
@@ -889,6 +904,7 @@ pub fn run() {
             media_key,
             open_n8n,
             open_settings_window,
+            close_settings_window,
             set_paused,
             set_pal_wander,
             pal_wander_state,

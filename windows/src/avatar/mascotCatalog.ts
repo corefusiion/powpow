@@ -79,7 +79,6 @@ export const MASCOTS_CATALOG: MascotInfo[] = [
 
   // ── Robôs & Criaturas (Robots) ──
   { id: 'doraemon', name: 'Doraemon (Gato Cósmico)', category: 'robots', description: 'Mascote gato cósmico do futuro com animações dinâmicas a 60 FPS.', color: '#009fe8' },
-  { id: 'robot', name: 'Robô (Robot)', category: 'robots', description: 'Androide clássico metálico', color: '#0984e3' },
   { id: 'postbot', name: 'Postbot', category: 'robots', description: 'Robô mensageiro veloz', color: '#e17055' },
   { id: 'gearbot', name: 'Engrenagem (Gearbot)', category: 'robots', description: 'Robô steampunk mecânico', color: '#b71540' },
   { id: 'clockwork', name: 'Corda (Clockwork)', category: 'robots', description: 'Mecanismo a corda de precisão', color: '#e58e26' },

@@ -1643,14 +1643,31 @@ async function main() {
         style: "background:rgba(255,255,255,0.06); border:1px solid var(--hairline); color:var(--dim); font-size:13px; font-weight:600; cursor:pointer; padding:4px 10px; border-radius:6px; transition:all 0.15s ease;",
         onclick: async () => {
           try {
-            const { getCurrentWebviewWindow } = await import("@tauri-apps/api/webviewWindow");
-            await getCurrentWebviewWindow().close();
+            const { invoke } = await import("@tauri-apps/api/core");
+            await invoke("close_settings_window");
           } catch {
-            window.close();
+            try {
+              const { getCurrentWebviewWindow } = await import("@tauri-apps/api/webviewWindow");
+              await getCurrentWebviewWindow().destroy();
+            } catch {
+              window.close();
+            }
           }
         },
       }, "✕ Fechar")
     );
+
+    // Escape fecha a janela com segurança
+    window.addEventListener("keydown", async (e) => {
+      if (e.key === "Escape") {
+        try {
+          const { invoke } = await import("@tauri-apps/api/core");
+          await invoke("close_settings_window");
+        } catch {
+          window.close();
+        }
+      }
+    });
 
     clear(root);
     root.append(
