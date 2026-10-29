@@ -793,8 +793,7 @@ fn create_settings_window(app: &AppHandle) -> Option<tauri::WebviewWindow> {
         Ok(win) => {
             let win_for_close = win.clone();
             win.on_window_event(move |event| {
-                if let tauri::WindowEvent::CloseRequested { api, .. } = event {
-                    api.prevent_close();
+                if let tauri::WindowEvent::CloseRequested { .. } = event {
                     let _ = win_for_close.hide();
                 }
             });
