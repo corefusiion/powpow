@@ -59,7 +59,16 @@ export class MascotSelector {
     this.container.appendChild(this.gridEl);
 
     this.bindEvents(header);
-    this.renderGrid();
+    // Lazy render: Não instanciar 52 web components no boot para não travar a janela
+  }
+
+  private rendered = false;
+
+  public ensureRendered() {
+    if (!this.rendered) {
+      this.rendered = true;
+      this.renderGrid();
+    }
   }
 
   private bindEvents(header: HTMLElement) {

@@ -2405,6 +2405,7 @@ async function main() {
   await onEvent<{ x?: number; y?: number } | null>("pal-summon", (pt) => {
     setWander(true);
     void Bridge.setPalWander(true);
+    void Bridge.setPalVisible(true);
     const targetCursorX = pt && typeof pt.x === "number" ? pt.x : cursorPos.x;
     const targetCursorY = pt && typeof pt.y === "number" ? pt.y : cursorPos.y;
     if (targetCursorX !== 0 || targetCursorY !== 0) {
@@ -2415,6 +2416,7 @@ async function main() {
       const spot = clampTo({ x: targetX, y: targetY });
       x = spot.x;
       y = spot.y;
+      send();
     }
     legs = [];
     currentVelocity = 0;

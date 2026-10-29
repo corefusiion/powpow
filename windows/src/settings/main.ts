@@ -1224,7 +1224,10 @@ function characterRow(): HTMLElement {
   });
   galleryToggle.addEventListener("click", () => {
     galleryPanel.hidden = !galleryPanel.hidden;
-    if (!galleryPanel.hidden) panel.hidden = true;
+    if (!galleryPanel.hidden) {
+      panel.hidden = true;
+      selector.ensureRendered();
+    }
   });
 
   const makerToggle = h("button", { text: t("Make your own pal") });
@@ -1583,29 +1586,22 @@ function generalSection(): HTMLElement {
 
 // ── Boot ──────────────────────────────────────────────────────────────────────
 
+function withTimeout<T>(promise: Promise<T>, timeoutMs: number, fallback: T): Promise<T> {
+  return Promise.race([
+    promise,
+    new Promise<T>((resolve) => setTimeout(() => resolve(fallback), timeoutMs)),
+  ]).catch(() => fallback);
+}
+
 async function main() {
   try {
-    const boot = await Bridge.boot();
+    const bootPromise = withTimeout(Bridge.boot(), 2000, null);
+    const boot = await bootPromise;
     if (boot) {
       settings = { ...settings, ...boot.settings };
       version = boot.version;
     }
     document.documentElement.dataset.theme = settings.theme ?? "onyx";
-    const status = (await Bridge.hooksStatus()) ?? {
-      installed: false, settingsPath: "", hookPath: "", hookReady: false,
-    };
-
-    const hasKey = (await Bridge.secretPresent("anthropic-api-key")) ?? false;
-    const hasGeminiKey = (await Bridge.secretPresent("gemini-api-key")) ?? false;
-    const hasOpenRouterKey = (await Bridge.secretPresent("openrouter-api-key")) ?? false;
-    const hasOrcaRouterKey = (await Bridge.secretPresent("orcarouter-api-key")) ?? false;
-    const hasTokenRouterKey = (await Bridge.secretPresent("tokenrouter-api-key")) ?? false;
-    const geminiStatus = (await Bridge.geminiHooksStatus()) ?? {
-      installed: false, settingsPath: "", hookPath: "", hookReady: false,
-    };
-    const agyStatus = (await Bridge.agyHooksStatus()) ?? {
-      installed: false, settingsPath: "", hookPath: "", hookReady: false,
-    };
 
     const keys = [
       "stripe-api-key", "github-token", "vercel-token",
@@ -1613,15 +1609,45 @@ async function main() {
       "gmail-email", "gmail-app-password", "gmail-oauth",
       "outlook-email", "outlook-app-password", "outlook-oauth",
     ];
-    const present: Record<string, boolean> = {};
-    for (const k of keys) present[k] = (await Bridge.secretPresent(k)) ?? false;
 
-    const agents = await Bridge.agentHooksList();
+    const fallbackStatus: HookStatus = { installed: false, settingsPath: "", hookPath: "", hookReady: false };
+
+    const [
+      status,
+      hasKey,
+      hasGeminiKey,
+      hasOpenRouterKey,
+      hasOrcaRouterKey,
+      hasTokenRouterKey,
+      geminiStatus,
+      agyStatus,
+      agents,
+      connectedMap,
+      ...secretResults
+    ] = await Promise.all([
+      withTimeout(Bridge.hooksStatus(), 1500, fallbackStatus),
+      withTimeout(Bridge.secretPresent("anthropic-api-key"), 1500, false),
+      withTimeout(Bridge.secretPresent("gemini-api-key"), 1500, false),
+      withTimeout(Bridge.secretPresent("openrouter-api-key"), 1500, false),
+      withTimeout(Bridge.secretPresent("orcarouter-api-key"), 1500, false),
+      withTimeout(Bridge.secretPresent("tokenrouter-api-key"), 1500, false),
+      withTimeout(Bridge.geminiHooksStatus(), 1500, fallbackStatus),
+      withTimeout(Bridge.agyHooksStatus(), 1500, fallbackStatus),
+      withTimeout(Bridge.agentHooksList(), 1500, []),
+      withTimeout(Bridge.agentHooksStatus(), 1500, {} as Record<string, boolean>),
+      ...keys.map((k) => withTimeout(Bridge.secretPresent(k), 1500, false)),
+    ]);
+
+    const present: Record<string, boolean> = {};
+    keys.forEach((k, idx) => {
+      present[k] = secretResults[idx] ?? false;
+    });
+
     settings = { ...settings, ...sanitizeDeclared(settings) };
-    const connected: Record<string, boolean> = { ...((await Bridge.agentHooksStatus()) ?? {}) };
+    const connected: Record<string, boolean> = { ...(connectedMap ?? {}) };
     for (const def of availablePills()) {
       if (def.connect.kind === "key") {
-        connected[def.id] = present[def.connect.key] ?? (await Bridge.secretPresent(def.connect.key)) ?? false;
+        connected[def.id] = present[def.connect.key] ?? false;
       }
     }
 
@@ -1672,12 +1698,18 @@ async function main() {
     clear(root);
     root.append(
       titleBar,
-      claudeSection(status),
-      geminiSection(geminiStatus),
-      agySection(agyStatus),
-      agentsSection(agents),
+      claudeSection(status ?? fallbackStatus),
+      geminiSection(geminiStatus ?? fallbackStatus),
+      agySection(agyStatus ?? fallbackStatus),
+      agentsSection(agents ?? []),
       activePillsSection(connected),
-      apiSection(hasKey, hasGeminiKey, hasOpenRouterKey, hasOrcaRouterKey, hasTokenRouterKey),
+      apiSection(
+        hasKey ?? false,
+        hasGeminiKey ?? false,
+        hasOpenRouterKey ?? false,
+        hasOrcaRouterKey ?? false,
+        hasTokenRouterKey ?? false,
+      ),
       gmailSection(present),
       outlookSection(present),
       integrationsSection(present),
